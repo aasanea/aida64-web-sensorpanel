@@ -11,13 +11,13 @@ Dim objShell, objFSO, strScriptDir, strBatPath
 Set objShell = CreateObject("WScript.Shell")
 Set objFSO = CreateObject("Scripting.FileSystemObject")
 
-' Resolve the path to launch_kiosk.bat
+' Resolve the path to launch_native.bat
 strScriptDir = objFSO.GetParentFolderName(WScript.ScriptFullName)
-strBatPath = objFSO.GetParentFolderName(strScriptDir) & "\launch_kiosk.bat"
+strBatPath = objFSO.GetParentFolderName(strScriptDir) & "\launch_native.bat"
 
-' Validate that launch_kiosk.bat exists
+' Validate that launch_native.bat exists
 If Not objFSO.FileExists(strBatPath) Then
-    strBatPath = strScriptDir & "\start.bat"
+    strBatPath = strScriptDir & "\launch_kiosk.bat"
 End If
 
 ' Set current working directory

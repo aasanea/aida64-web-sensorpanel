@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     AIDA64 Web SensorPanel - Turnkey One-Liner Installer for Windows 10/11.
 .DESCRIPTION
@@ -207,20 +207,29 @@ try {
     $wshShell = New-Object -ComObject WScript.Shell
     $desktopPath = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::Desktop)
     $shortcutPath = Join-Path $desktopPath "AIDA64 Web SensorPanel.lnk"
+    $nativeExe = Join-Path $InstallDir "bin\AIDA64Panel.exe"
+    $nativeIcon = Join-Path $InstallDir "bin\icon.ico"
     $targetBatch = Join-Path $InstallDir "scripts\start.bat"
 
     $shortcut = $wshShell.CreateShortcut($shortcutPath)
-    $shortcut.TargetPath = $targetBatch
-    $shortcut.WorkingDirectory = $InstallDir
+    if (Test-Path $nativeExe) {
+        $shortcut.TargetPath = $nativeExe
+        $shortcut.WorkingDirectory = (Join-Path $InstallDir "bin")
+        if (Test-Path $nativeIcon) {
+            $shortcut.IconLocation = "$nativeIcon,0"
+        }
+    } else {
+        $shortcut.TargetPath = $targetBatch
+        $shortcut.WorkingDirectory = $InstallDir
+        $edgeApp = Join-Path ${env:ProgramFiles(x86)} "Microsoft\Edge\Application\msedge.exe"
+        if (-not (Test-Path $edgeApp)) {
+            $edgeApp = Join-Path $env:ProgramFiles "Microsoft\Edge\Application\msedge.exe"
+        }
+        if (Test-Path $edgeApp) {
+            $shortcut.IconLocation = "$edgeApp,0"
+        }
+    }
     $shortcut.Description = "AIDA64 Glassmorphism 2.0 Web SensorPanel HUD"
-    
-    $edgeApp = Join-Path ${env:ProgramFiles(x86)} "Microsoft\Edge\Application\msedge.exe"
-    if (-not (Test-Path $edgeApp)) {
-        $edgeApp = Join-Path $env:ProgramFiles "Microsoft\Edge\Application\msedge.exe"
-    }
-    if (Test-Path $edgeApp) {
-        $shortcut.IconLocation = "$edgeApp,0"
-    }
     $shortcut.Save()
 
     Write-Color "[OK] Created Desktop shortcut: 'AIDA64 Web SensorPanel'" Green
