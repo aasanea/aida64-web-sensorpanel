@@ -1,0 +1,107 @@
+name: Bug Report
+description: Report a defect or unexpected behavior in the AIDA64 Dashboard
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Thank you for reporting a bug!
+        Before submitting, please make sure you have:
+        - Enabled shared memory in **AIDA64 Extreme** (`File` ➡️ `Preferences` ➡️ `Hardware Monitoring` ➡️ `External Applications` ➡️ **Enable shared memory**).
+        - Checked existing [open and closed issues](https://github.com/aasanea/aida64_dashboard/issues) to avoid duplicates.
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Describe what unexpected behavior you observed...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: Steps to Reproduce
+      description: Step-by-step instructions to reproduce the issue.
+      placeholder: |
+        1. Open AIDA64 Extreme and enable shared memory.
+        2. Run `D:\Services\aida64_dashboard\scripts\start.bat`.
+        3. Navigate to `http://localhost:8088`.
+        4. Observe the GPU temperature widget.
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: What you expected to happen.
+      placeholder: Describe the expected state or telemetry values...
+    validations:
+      required: true
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual Behavior
+      description: What actually occurred during runtime.
+      placeholder: Describe what went wrong or unexpected error messages observed...
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      description: What OS is running on your host machine?
+      options:
+        - Windows 11 (24H2)
+        - Windows 11 (23H2 / 22H2)
+        - Windows 10 (22H2)
+        - Windows Server 2022 / 2025
+        - Other (specify in comments)
+    validations:
+      required: true
+  - type: input
+    id: aida64-version
+    attributes:
+      label: AIDA64 Extreme Version
+      description: Exact version of AIDA64 Extreme in use.
+      placeholder: e.g., v7.35.7000 or v7.40.7100
+    validations:
+      required: true
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Display Browser
+      description: Which browser is rendering the dashboard in kiosk or windowed mode?
+      options:
+        - Microsoft Edge (Chromium)
+        - Google Chrome
+        - Brave Browser
+        - Mozilla Firefox
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: python-version
+    attributes:
+      label: Python Version
+      description: Python runtime version running the backend.
+      placeholder: e.g., Python 3.12.4
+    validations:
+      required: false
+  - type: textarea
+    id: logs-output
+    attributes:
+      label: Terminal Logs & Browser Console Output
+      description: Paste relevant terminal logs from the backend or browser console errors (F12).
+      render: shell
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-Submission Checklist
+      options:
+        - label: I have verified that "Enable shared memory" is checked in AIDA64 Extreme.
+          required: true
+        - label: I have checked existing issues and confirmed this is not a duplicate.
+          required: true
+        - label: I have tested with the latest release or latest commit on main.
+          required: false

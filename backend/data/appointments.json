@@ -1,0 +1,37 @@
+{
+  "appointments": [
+    {
+      "id": "apt_1",
+      "title": "مراجعة تقارير السيرفرات والشبكة",
+      "time": "09:30",
+      "category": "work",
+      "category_label": "عمل",
+      "location": "المكتب التقني",
+      "days": [
+        "all"
+      ]
+    },
+    {
+      "id": "apt_2",
+      "title": "جلسة تطوير برمجيات وهندسة عتاد",
+      "time": "14:00",
+      "category": "work",
+      "category_label": "عمل",
+      "location": "معمل الابتكار",
+      "days": [
+        "all"
+      ]
+    },
+    {
+      "id": "apt_3",
+      "title": "تمرين رياضي مسائي",
+      "time": "18:30",
+      "category": "personal",
+      "category_label": "شخصي",
+      "location": "الصالة الرياضية",
+      "days": [
+        "all"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,383 @@
+{
+  "standings": [
+    {
+      "position": 1,
+      "team_name": "الهلال",
+      "team_id": 5457,
+      "team_logo": "https://imagecache.365scores.com/image/upload/f_png,w_48,h_48,c_limit,q_auto:eco,dpr_2/competitors/5457",
+      "played": 7,
+      "won": 6,
+      "tied": 0,
+      "lost": 1,
+      "goals_for": 23,
+      "goals_against": 5,
+      "goal_diff": 18,
+      "points": 18,
+      "recent_form": [
+        1,
+        0,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "position": 2,
+      "team_name": "الاتحاد",
+      "team_id": 8593,
+      "team_logo": "https://imagecache.365scores.com/image/upload/f_png,w_48,h_48,c_limit,q_auto:eco,dpr_2/competitors/8593",
+      "played": 7,
+      "won": 5,
+      "tied": 2,
+      "lost": 0,
+      "goals_for": 12,
+      "goals_against": 6,
+      "goal_diff": 6,
+      "points": 17,
+      "recent_form": [
+        1,
+        1,
+        1,
+        2,
+        1
+      ]
+    },
+    {
+      "position": 3,
+      "team_name": "النصر",
+      "team_id": 7549,
+      "team_logo": "https://imagecache.365scores.com/image/upload/f_png,w_48,h_48,c_limit,q_auto:eco,dpr_2/competitors/7549",
+      "played": 7,
+      "won": 5,
+      "tied": 1,
+      "lost": 1,
+      "goals_for": 16,
+      "goals_against": 7,
+      "goal_diff": 9,
+      "points": 16,
+      "recent_form": [
+        2,
+        1,
+        0,
+        1,
+        1
+      ]
+    },
+    {
+      "position": 4,
+      "team_name": "القادسية",
+      "team_id": 8947,
+      "team_logo": "https://imagecache.365scores.com/image/upload/f_png,w_48,h_48,c_limit,q_auto:eco,dpr_2/competitors/8947",
+      "played": 7,
+      "won": 5,
+      "tied": 1,
+      "lost": 1,
+      "goals_for": 16,
+      "goals_against": 8,
+      "goal_diff": 8,
+      "points": 16,
+      "recent_form": [
+        2,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "position": 5,
+      "team_name": "نيوم",
+      "team_id": 55793,
+      "team_logo": "https://imagecache.365scores.com/image/upload/f_png,w_48,h_48,c_limit,q_auto:eco,dpr_2/competitors/55793",
+      "played": 7,
+      "won": 5,
+      "tied": 0,
+      "lost": 2,
+      "goals_for": 13,
+      "goals_against": 6,
+      "goal_diff": 7,
+      "points": 15,
+      "recent_form": [
+        1,
+        1,
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "position": 6,
+      "team_name": "الأهلي",
+      "team_id": 8946,
+      "team_logo": "https://imagecache.365scores.com/image/upload/f_png,w_48,h_48,c_limit,q_auto:eco,dpr_2/competitors/8946",
+      "played": 7,
+      "won": 4,
+      "tied": 0,
+      "lost": 3,
+      "goals_for": 16,
+      "goals_against": 10,
+      "goal_diff": 6,
+      "points": 12,
+      "recent_form": [
+        1,
+        0,
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "position": 7,
+      "team_name": "الخلود",
+      "team_id": 55800,
+      "team_logo": "https://imagecache.365scores.com/image/upload/f_png,w_48,h_48,c_limit,q_auto:eco,dpr_2/competitors/55800",
+      "played": 7,
+      "won": 3,
+      "tied": 3,
+      "lost": 1,
+      "goals_for": 12,
+      "goals_against": 10,
+      "goal_diff": 2,
+      "points": 12,
+      "recent_form": [
+        0,
+        1,
+        2,
+        1,
+        2
+      ]
+    },
+    {
+      "position": 8,
+      "team_name": "الدرعية",
+      "team_id": 13801,
+      "team_logo": "https://imagecache.365scores.com/image/upload/f_png,w_48,h_48,c_limit,q_auto:eco,dpr_2/competitors/13801",
+      "played": 7,
+      "won": 3,
+      "tied": 2,
+      "lost": 2,
+      "goals_for": 7,
+      "goals_against": 5,
+      "goal_diff": 2,
+      "points": 11,
+      "recent_form": [
+        2,
+        1,
+        0,
+        1,
+        2
+      ]
+    },
+    {
+      "position": 9,
+      "team_name": "الاتفاق",
+      "team_id": 8943,
+      "team_logo": "https://imagecache.365scores.com/image/upload/f_png,w_48,h_48,c_limit,q_auto:eco,dpr_2/competitors/8943",
+      "played": 7,
+      "won": 3,
+      "tied": 2,
+      "lost": 2,
+      "goals_for": 11,
+      "goals_against": 11,
+      "goal_diff": 0,
+      "points": 11,
+      "recent_form": [
+        2,
+        2,
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "position": 10,
+      "team_name": "الحزم",
+      "team_id": 14895,
+      "team_logo": "https://imagecache.365scores.com/image/upload/f_png,w_48,h_48,c_limit,q_auto:eco,dpr_2/competitors/14895",
+      "played": 7,
+      "won": 2,
+      "tied": 2,
+      "lost": 3,
+      "goals_for": 7,
+      "goals_against": 9,
+      "goal_diff": -2,
+      "points": 8,
+      "recent_form": [
+        0,
+        1,
+        2,
+        2,
+        0
+      ]
+    },
+    {
+      "position": 11,
+      "team_name": "الرياض",
+      "team_id": 12135,
+      "team_logo": "https://imagecache.365scores.com/image/upload/f_png,w_48,h_48,c_limit,q_auto:eco,dpr_2/competitors/12135",
+      "played": 7,
+      "won": 2,
+      "tied": 2,
+      "lost": 3,
+      "goals_for": 8,
+      "goals_against": 16,
+      "goal_diff": -8,
+      "points": 8,
+      "recent_form": [
+        1,
+        2,
+        0,
+        1,
+        2
+      ]
+    },
+    {
+      "position": 12,
+      "team_name": "الفيحاء",
+      "team_id": 20733,
+      "team_logo": "https://imagecache.365scores.com/image/upload/f_png,w_48,h_48,c_limit,q_auto:eco,dpr_2/competitors/20733",
+      "played": 7,
+      "won": 1,
+      "tied": 3,
+      "lost": 3,
+      "goals_for": 7,
+      "goals_against": 11,
+      "goal_diff": -4,
+      "points": 6,
+      "recent_form": [
+        2,
+        0,
+        2,
+        1,
+        2
+      ]
+    },
+    {
+      "position": 13,
+      "team_name": "الخليج",
+      "team_id": 12138,
+      "team_logo": "https://imagecache.365scores.com/image/upload/f_png,w_48,h_48,c_limit,q_auto:eco,dpr_2/competitors/12138",
+      "played": 7,
+      "won": 0,
+      "tied": 5,
+      "lost": 2,
+      "goals_for": 3,
+      "goals_against": 10,
+      "goal_diff": -7,
+      "points": 5,
+      "recent_form": [
+        2,
+        2,
+        0,
+        0,
+        2
+      ]
+    },
+    {
+      "position": 14,
+      "team_name": "الشباب",
+      "team_id": 8945,
+      "team_logo": "https://imagecache.365scores.com/image/upload/f_png,w_48,h_48,c_limit,q_auto:eco,dpr_2/competitors/8945",
+      "played": 7,
+      "won": 0,
+      "tied": 4,
+      "lost": 3,
+      "goals_for": 6,
+      "goals_against": 11,
+      "goal_diff": -5,
+      "points": 4,
+      "recent_form": [
+        2,
+        0,
+        0,
+        2,
+        2
+      ]
+    },
+    {
+      "position": 15,
+      "team_name": "الفتح",
+      "team_id": 8942,
+      "team_logo": "https://imagecache.365scores.com/image/upload/f_png,w_48,h_48,c_limit,q_auto:eco,dpr_2/competitors/8942",
+      "played": 7,
+      "won": 0,
+      "tied": 3,
+      "lost": 4,
+      "goals_for": 4,
+      "goals_against": 11,
+      "goal_diff": -7,
+      "points": 3,
+      "recent_form": [
+        0,
+        0,
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "position": 16,
+      "team_name": "الفيصلي",
+      "team_id": 8949,
+      "team_logo": "https://imagecache.365scores.com/image/upload/f_png,w_48,h_48,c_limit,q_auto:eco,dpr_2/competitors/8949",
+      "played": 7,
+      "won": 0,
+      "tied": 3,
+      "lost": 4,
+      "goals_for": 5,
+      "goals_against": 13,
+      "goal_diff": -8,
+      "points": 3,
+      "recent_form": [
+        0,
+        2,
+        2,
+        0,
+        2
+      ]
+    },
+    {
+      "position": 17,
+      "team_name": "التعاون",
+      "team_id": 8941,
+      "team_logo": "https://imagecache.365scores.com/image/upload/f_png,w_48,h_48,c_limit,q_auto:eco,dpr_2/competitors/8941",
+      "played": 7,
+      "won": 0,
+      "tied": 3,
+      "lost": 4,
+      "goals_for": 3,
+      "goals_against": 12,
+      "goal_diff": -9,
+      "points": 3,
+      "recent_form": [
+        0,
+        0,
+        2,
+        0,
+        2
+      ]
+    },
+    {
+      "position": 18,
+      "team_name": "أبها",
+      "team_id": 14898,
+      "team_logo": "https://imagecache.365scores.com/image/upload/f_png,w_48,h_48,c_limit,q_auto:eco,dpr_2/competitors/14898",
+      "played": 7,
+      "won": 0,
+      "tied": 2,
+      "lost": 5,
+      "goals_for": 5,
+      "goals_against": 13,
+      "goal_diff": -8,
+      "points": 2,
+      "recent_form": [
+        2,
+        0,
+        0,
+        0,
+        2
+      ]
+    }
+  ],
+  "last_update": "2026-09-22T14:32:34.165518"
+}

@@ -1,0 +1,101 @@
+:root {
+  /* Color Palette */
+  --bg-deep-indigo: #0B1020;
+  --neon-cyan: #22D3EE;
+  --neon-violet: #7C5CFF;
+  --neon-purple: #A855F7;
+  --neon-green: #10B981;
+  --neon-yellow: #FACC15;
+  --neon-orange: #FB923C;
+  --neon-red: #EF4444;
+  --text-pure-white: #F8FAFF;
+  --text-muted: rgba(248, 250, 255, 0.5);
+
+  /* Fonts */
+  --font-numbers: 'Roboto Mono', 'Orbitron', monospace;
+  --font-display: 'Barlow', 'Rajdhani', sans-serif;
+  --font-arabic: 'Almarai', 'Cairo', 'Tajawal', sans-serif;
+
+  /* Glassmorphism Specs */
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-blur: blur(24px) saturate(180%);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+  --glass-radius: 20px;
+  --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+
+  /* Ambient Mesh & Accent */
+  --mesh-opacity: 1;
+  --theme-accent: #22D3EE;
+}
+
+/* ==========================================================================
+   1. OLED Black (🖤) - True Pitch Black, 0% Blur, Halation-Safe Text
+   ========================================================================== */
+html[data-theme="oled"] {
+  --bg-deep-indigo: #000000;
+  --neon-cyan: #38BDF8;
+  --neon-violet: #818CF8;
+  --neon-purple: #C084FC;
+  --neon-green: #34D399;
+  --neon-yellow: #FDE047;
+  --neon-orange: #FB923C;
+  --neon-red: #F87171;
+  --text-pure-white: #EDEDED;
+  --text-muted: rgba(237, 237, 237, 0.6);
+
+  --glass-bg: #0A0A0A;
+  --glass-blur: none;
+  --glass-border: 1px solid rgba(255, 255, 255, 0.14);
+  --glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.95);
+
+  --mesh-opacity: 0;
+  --theme-accent: #38BDF8;
+}
+
+/* ==========================================================================
+   2. Cyberpunk 2077 (⚡) - Night City Neon Yellow & Hot Pink Magenta
+   ========================================================================== */
+html[data-theme="cyberpunk"] {
+  --bg-deep-indigo: #090114;
+  --neon-cyan: #FFE600;
+  --neon-violet: #FF0055;
+  --neon-purple: #FF007F;
+  --neon-green: #00FF66;
+  --neon-yellow: #FFE600;
+  --neon-orange: #FF6600;
+  --neon-red: #FF0033;
+  --text-pure-white: #FFFDF0;
+  --text-muted: rgba(255, 253, 240, 0.6);
+
+  --glass-bg: rgba(20, 5, 35, 0.72);
+  --glass-blur: blur(20px) saturate(200%);
+  --glass-border: 1px solid rgba(255, 0, 85, 0.4);
+  --glass-shadow: 0 0 20px rgba(255, 0, 85, 0.25), inset 0 1px 0 rgba(255, 230, 0, 0.25);
+
+  --mesh-opacity: 0.85;
+  --theme-accent: #FFE600;
+}
+
+/* ==========================================================================
+   3. Emerald Matrix (🍃) - Cyber Terminal Green & Dark Pine Luxury
+   ========================================================================== */
+html[data-theme="emerald"] {
+  --bg-deep-indigo: #02140D;
+  --neon-cyan: #00FF66;
+  --neon-violet: #059669;
+  --neon-purple: #047857;
+  --neon-green: #34D399;
+  --neon-yellow: #6EE7B7;
+  --neon-orange: #F59E0B;
+  --neon-red: #EF4444;
+  --text-pure-white: #ECFDF5;
+  --text-muted: rgba(236, 253, 245, 0.6);
+
+  --glass-bg: rgba(4, 28, 18, 0.72);
+  --glass-blur: blur(20px) saturate(180%);
+  --glass-border: 1px solid rgba(0, 255, 102, 0.35);
+  --glass-shadow: 0 0 20px rgba(0, 255, 102, 0.2), inset 0 1px 0 rgba(52, 211, 153, 0.25);
+
+  --mesh-opacity: 0.75;
+  --theme-accent: #00FF66;
+}

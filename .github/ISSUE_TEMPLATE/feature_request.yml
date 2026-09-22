@@ -1,0 +1,49 @@
+name: Feature Request
+description: Suggest an idea, sensor integration, or visual enhancement for the dashboard
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Thank you for suggesting a feature!
+        Please check existing [open feature requests](https://github.com/aasanea/aida64_dashboard/issues?q=label%3Aenhancement) to avoid duplicates.
+  - type: textarea
+    id: problem-statement
+    attributes:
+      label: Problem or Motivation
+      description: Is your feature request related to a problem or limitation?
+      placeholder: A clear and concise description of what needs improvement or what capability is missing...
+    validations:
+      required: true
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed Solution & Functionality
+      description: Detailed explanation of what you would like to see implemented.
+      placeholder: Describe the desired feature, visual widget, or architectural enhancement...
+    validations:
+      required: true
+  - type: textarea
+    id: hardware-context
+    attributes:
+      label: Hardware, Sensor IDs & Display Context
+      description: Any specific hardware (Intel/AMD/NVIDIA), sensor IDs in AIDA64, or display dimensions (e.g., 1920x480 ultra-wide sensor panel).
+      placeholder: e.g., AIDA64 Sensor ID 'TCHIP', custom resolution 1920x515, fan speed RPM curve...
+    validations:
+      required: false
+  - type: textarea
+    id: alternatives-considered
+    attributes:
+      label: Alternatives Considered
+      description: A clear description of any alternative solutions, designs, or workarounds you have evaluated.
+      placeholder: Other approaches or tools you considered...
+    validations:
+      required: false
+  - type: checkboxes
+    id: contribution-interest
+    attributes:
+      label: Contribution
+      options:
+        - label: I would like to implement or help implement this feature with a Pull Request.
+          required: false

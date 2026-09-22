@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIDA64 Glassmorphism 2.0 Dashboard</title>
+
+  <!-- Zero-FOUT Theme Initializer (Executes synchronously before CSS/DOM paint) -->
+  <script>
+    (function() {
+      try {
+        const theme = localStorage.getItem('aida64_theme');
+        if (theme && theme !== 'default') {
+          document.documentElement.setAttribute('data-theme', theme);
+        }
+      } catch (e) {}
+    })();
+  </script>
+  
+  <!-- Google Fonts: Almarai, Roboto Mono, Barlow, Orbitron, Rajdhani, Tajawal, Cairo -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Barlow:wght@500;600;700;800&family=Cairo:wght@400;600;700;800&family=Orbitron:wght@500;600;700;800;900&family=Rajdhani:wght@500;600;700&family=Roboto+Mono:wght@500;600;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="css/design-tokens.css">
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:," />
+</head>
+<body>
+
+  <!-- Background Layer: Animated Mesh Gradient & Floating Orbs -->
+  <div class="mesh-background" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="orb orb-4"></div>
+  </div>
+  
+  <!-- SVG Noise Overlay (0.03 opacity) -->
+  <div class="noise-overlay" aria-hidden="true"></div>
+
+  <!-- Dashboard Main Container -->
+  <div class="dashboard-container">
+    
+    <!-- Top Bar Header Web Component -->
+    <dashboard-header class="top-bar" id="dashboard-header"></dashboard-header>
+
+    <!-- Asymmetric Bento Grid (7 Cards) -->
+    <main class="bento-grid">
+
+      <!-- CARD 1: CPU Master Panel (Large Bento Card) -->
+      <dashboard-cpu class="glass-card card-cpu" id="card-cpu"></dashboard-cpu>
+
+      <!-- CARD 2: Appointments Panel (Center Bento Card Row 1) -->
+      <dashboard-appointments class="glass-card card-appointments" id="card-appointments"></dashboard-appointments>
+
+      <!-- CARD 3: GPU Master Panel (Large Bento Card) -->
+      <dashboard-gpu class="glass-card card-gpu" id="card-gpu"></dashboard-gpu>
+
+      <!-- CARD 3: RAM Panel (Medium Bento Card) -->
+      <dashboard-ram class="glass-card card-ram" id="card-ram"></dashboard-ram>
+
+      <!-- CARD 4: Live Matches & Saudi Pro League Panel (Medium Bento Card) -->
+      <dashboard-matches class="glass-card card-matches" id="card-matches"></dashboard-matches>
+
+      <!-- CARD 5: Storage Panel (Medium Bento Card) -->
+      <dashboard-storage class="glass-card card-storage" id="card-storage"></dashboard-storage>
+
+
+      <!-- CARD 7: Display & Gaming Telemetry (Card Slot 1) -->
+      <dashboard-display class="glass-card card-slot-1" id="card-slot-1"></dashboard-display>
+
+      <!-- CARD 8: Riyadh Weather & Prayer Times (Card Slot 2) -->
+      <dashboard-weather class="glass-card card-slot-2" id="card-slot-2"></dashboard-weather>
+
+      <!-- CARD 9: Network Telemetry (Compact Bento Card) -->
+      <dashboard-network class="glass-card card-network" id="card-network"></dashboard-network>
+
+    </main>
+
+    <!-- Footer Bar -->
+    <footer class="footer-bar">
+      <div class="footer-item">
+        <span class="footer-dot"></span>
+        <span>AIDA64 SHARED MEMORY V4.0</span>
+      </div>
+      <div class="footer-item">
+        <span dir="ltr">60 FPS SMOOTH RENDERER // HARDWARE ACCELERATED</span>
+      </div>
+    </footer>
+
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

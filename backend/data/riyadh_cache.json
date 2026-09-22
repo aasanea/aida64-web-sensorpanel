@@ -1,0 +1,33 @@
+{
+  "timestamp": 1790076755.747506,
+  "data": {
+    "riyadh_temp": 40.8,
+    "riyadh_weather_desc": "مشمس",
+    "riyadh_weather_icon": "☀️",
+    "prayer_fajr": "4:24",
+    "prayer_sunrise": "5:42",
+    "prayer_dhuhr": "11:46",
+    "prayer_asr": "3:13",
+    "prayer_maghrib": "5:50",
+    "prayer_isha": "7:20",
+    "next_prayer_name": "العصر",
+    "next_prayer_time": "3:13",
+    "next_prayer_seconds": 2424,
+    "prev_prayer_name": "الظهر",
+    "prev_prayer_time": "11:46",
+    "prev_prayer_seconds": 9995
+  },
+  "raw_timings": {
+    "Fajr": "04:24",
+    "Sunrise": "05:42",
+    "Dhuhr": "11:46",
+    "Asr": "15:13",
+    "Sunset": "17:50",
+    "Maghrib": "17:50",
+    "Isha": "19:20",
+    "Imsak": "04:14",
+    "Midnight": "23:46",
+    "Firstthird": "21:47",
+    "Lastthird": "01:44"
+  }
+}

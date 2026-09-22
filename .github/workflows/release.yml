@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    name: Build Standalone Release Package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract Release Version
+        id: version
+        run: echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare Standalone Distribution Directory
+        run: |
+          PACKAGE_NAME="aida64-web-sensorpanel-${{ steps.version.outputs.TAG_NAME }}"
+          mkdir -p "dist/${PACKAGE_NAME}"
+          
+          # Copy application directories and files
+          cp -r backend "dist/${PACKAGE_NAME}/"
+          cp -r frontend "dist/${PACKAGE_NAME}/"
+          cp -r scripts "dist/${PACKAGE_NAME}/"
+          cp launch_kiosk.bat "dist/${PACKAGE_NAME}/"
+          cp open_dashboard.bat "dist/${PACKAGE_NAME}/"
+          cp README.md "dist/${PACKAGE_NAME}/"
+          cp LICENSE "dist/${PACKAGE_NAME}/"
+          cp CONTRIBUTING.md "dist/${PACKAGE_NAME}/"
+          cp SECURITY.md "dist/${PACKAGE_NAME}/"
+
+          # Remove build artifacts, test artifacts, and caches
+          find "dist/${PACKAGE_NAME}" -type d -name "__pycache__" -exec rm -rf {} +
+          find "dist/${PACKAGE_NAME}" -type d -name ".pytest_cache" -exec rm -rf {} +
+          find "dist/${PACKAGE_NAME}" -type f -name "*.pyc" -delete
+
+      - name: Build Standalone ZIP Archive
+        run: |
+          PACKAGE_NAME="aida64-web-sensorpanel-${{ steps.version.outputs.TAG_NAME }}"
+          cd dist
+          zip -r "../${PACKAGE_NAME}.zip" "${PACKAGE_NAME}"
+          cd ..
+
+      - name: Generate SHA256 Checksums
+        run: |
+          PACKAGE_NAME="aida64-web-sensorpanel-${{ steps.version.outputs.TAG_NAME }}"
+          sha256sum "${PACKAGE_NAME}.zip" > "${PACKAGE_NAME}.zip.sha256"
+
+      - name: Create GitHub Release Draft
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "AIDA64 Web SensorPanel ${{ steps.version.outputs.TAG_NAME }}"
+          draft: true
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            aida64-web-sensorpanel-${{ steps.version.outputs.TAG_NAME }}.zip
+            aida64-web-sensorpanel-${{ steps.version.outputs.TAG_NAME }}.zip.sha256

@@ -1,0 +1,2087 @@
+/* ==========================================================================
+   AIDA64 GLASSMORPHISM 2.0 DASHBOARD STYLESHEET
+   Target: Small independent screen at 100cm distance in Kiosk Mode (60 FPS)
+   Aesthetic: Glassmorphism 2.0 with Asymmetric Bento Grid
+   ========================================================================== */
+
+
+/* --------------------------------------------------------------------------
+   2. Background: Animated Mesh Gradient, Glowing Floating Orbs, SVG Noise
+   -------------------------------------------------------------------------- */
+.mesh-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  transform: translateZ(0);
+  contain: strict;
+  background: 
+    radial-gradient(circle at 15% 20%, rgba(124, 92, 255, 0.16) 0%, transparent 45%),
+    radial-gradient(circle at 85% 15%, rgba(34, 211, 238, 0.14) 0%, transparent 45%),
+    radial-gradient(circle at 50% 85%, rgba(124, 92, 255, 0.12) 0%, transparent 50%),
+    radial-gradient(circle at 85% 80%, rgba(34, 211, 238, 0.10) 0%, transparent 45%),
+    #0B1020;
+  opacity: var(--mesh-opacity, 1);
+  transition: opacity 0.5s ease;
+  overflow: hidden;
+}
+
+/* 4 Glowing Floating Orbs with Heavy Blur (filter: blur(80px)) */
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  will-change: transform;
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  pointer-events: none;
+}
+
+.orb-1 {
+  width: 480px;
+  height: 480px;
+  background: radial-gradient(circle, rgba(124, 92, 255, 0.45) 0%, rgba(124, 92, 255, 0) 70%);
+  top: -120px;
+  left: -80px;
+  animation: orb-float-1 22s infinite ease-in-out alternate;
+}
+
+.orb-2 {
+  width: 520px;
+  height: 520px;
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.38) 0%, rgba(34, 211, 238, 0) 70%);
+  bottom: -150px;
+  right: -100px;
+  animation: orb-float-2 26s infinite ease-in-out alternate;
+}
+
+.orb-3 {
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.35) 0%, rgba(168, 85, 247, 0) 70%);
+  top: 35%;
+  left: 45%;
+  animation: orb-float-3 20s infinite ease-in-out alternate;
+}
+
+.orb-4 {
+  width: 340px;
+  height: 340px;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.32) 0%, rgba(6, 182, 212, 0) 70%);
+  bottom: 8%;
+  left: 15%;
+  animation: orb-float-4 28s infinite ease-in-out alternate;
+}
+
+@keyframes orb-float-1 {
+  0%   { transform: translate(0, 0) scale(1); }
+  50%  { transform: translate(80px, 90px) scale(1.12); }
+  100% { transform: translate(-30px, 120px) scale(0.95); }
+}
+
+@keyframes orb-float-2 {
+  0%   { transform: translate(0, 0) scale(1); }
+  50%  { transform: translate(-90px, -70px) scale(1.08); }
+  100% { transform: translate(-50px, -130px) scale(0.92); }
+}
+
+@keyframes orb-float-3 {
+  0%   { transform: translate(0, 0) scale(1); }
+  50%  { transform: translate(-60px, 50px) scale(1.15); }
+  100% { transform: translate(70px, -40px) scale(0.9); }
+}
+
+@keyframes orb-float-4 {
+  0%   { transform: translate(0, 0) scale(1); }
+  50%  { transform: translate(60px, -60px) scale(1.1); }
+  100% { transform: translate(-40px, -40px) scale(0.96); }
+}
+
+/* SVG Noise Overlay (0.03 opacity) */
+.noise-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.03;
+  transform: translateZ(0);
+  contain: strict;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+/* --------------------------------------------------------------------------
+   3. Main Dashboard Layout & Containers
+   -------------------------------------------------------------------------- */
+.dashboard-container {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 1920px;
+  height: 100vh;
+  max-height: 100vh;
+  margin: 0 auto;
+  padding: 8px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Top Bar */
+.top-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  flex-shrink: 0;
+  gap: 16px;
+}
+
+.header-right-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* Prominent Enlarged Date Badge */
+.date-group-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(34, 211, 238, 0.25);
+  border-radius: 16px;
+  font-family: var(--font-numbers);
+  font-size: 20px;
+  color: var(--text-pure-white);
+  letter-spacing: 0.5px;
+  box-shadow: 0 0 15px rgba(34, 211, 238, 0.1);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.date-icon {
+  font-size: 19px;
+}
+
+.date-sep {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 15px;
+}
+
+.date-hijri {
+  color: var(--neon-cyan);
+  font-size: 20px;
+  font-weight: 800;
+  text-shadow: 0 0 10px rgba(34, 211, 238, 0.4);
+}
+
+.date-greg {
+  color: var(--text-pure-white);
+  font-size: 18px;
+  font-weight: 700;
+  opacity: 0.95;
+}
+
+/* Weekdays Strip (7 Days of the Week) */
+.weekdays-strip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 6px;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.weekday-pill {
+  position: relative;
+  font-family: var(--font-arabic);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: rgba(248, 250, 255, 0.36);
+  padding: 3px 6px;
+  border-radius: 8px;
+  border: 1.5px solid transparent;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  white-space: nowrap;
+  user-select: none;
+  line-height: 1.2;
+}
+
+/* Active Day: Magnifying Lens Aesthetic (عدسة مكبرة متوهجة) */
+.weekday-pill.active-day {
+  position: relative;
+  z-index: 5;
+  font-size: 16.5px;
+  font-weight: 800;
+  color: #FFFFFF;
+  padding: 5px 14px;
+  margin: 0 5px;
+  border-radius: 13px;
+  background: radial-gradient(ellipse at 50% 20%, rgba(255, 255, 255, 0.32) 0%, rgba(34, 211, 238, 0.3) 40%, rgba(124, 92, 255, 0.22) 100%);
+  border: 2px solid var(--neon-cyan);
+  box-shadow: 
+    0 0 18px rgba(34, 211, 238, 0.55),
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    inset 0 2px 4px rgba(255, 255, 255, 0.6),
+    inset 0 -1px 3px rgba(0, 0, 0, 0.4);
+  text-shadow: 
+    0 0 10px rgba(34, 211, 238, 0.8),
+    0 2px 4px rgba(0, 0, 0, 0.6);
+  transform: scale(1.15) translateY(-1px);
+  letter-spacing: 0.5px;
+}
+
+/* 12-Hour System Clock (Guaranteed Non-Wrapping Single Line & Absolute Dead-Center Anchor) */
+.clock-display {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-numbers);
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: var(--text-pure-white);
+  text-shadow: 0 0 16px rgba(248, 250, 255, 0.3);
+  direction: ltr;
+  white-space: nowrap !important;
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  width: 240px;
+  min-width: 240px;
+  max-width: 240px;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.clock-ampm {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--neon-cyan);
+  margin-left: 6px;
+  vertical-align: baseline;
+}
+
+/* Header Telemetry Group */
+.header-telemetry-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.header-vitals {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.vital-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  font-family: var(--font-arabic);
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text-pure-white);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.vital-icon {
+  font-size: 18px;
+}
+
+.vital-label {
+  color: #F1F5F9;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.vital-val {
+  font-family: var(--font-numbers);
+  font-weight: 800;
+  font-size: 22px;
+  color: var(--text-pure-white);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+.vital-unit {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--neon-cyan);
+}
+
+.power-badge .vital-val {
+  color: var(--neon-yellow);
+}
+
+.temp-badge .vital-val {
+  color: var(--neon-orange);
+}
+
+.fps-badge .vital-val {
+  color: var(--neon-green);
+}
+
+.display-badge {
+  font-family: var(--font-numbers);
+  font-size: 16px;
+  color: var(--text-muted);
+  direction: ltr;
+  margin-inline-start: 22px;
+}
+
+.vital-item {
+  color: var(--text-pure-white);
+  font-weight: 600;
+}
+
+.vital-sep {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+/* Header Actions & Status Badge */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 30px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  font-size: 13px;
+  font-family: var(--font-arabic);
+  font-weight: 600;
+  direction: ltr;
+  transition: all 0.3s ease;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--neon-yellow);
+  box-shadow: 0 0 8px var(--neon-yellow);
+  transition: all 0.3s ease;
+}
+
+.status-badge.live .status-dot {
+  background-color: var(--neon-green);
+  box-shadow: 0 0 10px var(--neon-green), 0 0 20px var(--neon-green);
+  animation: pulse-glow 2s infinite ease-in-out;
+}
+
+.status-badge.polling .status-dot {
+  background-color: var(--neon-cyan);
+  box-shadow: 0 0 8px var(--neon-cyan);
+}
+
+.status-badge.reconnecting .status-dot {
+  background-color: var(--neon-orange);
+  box-shadow: 0 0 8px var(--neon-orange);
+  animation: blink-fast 1s infinite;
+}
+
+.status-badge.offline .status-dot {
+  background-color: var(--neon-red);
+  box-shadow: 0 0 8px var(--neon-red);
+}
+
+.status-ping {
+  font-family: var(--font-numbers);
+  font-size: 11px;
+  color: var(--neon-cyan);
+  direction: ltr;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.75; }
+}
+
+@keyframes blink-fast {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+.kiosk-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: var(--text-pure-white);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.kiosk-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+  transform: translateY(-1px);
+}
+
+/* --------------------------------------------------------------------------
+   4. Glassmorphism 2.0 Card Specification (STRICT MANDATORY)
+   -------------------------------------------------------------------------- */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: var(--glass-border);
+  border-radius: var(--glass-radius);
+  box-shadow: var(--glass-shadow);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  contain: layout style;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.glass-card:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 12px 40px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* Critical Thermal Neon Aura (60 FPS GPU Composite-Only Breathing Glow) */
+.glass-card::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  border: 2px solid rgba(239, 68, 68, 0.85);
+  box-shadow: 
+    0 0 25px rgba(239, 68, 68, 0.5),
+    inset 0 0 18px rgba(239, 68, 68, 0.25);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity;
+  z-index: 5;
+}
+
+.glass-card.critical-thermal::after {
+  animation: thermal-glow-pulse 2s infinite ease-in-out;
+}
+
+@keyframes thermal-glow-pulse {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glass-card.critical-thermal::after {
+    animation: none;
+    opacity: 0.7;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   5. Asymmetric Bento Grid
+   -------------------------------------------------------------------------- */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.bento-grid > .glass-card {
+  padding: 10px 16px;
+  border-radius: 16px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* Symmetrical Bento Cards (Row 1: CPU, Appointments, GPU - 8 + 8 + 8 = 24) */
+.card-cpu {
+  grid-column: span 8;
+  perspective: 1200px;
+  padding: 0 !important;
+}
+
+.card-appointments {
+  grid-column: span 8;
+}
+
+.card-gpu {
+  grid-column: span 8;
+  perspective: 1200px;
+  padding: 0 !important;
+}
+
+/* Medium Bento Cards (Row 2: RAM, Standby Slot 1, Storage - 8 + 8 + 8 = 24) */
+.card-ram {
+  grid-column: span 8;
+}
+
+.card-vram,
+.card-slot-standby-1,
+.card-matches {
+  grid-column: span 8;
+  perspective: 1200px;
+  padding: 0 !important;
+}
+
+.card-storage {
+  grid-column: span 8;
+}
+
+/* Long & Compact Bento Cards (Row 3: Display & Audio, Weather, Network - 13 + 5 + 6 = 24) */
+.card-thermals {
+  grid-column: span 8;
+}
+
+.card-slot-1 {
+  grid-column: span 13;
+  perspective: 1200px;
+  padding: 0 !important;
+}
+
+.card-slot-2 {
+  grid-column: span 5;
+}
+
+.card-network {
+  grid-column: span 6;
+}
+
+/* Standby Expansion Slots & Custom Placeholders */
+.card-slot-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed rgba(255, 255, 255, 0.12) !important;
+  background: rgba(255, 255, 255, 0.015) !important;
+  backdrop-filter: var(--glass-blur, blur(24px) saturate(180%));
+  -webkit-backdrop-filter: var(--glass-blur, blur(24px) saturate(180%));
+  border-radius: 16px;
+  padding: 16px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: default;
+  user-select: none;
+}
+
+.card-slot-placeholder:hover {
+  border-color: var(--theme-accent, var(--neon-cyan)) !important;
+  background: rgba(255, 255, 255, 0.035) !important;
+  box-shadow: 0 0 24px rgba(0, 0, 0, 0.4), inset 0 0 15px rgba(255, 255, 255, 0.02);
+  transform: translateY(-2px);
+}
+
+.standby-content,
+.slot-placeholder-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.standby-icon,
+.slot-placeholder-icon {
+  width: 44px;
+  height: 44px;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--theme-accent, var(--neon-cyan));
+  font-size: 20px;
+  font-weight: 700;
+  text-shadow: 0 0 10px var(--theme-accent, var(--neon-cyan));
+  animation: standby-pulse 3s infinite ease-in-out;
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-slot-placeholder:hover .standby-icon,
+.card-slot-placeholder:hover .slot-placeholder-icon {
+  transform: scale(1.12);
+  border-color: var(--theme-accent, var(--neon-cyan));
+  box-shadow: 0 0 16px var(--theme-accent, var(--neon-cyan));
+  animation-play-state: paused;
+}
+
+@keyframes standby-pulse {
+  0%, 100% {
+    opacity: 0.7;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
+.standby-title,
+.slot-placeholder-title {
+  font-family: var(--font-arabic);
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--text-pure-white);
+  letter-spacing: 0.3px;
+  line-height: 1.3;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.standby-sub,
+.slot-placeholder-sub {
+  font-family: var(--font-numbers);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  color: var(--theme-accent, var(--neon-cyan));
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+/* --------------------------------------------------------------------------
+   6. Card Header & Typography (100cm Distance Readability)
+   -------------------------------------------------------------------------- */
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+
+.card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cpu-icon { color: var(--neon-cyan); }
+.gpu-icon { color: var(--neon-violet); }
+.ram-icon { color: #38BDF8; }
+.vram-icon { color: #C084FC; }
+.thermals-icon { color: var(--neon-orange); }
+.net-icon { color: var(--neon-green); }
+.storage-icon { color: #34D399; }
+
+.card-title {
+  font-family: var(--font-arabic);
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-pure-white);
+  line-height: 1.2;
+}
+
+.card-sub {
+  font-family: var(--font-numbers);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #94A3B8;
+}
+
+.card-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 15px;
+}
+
+.badge-label {
+  font-family: var(--font-arabic);
+  font-weight: 800;
+  color: #F8FAFC;
+  font-size: 17px;
+}
+
+.badge-val-group {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  direction: ltr;
+}
+
+.badge-value {
+  font-family: var(--font-numbers);
+  font-weight: 800;
+  font-size: 22px;
+  color: var(--text-pure-white);
+  direction: ltr;
+}
+
+.badge-unit {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--neon-cyan);
+  direction: ltr;
+}
+
+.thermals-header-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.thermal-header-badge {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.thermal-header-badge .badge-label {
+  font-size: 16px;
+  white-space: nowrap;
+}
+
+.thermal-header-badge .badge-value {
+  font-size: 21px;
+}
+
+#max-temp-badge .badge-value {
+  color: var(--neon-orange);
+}
+
+#total-power-badge .badge-value {
+  color: var(--neon-yellow);
+}
+
+/* Arabic Labels Standard: Almarai, font-size 19px, bold high-contrast readability from 100cm */
+.arabic-label {
+  font-family: var(--font-arabic);
+  font-size: 19px;
+  font-weight: 800;
+  color: #FFFFFF;
+  opacity: 1;
+  letter-spacing: 0.3px;
+  line-height: 1.2;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+/* Main Numbers Standard: Roboto Mono, font-size >= 48px, stark white #F8FAFF */
+.huge-number {
+  font-family: var(--font-numbers);
+  font-size: 58px;
+  font-weight: 800;
+  color: var(--text-pure-white);
+  line-height: 1;
+  direction: ltr;
+  display: inline-block;
+  text-shadow: 0 0 24px rgba(248, 250, 255, 0.25);
+  font-variant-numeric: tabular-nums;
+}
+
+.huge-unit {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--neon-cyan);
+  margin-right: 4px;
+  direction: ltr;
+}
+
+/* --------------------------------------------------------------------------
+   7. Card 1 & 2: Split Body, Circular SVG Rings & Performance Bars
+   -------------------------------------------------------------------------- */
+.card-body-split {
+  display: grid;
+  grid-template-columns: 145px 1fr;
+  gap: 16px;
+  align-items: center;
+  flex: 1;
+  min-height: 0;
+}
+
+/* SVG Circular Temperature Rings */
+.gauge-circular-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.svg-ring-wrapper {
+  position: relative;
+  width: 135px;
+  height: 135px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.temp-ring-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  overflow: visible;
+}
+
+.ring-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.06);
+  stroke-width: 3px;
+}
+
+.ring-progress {
+  fill: none;
+  stroke: var(--neon-cyan);
+  stroke-width: 3px;
+  stroke-linecap: round;
+  stroke-dasharray: 471.24; /* 2 * PI * 75 */
+  stroke-dashoffset: 471.24;
+  will-change: stroke-dashoffset;
+  transition: stroke 0.3s ease;
+  filter: drop-shadow(0 0 6px var(--neon-cyan));
+}
+
+.ring-center-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.arabic-ring-label {
+  font-family: var(--font-arabic);
+  font-size: 17px;
+  font-weight: 800;
+  opacity: 0.95;
+  margin-bottom: 2px;
+  color: #F1F5F9;
+}
+
+.temp-val-wrapper {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  direction: ltr;
+}
+
+.temp-val-wrapper .huge-number {
+  font-size: 52px;
+  font-weight: 800;
+}
+
+.temp-val-wrapper .huge-unit {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.status-descriptor {
+  font-family: var(--font-arabic);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--neon-cyan);
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+/* Performance Bars Stack */
+.metrics-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  justify-content: center;
+}
+
+.metric-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.metric-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.metric-num-group {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  direction: ltr;
+}
+
+.metric-val {
+  font-family: var(--font-numbers);
+  font-size: 27px;
+  font-weight: 700;
+  color: var(--text-pure-white);
+  line-height: 1;
+}
+
+.metric-unit {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--neon-cyan);
+}
+
+/* Ultra-thin 4px Horizontal Lines with Neon Gradient & Glowing Dot Indicator */
+.progress-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  position: relative;
+  direction: ltr;
+  overflow: visible;
+  contain: layout style;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--neon-cyan), var(--neon-violet));
+  border-radius: 4px;
+  position: relative;
+  will-change: width;
+  transform: translateZ(0);
+  transition: width 0.1s linear;
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.35);
+}
+
+.progress-dot {
+  position: absolute;
+  right: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #F8FAFF;
+  box-shadow: 0 0 8px var(--neon-cyan), 0 0 16px var(--neon-violet);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.progress-bar.active .progress-dot {
+  opacity: 1;
+}
+
+/* --------------------------------------------------------------------------
+   8. Cards 3 & 4: RAM & VRAM (Medium Bento Cards)
+   -------------------------------------------------------------------------- */
+.card-body-medium {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+  flex: 1;
+  min-height: 0;
+}
+
+.hero-metric-display {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hero-metric-display .huge-number {
+  font-size: 52px;
+  font-weight: 800;
+}
+
+.hero-val-unit {
+  display: flex;
+  align-items: baseline;
+  direction: ltr;
+}
+
+.capacity-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 5px 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+
+.capacity-val-group {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  direction: ltr;
+}
+
+.cap-val {
+  font-family: var(--font-numbers);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-pure-white);
+}
+
+.cap-separator {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--text-muted);
+}
+
+.cap-total {
+  font-family: var(--font-numbers);
+  font-size: 22px;
+  font-weight: 700;
+  color: #CBD5E1;
+}
+
+.cap-unit {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--neon-cyan);
+}
+
+.card-sub-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 2px 0 4px 0;
+}
+
+.sub-stat-box {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 4px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sub-stat-val {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  direction: ltr;
+}
+
+.sub-num {
+  font-family: var(--font-numbers);
+  font-size: 25px;
+  font-weight: 800;
+  color: var(--text-pure-white);
+}
+
+.sub-unit {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--neon-cyan);
+}
+
+/* Storage Drive Item */
+.storage-drive-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 4px;
+}
+
+.storage-drive-item:last-child {
+  margin-bottom: 0;
+}
+
+.cap-free-text {
+  font-family: var(--font-arabic);
+  font-size: 18px;
+  font-weight: 800;
+  color: #34D399;
+  opacity: 1;
+  margin-right: 6px;
+}
+
+/* --------------------------------------------------------------------------
+   9. Card 5: Thermals & Motherboard (Compact Bento Card)
+   -------------------------------------------------------------------------- */
+.thermal-badges-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 14px;
+  padding: 10px 4px;
+  flex: 1;
+  min-height: 0;
+  align-content: center;
+}
+
+.thermal-capsule {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: all 0.25s ease;
+}
+
+.thermal-capsule:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(34, 211, 238, 0.3);
+}
+
+.capsule-label-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.capsule-label-group .vital-icon {
+  font-size: 20px;
+}
+
+.capsule-label-group .vital-label {
+  font-family: var(--font-arabic);
+  font-size: 17px;
+  font-weight: 700;
+  color: #F8FAFC;
+}
+
+.thermal-capsule .vital-val {
+  font-family: var(--font-numbers);
+  font-size: 26px;
+  font-weight: 800;
+  color: #38BDF8;
+}
+
+.thermal-capsule .vital-unit {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--neon-cyan);
+}
+
+.pump-capsule {
+  grid-column: span 2;
+}
+
+.pump-capsule .pump-val {
+  color: var(--neon-orange);
+}
+
+/* --------------------------------------------------------------------------
+   9b. Card 7: Display & Audio Telemetry (Card Slot 1)
+   -------------------------------------------------------------------------- */
+.display-icon svg {
+  color: var(--neon-cyan);
+}
+
+.slot-display-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 10px;
+  padding: 4px 0;
+  width: 100%;
+  box-sizing: border-box;
+  flex: 1;
+  min-height: 0;
+  align-content: center;
+}
+
+.slot-capsule {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: all 0.25s ease;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.slot-capsule:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(34, 211, 238, 0.3);
+}
+
+.slot-capsule .capsule-label-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.slot-capsule .capsule-label-group .vital-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.slot-capsule .capsule-label-group .vital-label {
+  font-family: var(--font-arabic);
+  font-size: 15px;
+  font-weight: 700;
+  color: #F8FAFC;
+  white-space: nowrap;
+}
+
+.slot-capsule .badge-val-group {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.slot-capsule .vital-val {
+  font-family: var(--font-numbers);
+  font-size: 20px;
+  font-weight: 800;
+  color: #F8FAFC;
+}
+
+.slot-capsule .vital-unit {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--neon-cyan);
+}
+
+.fps-capsule {
+  grid-column: span 2;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+  border-color: rgba(16, 185, 129, 0.3);
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  padding: 6px 14px;
+}
+
+.fps-capsule .vital-icon {
+  font-size: 22px;
+}
+
+.fps-capsule .vital-label {
+  font-size: 17px;
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
+.fps-capsule .fps-val {
+  color: var(--neon-green);
+  font-size: 34px;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 0 16px rgba(0, 255, 163, 0.5);
+  letter-spacing: 0.5px;
+}
+
+.fps-capsule .vital-unit {
+  color: var(--neon-green);
+  font-size: 16px;
+  font-weight: 800;
+  opacity: 0.9;
+}
+
+.hz-capsule .hz-val {
+  color: #38BDF8;
+}
+
+.vol-capsule .vol-val {
+  color: var(--neon-yellow);
+}
+
+.res-capsule {
+  grid-column: span 2;
+  padding: 6px 14px;
+}
+
+.res-capsule .res-val {
+  font-family: var(--font-numbers);
+  font-size: 17px;
+  color: #F1F5F9;
+  letter-spacing: 0.5px;
+}
+
+/* --------------------------------------------------------------------------
+   9c. Card 8: Riyadh Weather & Prayer Times (Card Slot 2)
+   -------------------------------------------------------------------------- */
+.prayer-icon svg {
+  color: var(--neon-cyan);
+}
+
+.card-slot-2 .card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.card-slot-2 .card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.card-slot-2 .card-title {
+  font-family: var(--font-arabic);
+  font-size: 21px;
+  font-weight: 800;
+  color: var(--text-pure-white);
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.card-slot-2 .card-sub {
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: var(--neon-cyan);
+  text-transform: uppercase;
+  white-space: nowrap;
+  display: block;
+}
+
+.slot-prayer-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 2px 0;
+  flex: 1;
+  min-height: 0;
+  justify-content: space-between;
+}
+
+.weather-capsule {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+  border-color: rgba(251, 191, 36, 0.3);
+  box-shadow: 0 0 14px rgba(251, 191, 36, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.weather-capsule:hover {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.12) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border-color: rgba(251, 191, 36, 0.55);
+  box-shadow: 0 0 18px rgba(251, 191, 36, 0.15);
+}
+
+.weather-capsule .weather-icon {
+  font-size: 28px;
+  line-height: 1;
+  display: inline-block;
+  transform: translateY(1px);
+  filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.8));
+}
+
+.weather-capsule .weather-desc {
+  font-family: var(--font-arabic);
+  font-size: 12px;
+  font-weight: 700;
+  color: #FDE68A;
+  background: rgba(251, 191, 36, 0.15);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  padding: 1px 8px;
+  border-radius: 6px;
+  margin-inline-start: 6px;
+}
+
+.weather-capsule .weather-temp-val {
+  font-family: var(--font-numbers);
+  font-size: 24px;
+  font-weight: 900;
+  color: #F8FAFF;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+.weather-capsule .vital-unit {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--neon-cyan);
+}
+
+.prayer-capsule {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: all 0.25s ease;
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.prayer-capsule:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(34, 211, 238, 0.3);
+}
+
+.next-prayer-capsule {
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+  border-color: rgba(34, 211, 238, 0.3);
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.next-prayer-capsule .countdown-val {
+  font-family: var(--font-numbers);
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--neon-cyan);
+  letter-spacing: 1px;
+  text-shadow: 0 0 14px rgba(34, 211, 238, 0.45);
+}
+
+.prev-prayer-capsule .elapsed-val {
+  font-family: var(--font-numbers);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--neon-yellow);
+  letter-spacing: 0.8px;
+}
+
+.prayer-times-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.prayer-pill {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px 2px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.25s ease;
+  min-width: 0;
+}
+
+.prayer-pill-name {
+  font-family: var(--font-arabic);
+  font-size: 13px;
+  font-weight: 700;
+  color: #94A3B8;
+  white-space: nowrap;
+}
+
+.prayer-pill-time {
+  font-family: var(--font-numbers);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-pure-white);
+  white-space: nowrap;
+}
+
+.prayer-pill.active-next {
+  background: rgba(34, 211, 238, 0.12);
+  border-color: rgba(34, 211, 238, 0.45);
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.25);
+}
+
+.prayer-pill.active-next .prayer-pill-name {
+  color: var(--neon-cyan);
+  font-weight: 800;
+}
+
+.prayer-pill.active-next .prayer-pill-time {
+  color: var(--neon-cyan);
+  font-weight: 900;
+}
+
+/* --------------------------------------------------------------------------
+   9d. Card 2: Appointments Panel (Center Bento Card Row 1)
+   -------------------------------------------------------------------------- */
+.appointments-icon {
+  color: #FBBF24;
+}
+
+.appointments-icon svg {
+  color: #FBBF24;
+}
+
+.card-appointments .card-title {
+  font-size: 24px;
+  white-space: nowrap;
+}
+
+.card-appointments .card-sub {
+  font-size: 15px;
+}
+
+.appointments-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+  justify-content: space-between;
+}
+
+/* Hero Next Appointment Banner */
+.apt-hero-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 12px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.08) 0%, rgba(34, 211, 238, 0.05) 100%);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.apt-hero-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.apt-hero-tag-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.apt-category-pill {
+  font-family: var(--font-arabic);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 1px 9px;
+  border-radius: 6px;
+  background: rgba(34, 211, 238, 0.15);
+  color: var(--neon-cyan);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  white-space: nowrap;
+}
+
+.apt-category-pill.category-work {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38BDF8;
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+.apt-category-pill.category-meeting {
+  background: rgba(192, 132, 252, 0.15);
+  color: #C084FC;
+  border-color: rgba(192, 132, 252, 0.35);
+}
+
+.apt-category-pill.category-urgent {
+  background: rgba(248, 113, 113, 0.15);
+  color: #F87171;
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+.apt-category-pill.category-personal {
+  background: rgba(52, 211, 153, 0.15);
+  color: #34D399;
+  border-color: rgba(52, 211, 153, 0.35);
+}
+
+.apt-status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--neon-cyan);
+  box-shadow: 0 0 6px var(--neon-cyan);
+}
+
+.apt-status-indicator.pulse-cyan {
+  animation: pulse-dot 2s infinite ease-in-out;
+}
+
+.apt-status-indicator.pulse-green {
+  background: #10B981;
+  box-shadow: 0 0 6px #10B981;
+  animation: pulse-dot 1.5s infinite ease-in-out;
+}
+
+.apt-status-label {
+  font-family: var(--font-arabic);
+  font-size: 14px;
+  font-weight: 700;
+  color: #CBD5E1;
+}
+
+.apt-hero-title {
+  font-family: var(--font-arabic);
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text-pure-white);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+  max-width: 320px;
+}
+
+.apt-hero-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-arabic);
+  font-size: 13px;
+  color: #94A3B8;
+}
+
+.apt-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.apt-meta-icon {
+  font-size: 13px;
+}
+
+.apt-meta-sep {
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 11px;
+}
+
+.apt-hero-countdown-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  min-width: 105px;
+}
+
+.apt-hero-countdown-box .countdown-sub-label {
+  font-family: var(--font-arabic);
+  font-size: 13px;
+  font-weight: 700;
+  color: #94A3B8;
+}
+
+.apt-hero-countdown-box .countdown-hero-digits {
+  font-family: var(--font-numbers);
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--neon-cyan);
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+  text-shadow: 0 0 12px rgba(34, 211, 238, 0.35);
+}
+
+/* Timeline List */
+.apt-timeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-height: 0;
+  max-height: 165px;
+  overflow-y: auto;
+  padding-left: 2px;
+}
+
+.apt-timeline-list::-webkit-scrollbar {
+  width: 3px;
+}
+
+.apt-timeline-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.apt-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s ease;
+}
+
+.apt-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.apt-item.status-ongoing {
+  border-color: rgba(34, 211, 238, 0.35);
+  background: rgba(34, 211, 238, 0.06);
+}
+
+.apt-item.status-completed {
+  opacity: 0.5;
+}
+
+.apt-item-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.apt-item-time {
+  font-family: var(--font-arabic);
+  font-size: 15px;
+  font-weight: 700;
+  color: #E2E8F0;
+  min-width: 68px;
+  direction: rtl;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.apt-item-title {
+  font-family: var(--font-arabic);
+  font-size: 15px;
+  font-weight: 700;
+  color: #F8FAFC;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.apt-item-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.apt-item-status-pill {
+  font-family: var(--font-arabic);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 4px;
+}
+
+.apt-item-status-pill.status-upcoming {
+  background: rgba(148, 163, 184, 0.12);
+  color: #94A3B8;
+}
+
+.apt-item-status-pill.status-ongoing {
+  background: rgba(34, 211, 238, 0.18);
+  color: var(--neon-cyan);
+  border: 1px solid rgba(34, 211, 238, 0.35);
+}
+
+.apt-item-status-pill.status-completed {
+  background: rgba(255, 255, 255, 0.04);
+  color: #64748B;
+}
+
+.apt-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  font-family: var(--font-arabic);
+  font-size: 16px;
+  font-weight: 700;
+  color: #94A3B8;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+/* --------------------------------------------------------------------------
+   10. Card 6: Network Telemetry (Compact Bento Card)
+   -------------------------------------------------------------------------- */
+.network-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-height: 0;
+  justify-content: space-around;
+}
+
+.net-direction-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+
+.net-dir-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.net-icon-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+}
+
+.dl-badge {
+  background: rgba(34, 211, 238, 0.15);
+  color: var(--neon-cyan);
+}
+
+.ul-badge {
+  background: rgba(168, 85, 247, 0.15);
+  color: var(--neon-purple);
+}
+
+.net-val-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  direction: ltr;
+}
+
+.net-val-row .huge-number {
+  font-size: 46px;
+  font-weight: 800;
+}
+
+.net-val-row .huge-unit {
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.net-dl-number {
+  color: var(--text-pure-white);
+  text-shadow: 0 0 20px rgba(34, 211, 238, 0.3);
+}
+
+.net-ul-number {
+  color: var(--text-pure-white);
+  text-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+}
+
+.dl-bar {
+  background: linear-gradient(90deg, #06B6D4, var(--neon-cyan));
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
+}
+
+.ul-bar {
+  background: linear-gradient(90deg, #7C5CFF, var(--neon-purple));
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+}
+
+/* --------------------------------------------------------------------------
+   11. Footer Bar
+   -------------------------------------------------------------------------- */
+.footer-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 16px;
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+  font-family: var(--font-numbers);
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  flex-shrink: 0;
+}
+
+.footer-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--neon-cyan);
+  box-shadow: 0 0 6px var(--neon-cyan);
+}
+
+/* --------------------------------------------------------------------------
+   12. Responsive Adjustments (Kiosk Display Modes)
+   -------------------------------------------------------------------------- */
+@media (max-width: 1400px) {
+  .huge-number {
+    font-size: 48px;
+  }
+  .card-body-split {
+    grid-template-columns: 160px 1fr;
+    gap: 16px;
+  }
+  .svg-ring-wrapper {
+    width: 150px;
+    height: 150px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .bento-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+  .card-cpu { grid-column: span 6; }
+  .card-gpu { grid-column: span 6; }
+  .card-ram { grid-column: span 3; }
+  .card-vram, .card-slot-standby-1 { grid-column: span 3; }
+  .card-storage { grid-column: span 6; }
+  .card-thermals { grid-column: span 3; }
+  .card-slot-1 { grid-column: span 6; }
+  .card-slot-2 { grid-column: span 3; }
+  .card-network { grid-column: span 3; }
+}
+
+@media (max-width: 768px) {
+  .bento-grid {
+    grid-template-columns: 1fr;
+  }
+  .card-cpu, .card-gpu, .card-ram, .card-vram, .card-storage, .card-thermals, .card-network, .card-slot-standby-1, .card-slot-1, .card-slot-2 {
+    grid-column: span 1;
+  }
+  .card-body-split {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+}
+
+/* ==========================================================================
+   CSS View Transitions API - Circular Ripple Theme Reveal Animation
+   ========================================================================== */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 9999;
+  animation: theme-ripple-reveal 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes theme-ripple-reveal {
+  from {
+    clip-path: circle(0% at var(--click-x, 85%) var(--click-y, 30px));
+  }
+  to {
+    clip-path: circle(150% at var(--click-x, 85%) var(--click-y, 30px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
