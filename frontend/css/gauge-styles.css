@@ -139,18 +139,18 @@
 
 .gauge-tachometer .tacho-progress {
   fill: none;
-  stroke: var(--neon-cyan, #22D3EE);
+  stroke: var(--theme-accent, var(--neon-cyan, #22D3EE));
   stroke-width: 5px;
   stroke-linecap: round;
   transition: stroke-dashoffset 0.3s ease, stroke 0.3s ease;
-  filter: drop-shadow(0 0 8px var(--neon-cyan, #22D3EE));
+  filter: drop-shadow(0 0 8px var(--theme-accent, var(--neon-cyan, #22D3EE)));
 }
 
 .gauge-tachometer .laser-bead {
   fill: #FFFFFF;
-  stroke: var(--neon-cyan, #22D3EE);
+  stroke: var(--theme-accent, var(--neon-cyan, #22D3EE));
   stroke-width: 2px;
-  filter: drop-shadow(0 0 8px var(--neon-cyan, #22D3EE));
+  filter: drop-shadow(0 0 8px var(--theme-accent, var(--neon-cyan, #22D3EE)));
 }
 
 /* ==========================================================================
@@ -161,13 +161,13 @@
   stroke: rgba(255, 255, 255, 0.05);
   stroke-width: 1px;
   transition: fill 0.25s ease, filter 0.25s ease, opacity 0.25s ease;
-  opacity: 0.4;
+  opacity: 0.35;
 }
 
 .gauge-turbine .turbine-blade.blade-active {
-  fill: var(--neon-cyan, #22D3EE);
+  fill: var(--theme-accent, var(--neon-cyan, #22D3EE));
   opacity: 1;
-  filter: drop-shadow(0 0 6px var(--neon-cyan, #22D3EE));
+  filter: drop-shadow(0 0 6px var(--theme-accent, var(--neon-cyan, #22D3EE)));
 }
 
 .gauge-turbine .turbine-blade.blade-warning {
@@ -189,77 +189,88 @@
 /* ==========================================================================
    4. Style 3: Hexa-Matrix Honeycomb (🔷)
    ========================================================================== */
-.gauge-hexa .hexa-cell {
+.gauge-hexa .hexa-cell,
+.gauge-hexa-matrix .hexa-cell {
   fill: rgba(255, 255, 255, 0.04);
   stroke: rgba(255, 255, 255, 0.12);
   stroke-width: 1px;
   transition: all 0.3s ease;
 }
 
-.gauge-hexa .hexa-cell.cell-active {
+.gauge-hexa .hexa-cell.cell-active,
+.gauge-hexa-matrix .hexa-cell.cell-active {
   fill: rgba(34, 211, 238, 0.25);
-  stroke: var(--neon-cyan, #22D3EE);
-  filter: drop-shadow(0 0 5px var(--neon-cyan, #22D3EE));
+  stroke: var(--theme-accent, var(--neon-cyan, #22D3EE));
+  filter: drop-shadow(0 0 5px var(--theme-accent, var(--neon-cyan, #22D3EE)));
 }
 
-.gauge-hexa .hexa-arc {
+.gauge-hexa .hexa-arc,
+.gauge-hexa-matrix .hexa-arc {
   fill: none;
-  stroke: var(--neon-cyan, #22D3EE);
-  stroke-width: 3px;
+  stroke: var(--theme-accent, var(--neon-cyan, #22D3EE));
+  stroke-width: 3.5px;
   stroke-linecap: round;
-  filter: drop-shadow(0 0 8px var(--neon-cyan, #22D3EE));
+  filter: drop-shadow(0 0 8px var(--theme-accent, var(--neon-cyan, #22D3EE)));
   transition: stroke-dashoffset 0.3s ease;
 }
 
 /* ==========================================================================
    5. Style 4: Liquid Mercury (🧪)
    ========================================================================== */
-.gauge-mercury .mercury-bg {
+.gauge-mercury .mercury-bg,
+.gauge-liquid-mercury .mercury-bg {
   fill: none;
   stroke: rgba(255, 255, 255, 0.08);
   stroke-width: 10px;
 }
 
-.gauge-mercury .mercury-fluid {
+.gauge-mercury .mercury-fluid,
+.gauge-liquid-mercury .mercury-fluid {
   fill: none;
   stroke: var(--neon-yellow, #FACC15);
+  stroke: url(#mercury-grad);
   stroke-width: 10px;
   stroke-linecap: round;
   transition: stroke-dashoffset 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), stroke 0.3s ease;
   filter: drop-shadow(0 0 10px var(--neon-yellow, #FACC15));
 }
 
-.gauge-mercury .mercury-bubble {
+.gauge-mercury .mercury-bubble,
+.gauge-liquid-mercury .mercury-bubble {
   fill: #FFFFFF;
-  opacity: 0.8;
+  opacity: 0.9;
   filter: drop-shadow(0 0 4px #FFFFFF);
   animation: bubble-float 3s infinite ease-in-out;
+  transition: cx 0.3s ease, cy 0.3s ease;
 }
 
 @keyframes bubble-float {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
+  50% { transform: translateY(-2px); }
 }
 
 /* ==========================================================================
    6. Style 5: Tactical Radar (🛰️)
    ========================================================================== */
-.gauge-radar .radar-grid {
+.gauge-radar .radar-grid,
+.gauge-tactical-radar .radar-grid {
   fill: none;
   stroke: rgba(34, 211, 238, 0.15);
   stroke-width: 1px;
 }
 
-.gauge-radar .radar-crosshair {
+.gauge-radar .radar-crosshair,
+.gauge-tactical-radar .radar-crosshair {
   stroke: rgba(34, 211, 238, 0.25);
   stroke-width: 1px;
   stroke-dasharray: 2 4;
 }
 
-.gauge-radar .radar-sweep-cone {
+.gauge-radar .radar-sweep-cone,
+.gauge-tactical-radar .radar-sweep-cone {
   transform-origin: 90px 90px;
   animation: radar-sweep 4s linear infinite;
-  opacity: 0.45;
+  opacity: 0.55;
 }
 
 @keyframes radar-sweep {
@@ -267,62 +278,69 @@
   to { transform: rotate(360deg); }
 }
 
-.gauge-radar .radar-arc {
+.gauge-radar .radar-arc,
+.gauge-tactical-radar .radar-arc {
   fill: none;
-  stroke: var(--neon-cyan, #22D3EE);
+  stroke: var(--theme-accent, var(--neon-cyan, #22D3EE));
   stroke-width: 3.5px;
   stroke-linecap: round;
-  filter: drop-shadow(0 0 8px var(--neon-cyan, #22D3EE));
+  filter: drop-shadow(0 0 8px var(--theme-accent, var(--neon-cyan, #22D3EE)));
 }
 
 /* ==========================================================================
    7. Style 6: Holo Minimal (🌌)
    ========================================================================== */
-.gauge-minimal .holo-core-glow {
+.gauge-minimal .holo-core-glow,
+.gauge-holo-minimal .holo-core-glow {
   fill: url(#holo-core-grad);
   opacity: 0.25;
   transition: opacity 0.3s ease;
 }
 
-.gauge-minimal .holo-hairline-bg {
+.gauge-minimal .holo-hairline-bg,
+.gauge-holo-minimal .holo-hairline-bg {
   fill: none;
-  stroke: rgba(255, 255, 255, 0.06);
+  stroke: rgba(255, 255, 255, 0.08);
   stroke-width: 1px;
 }
 
-.gauge-minimal .holo-hairline-progress {
+.gauge-minimal .holo-hairline-progress,
+.gauge-holo-minimal .holo-hairline-progress {
   fill: none;
-  stroke: var(--neon-cyan, #22D3EE);
-  stroke-width: 2px;
+  stroke: var(--theme-accent, var(--neon-cyan, #22D3EE));
+  stroke-width: 2.5px;
   stroke-linecap: round;
   transition: stroke-dashoffset 0.3s ease, stroke 0.3s ease;
-  filter: drop-shadow(0 0 8px var(--neon-cyan, #22D3EE));
+  filter: drop-shadow(0 0 8px var(--theme-accent, var(--neon-cyan, #22D3EE)));
 }
 
 /* ==========================================================================
    8. Style 7: Arc Reactor (⚡)
    ========================================================================== */
-.gauge-reactor .reactor-outer-ring {
+.gauge-reactor .reactor-outer-ring,
+.gauge-arc-reactor .reactor-outer-ring {
   fill: none;
   stroke: rgba(255, 255, 255, 0.12);
   stroke-width: 6px;
-  stroke-dasharray: 85 10;
+  stroke-dasharray: 70 12;
 }
 
-.gauge-reactor .reactor-active-arc {
+.gauge-reactor .reactor-active-arc,
+.gauge-arc-reactor .reactor-active-arc {
   fill: none;
-  stroke: var(--neon-cyan, #22D3EE);
+  stroke: var(--theme-accent, var(--neon-cyan, #22D3EE));
   stroke-width: 6px;
-  stroke-dasharray: 85 10;
   stroke-linecap: butt;
   transition: stroke-dashoffset 0.3s ease;
-  filter: drop-shadow(0 0 10px var(--neon-cyan, #22D3EE));
+  filter: drop-shadow(0 0 10px var(--theme-accent, var(--neon-cyan, #22D3EE)));
 }
 
-.gauge-reactor .reactor-node {
-  fill: var(--neon-cyan, #22D3EE);
-  filter: drop-shadow(0 0 6px var(--neon-cyan, #22D3EE));
+.gauge-reactor .reactor-node,
+.gauge-arc-reactor .reactor-node {
+  fill: var(--theme-accent, var(--neon-cyan, #22D3EE));
+  filter: drop-shadow(0 0 6px var(--theme-accent, var(--neon-cyan, #22D3EE)));
   animation: pulse-node 1.5s infinite alternate;
+  transition: fill 0.3s ease, opacity 0.3s ease;
 }
 
 @keyframes pulse-node {
@@ -333,13 +351,15 @@
 /* ==========================================================================
    9. Style 8: Retro Nixie (💡)
    ========================================================================== */
-.gauge-nixie .nixie-bg {
+.gauge-nixie .nixie-bg,
+.gauge-retro-nixie .nixie-bg {
   fill: none;
   stroke: rgba(245, 158, 11, 0.15);
   stroke-width: 5px;
 }
 
-.gauge-nixie .nixie-filament {
+.gauge-nixie .nixie-filament,
+.gauge-retro-nixie .nixie-filament {
   fill: none;
   stroke: #F59E0B;
   stroke-width: 4px;
@@ -349,12 +369,14 @@
   transition: stroke-dashoffset 0.3s ease;
 }
 
-.gauge-nixie .gauge-huge-number {
+.gauge-nixie .gauge-huge-number,
+.gauge-retro-nixie .gauge-huge-number {
   color: #FEF08A;
   text-shadow: 0 0 12px rgba(245, 158, 11, 0.8), 0 0 24px rgba(217, 119, 6, 0.6);
 }
 
-.gauge-nixie .gauge-huge-unit {
+.gauge-nixie .gauge-huge-unit,
+.gauge-retro-nixie .gauge-huge-unit {
   color: #F59E0B;
   text-shadow: 0 0 8px rgba(245, 158, 11, 0.8);
 }
@@ -363,13 +385,16 @@
    10. Style 9: Dual Split Arc (❄️🔥)
    ========================================================================== */
 .gauge-dualsplit .split-bg-left,
-.gauge-dualsplit .split-bg-right {
+.gauge-dualsplit .split-bg-right,
+.gauge-dual-split .split-bg-left,
+.gauge-dual-split .split-bg-right {
   fill: none;
   stroke: rgba(255, 255, 255, 0.08);
   stroke-width: 5px;
 }
 
-.gauge-dualsplit .split-cool-arc {
+.gauge-dualsplit .split-cool-arc,
+.gauge-dual-split .split-cool-arc {
   fill: none;
   stroke: #38BDF8;
   stroke-width: 5px;
@@ -378,7 +403,8 @@
   transition: stroke-dashoffset 0.3s ease;
 }
 
-.gauge-dualsplit .split-hot-arc {
+.gauge-dualsplit .split-hot-arc,
+.gauge-dual-split .split-hot-arc {
   fill: none;
   stroke: #F97316;
   stroke-width: 5px;
@@ -390,13 +416,15 @@
 /* ==========================================================================
    11. Style 10: Prism Glass (💎)
    ========================================================================== */
-.gauge-prism .prism-bevel-bg {
+.gauge-prism .prism-bevel-bg,
+.gauge-prism-glass .prism-bevel-bg {
   fill: none;
   stroke: rgba(255, 255, 255, 0.08);
   stroke-width: 12px;
 }
 
-.gauge-prism .prism-spectrum-arc {
+.gauge-prism .prism-spectrum-arc,
+.gauge-prism-glass .prism-spectrum-arc {
   fill: none;
   stroke: url(#prism-gradient);
   stroke-width: 12px;
@@ -405,7 +433,8 @@
   transition: stroke-dashoffset 0.3s ease;
 }
 
-.gauge-prism .prism-specular {
+.gauge-prism .prism-specular,
+.gauge-prism-glass .prism-specular {
   fill: none;
   stroke: rgba(255, 255, 255, 0.4);
   stroke-width: 1px;

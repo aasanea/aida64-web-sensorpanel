@@ -32,7 +32,10 @@ export class GaugeEngine {
 
     // Clear container
     containerEl.innerHTML = '';
-    containerEl.className = `gauge-dynamic-root gauge-${styleId}`;
+    const shortStyle = styleId.replace(/-/g, '');
+    const prefixStyle = styleId.split('-')[0];
+    const suffixStyle = styleId.split('-')[1];
+    containerEl.className = `gauge-dynamic-root gauge-${styleId} gauge-${shortStyle} gauge-${prefixStyle}` + (suffixStyle ? ` gauge-${suffixStyle}` : '');
     containerEl.setAttribute('data-gauge-style', styleId);
     containerEl.setAttribute('data-gauge-id', gaugeId);
 
@@ -120,20 +123,20 @@ export class GaugeEngine {
         pillEl.style.color = 'var(--neon-yellow, #FACC15)';
         pillEl.style.borderColor = 'rgba(250, 204, 21, 0.4)';
       } else {
-        pillEl.style.color = 'var(--neon-cyan, #22D3EE)';
+        pillEl.style.color = 'var(--theme-accent, var(--neon-cyan, #22D3EE))';
         pillEl.style.borderColor = 'rgba(34, 211, 238, 0.3)';
       }
     }
 
     // 2. Update style-specific SVG parameters
-    const circumference = 2 * Math.PI * 72; // ~452.39
+    const defaultCircumference = 2 * Math.PI * 72; // ~452.39
 
     switch (styleId) {
       case 'tachometer': {
         const prog = containerEl.querySelector('.tacho-progress');
         const bead = containerEl.querySelector('.laser-bead');
         if (prog) {
-          const totalArc = circumference * 0.75; // 270 deg
+          const totalArc = defaultCircumference * 0.75; // 270 deg
           const offset = totalArc - (ratio * totalArc);
           prog.style.strokeDashoffset = `${offset}px`;
           
@@ -175,7 +178,8 @@ export class GaugeEngine {
       case 'hexa-matrix': {
         const arc = containerEl.querySelector('.hexa-arc');
         if (arc) {
-          arc.style.strokeDashoffset = `${circumference * (1 - ratio)}px`;
+          const totalLen = arc.getTotalLength ? arc.getTotalLength() : (2 * Math.PI * 65);
+          arc.style.strokeDashoffset = `${totalLen * (1 - ratio)}px`;
         }
         const cells = containerEl.querySelectorAll('.hexa-cell');
         const activeCells = Math.round(ratio * cells.length);
@@ -187,8 +191,18 @@ export class GaugeEngine {
 
       case 'liquid-mercury': {
         const fluid = containerEl.querySelector('.mercury-fluid');
+        const bubble = containerEl.querySelector('.mercury-bubble');
         if (fluid) {
-          fluid.style.strokeDashoffset = `${circumference * (1 - ratio)}px`;
+          const totalLen = fluid.getTotalLength ? fluid.getTotalLength() : (2 * Math.PI * 70);
+          fluid.style.strokeDashoffset = `${totalLen * (1 - ratio)}px`;
+          if (bubble) {
+            const angleDeg = -90 + (ratio * 360);
+            const angleRad = (angleDeg * Math.PI) / 180;
+            const bx = 90 + 70 * Math.cos(angleRad);
+            const by = 90 + 70 * Math.sin(angleRad);
+            bubble.setAttribute('cx', bx.toFixed(1));
+            bubble.setAttribute('cy', by.toFixed(1));
+          }
         }
         break;
       }
@@ -196,7 +210,8 @@ export class GaugeEngine {
       case 'tactical-radar': {
         const arc = containerEl.querySelector('.radar-arc');
         if (arc) {
-          arc.style.strokeDashoffset = `${circumference * (1 - ratio)}px`;
+          const totalLen = arc.getTotalLength ? arc.getTotalLength() : defaultCircumference;
+          arc.style.strokeDashoffset = `${totalLen * (1 - ratio)}px`;
         }
         break;
       }
@@ -205,10 +220,11 @@ export class GaugeEngine {
         const hair = containerEl.querySelector('.holo-hairline-progress');
         const glow = containerEl.querySelector('.holo-core-glow');
         if (hair) {
-          hair.style.strokeDashoffset = `${circumference * (1 - ratio)}px`;
+          const totalLen = hair.getTotalLength ? hair.getTotalLength() : (2 * Math.PI * 75);
+          hair.style.strokeDashoffset = `${totalLen * (1 - ratio)}px`;
         }
         if (glow) {
-          glow.style.opacity = `${0.15 + (ratio * 0.35)}`;
+          glow.style.opacity = `${0.15 + (ratio * 0.45)}`;
         }
         break;
       }
@@ -216,15 +232,28 @@ export class GaugeEngine {
       case 'arc-reactor': {
         const arc = containerEl.querySelector('.reactor-active-arc');
         if (arc) {
-          arc.style.strokeDashoffset = `${circumference * (1 - ratio)}px`;
+          const totalLen = arc.getTotalLength ? arc.getTotalLength() : (2 * Math.PI * 74);
+          arc.style.strokeDashoffset = `${totalLen * (1 - ratio)}px`;
         }
+        const nodes = containerEl.querySelectorAll('.reactor-node');
+        nodes.forEach((n, idx) => {
+          const thresh = 0.25 + (idx * 0.3);
+          if (ratio >= thresh) {
+            n.style.opacity = '1';
+            n.style.transform = 'scale(1.2)';
+          } else {
+            n.style.opacity = '0.4';
+            n.style.transform = 'scale(0.8)';
+          }
+        });
         break;
       }
 
       case 'retro-nixie': {
         const fil = containerEl.querySelector('.nixie-filament');
         if (fil) {
-          fil.style.strokeDashoffset = `${circumference * (1 - ratio)}px`;
+          const totalLen = fil.getTotalLength ? fil.getTotalLength() : (2 * Math.PI * 73);
+          fil.style.strokeDashoffset = `${totalLen * (1 - ratio)}px`;
         }
         break;
       }
@@ -232,13 +261,15 @@ export class GaugeEngine {
       case 'dual-split': {
         const coolArc = containerEl.querySelector('.split-cool-arc');
         const hotArc = containerEl.querySelector('.split-hot-arc');
-        const halfCirc = circumference / 2;
         if (coolArc) {
-          coolArc.style.strokeDashoffset = `${halfCirc * (1 - Math.min(1, ratio * 2))}px`;
+          const coolLen = coolArc.getTotalLength ? coolArc.getTotalLength() : (Math.PI * 73);
+          const coolRatio = Math.min(1, ratio * 2);
+          coolArc.style.strokeDashoffset = `${coolLen * (1 - coolRatio)}px`;
         }
         if (hotArc) {
-          const hotRatio = Math.max(0, (ratio - 0.5) * 2);
-          hotArc.style.strokeDashoffset = `${halfCirc * (1 - hotRatio)}px`;
+          const hotLen = hotArc.getTotalLength ? hotArc.getTotalLength() : (Math.PI * 73);
+          const hotRatio = Math.max(0, Math.min(1, (ratio - 0.5) * 2));
+          hotArc.style.strokeDashoffset = `${hotLen * (1 - hotRatio)}px`;
         }
         break;
       }
@@ -246,7 +277,8 @@ export class GaugeEngine {
       case 'prism-glass': {
         const prism = containerEl.querySelector('.prism-spectrum-arc');
         if (prism) {
-          prism.style.strokeDashoffset = `${circumference * (1 - ratio)}px`;
+          const totalLen = prism.getTotalLength ? prism.getTotalLength() : (2 * Math.PI * 71);
+          prism.style.strokeDashoffset = `${totalLen * (1 - ratio)}px`;
         }
         break;
       }
@@ -394,6 +426,21 @@ export class GaugeEngine {
     const r = 70;
     const circ = 2 * Math.PI * r;
 
+    // Golden amber / neon yellow liquid gradient
+    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+    const grad = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+    grad.setAttribute('id', 'mercury-grad');
+    grad.setAttribute('x1', '0%');
+    grad.setAttribute('y1', '100%');
+    grad.setAttribute('x2', '100%');
+    grad.setAttribute('y2', '0%');
+    grad.innerHTML = `
+      <stop offset="0%" stop-color="var(--neon-yellow, #FACC15)"/>
+      <stop offset="100%" stop-color="var(--neon-orange, #FB923C)"/>
+    `;
+    defs.appendChild(grad);
+    svg.appendChild(defs);
+
     const bg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     bg.setAttribute('class', 'mercury-bg');
     bg.setAttribute('cx', cx);
@@ -406,6 +453,7 @@ export class GaugeEngine {
     fluid.setAttribute('cx', cx);
     fluid.setAttribute('cy', cy);
     fluid.setAttribute('r', r);
+    fluid.setAttribute('stroke', 'url(#mercury-grad)');
     fluid.style.strokeDasharray = `${circ}`;
     fluid.style.strokeDashoffset = `${circ}px`;
     fluid.style.transformOrigin = '90px 90px';
@@ -416,13 +464,28 @@ export class GaugeEngine {
     bubble.setAttribute('class', 'mercury-bubble');
     bubble.setAttribute('cx', '90');
     bubble.setAttribute('cy', '20');
-    bubble.setAttribute('r', '2.5');
+    bubble.setAttribute('r', '3');
     svg.appendChild(bubble);
   }
 
   static _buildRadarSvg(svg) {
     const cx = 90;
     const cy = 90;
+
+    // Cyan radar sweep cone gradient
+    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+    const grad = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+    grad.setAttribute('id', 'radar-sweep-grad');
+    grad.setAttribute('x1', '0%');
+    grad.setAttribute('y1', '0%');
+    grad.setAttribute('x2', '100%');
+    grad.setAttribute('y2', '100%');
+    grad.innerHTML = `
+      <stop offset="0%" stop-color="var(--theme-accent, var(--neon-cyan, #22D3EE))" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="var(--theme-accent, var(--neon-cyan, #22D3EE))" stop-opacity="0"/>
+    `;
+    defs.appendChild(grad);
+    svg.appendChild(defs);
 
     [30, 50, 72].forEach(r => {
       const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
