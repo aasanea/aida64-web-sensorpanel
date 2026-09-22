@@ -30,3 +30,9 @@ backups/
 *~
 .DS_Store
 Thumbs.db
+
+# .NET Build artifacts
+host/bin/
+host/obj/
+*.user
+
