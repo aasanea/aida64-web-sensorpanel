@@ -31,12 +31,14 @@
 - [⚙️ AIDA64 Shared Memory Setup Guide](#️-aida64-shared-memory-setup-guide)
 - [🔄 Updating Guide (In-App & CLI)](#-updating-guide-in-app--cli)
 - [🏗️ System Architecture Topology](#️-system-architecture-topology)
+- [🗺️ Architectural Roadmap & Future Enhancements](ROADMAP.md)
 - [🧪 Automated Verification & Test Suite](#-automated-verification--test-suite)
 - [🇸🇦 الدليل العربي الكامل والشامل (Arabic Comprehensive Guide)](#-الدليل-العربي-الكامل-والشامل-arabic-comprehensive-guide)
   - [المواصفات التقنية الفائقة](#المواصفات-التقنية-الفائقة)
   - [طريقة التثبيت بأمر واحد](#طريقة-التثبيت-بأمر-واحد)
   - [إعداد برنامج AIDA64 خطوة بخطوة](#إعداد-برنامج-aida64-خطوة-بخطوة)
   - [إدارة التحديثات](#إدارة-التحديثات)
+  - [خارطة الطريق المعمارية للمشروع](ROADMAP.md)
 
 ---
 
