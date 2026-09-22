@@ -15,25 +15,47 @@ namespace AIDA64Panel
 {
     static class Program
     {
+        private static readonly string LogFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "host.log");
+
+        public static void Log(string msg)
+        {
+            try
+            {
+                File.AppendAllText(LogFile, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {msg}\r\n");
+            }
+            catch { }
+        }
+
         [STAThread]
         static void Main()
         {
-            // Only allow single instance of Host
+            Log("AIDA64Panel starting...");
+
             using var mutex = new System.Threading.Mutex(true, "AIDA64_SensorPanel_Host_Mutex", out bool createdNew);
             if (!createdNew)
             {
-                MessageBox.Show("لوحة AIDA64 SensorPanel تعمل بالفعل في صينية النظام بجوار الساعة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Log("Mutex already held by existing instance.");
+                MessageBox.Show("لوحة AIDA64 SensorPanel تعمل بالفعل في صينية النظام بجوار الساعة.\nيمكنك النقر بزر الفأرة الأيمن على الأيقونة للتحكم بها أو تبديل الشاشة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
-            ApplicationConfiguration.Initialize();
-            Application.Run(new DashboardHostForm());
+            try
+            {
+                ApplicationConfiguration.Initialize();
+                Log("ApplicationConfiguration initialized.");
+                Application.Run(new DashboardHostForm());
+            }
+            catch (Exception ex)
+            {
+                Log($"Fatal Exception in Main: {ex}");
+                MessageBox.Show($"خطأ أثناء تشغيل اللوحة:\n{ex.Message}", "خطأ فادح", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 
     public class DashboardHostForm : Form
     {
-        private WebView2? _webView;
+        private WebView2 _webView = null!;
         private NotifyIcon? _trayIcon;
         private ContextMenuStrip? _trayMenu;
         private ToolStripMenuItem? _topmostItem;
@@ -44,10 +66,21 @@ namespace AIDA64Panel
 
         public DashboardHostForm()
         {
+            Program.Log("DashboardHostForm constructor called.");
             InitializeWindow();
             InitializeTray();
             EnsureBackendRunning();
-            _ = InitializeWebViewAsync();
+        }
+
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                CreateParams cp = base.CreateParams;
+                cp.ExStyle |= 0x00000080; // WS_EX_TOOLWINDOW
+                cp.ExStyle &= ~0x00040000; // Strip WS_EX_APPWINDOW
+                return cp;
+            }
         }
 
         private void InitializeWindow()
@@ -56,29 +89,62 @@ namespace AIDA64Panel
             this.FormBorderStyle = FormBorderStyle.None;
             this.ShowInTaskbar = false;
             this.StartPosition = FormStartPosition.Manual;
-            this.TopMost = false;
+            this.TopMost = true;
             this.BackColor = Color.FromArgb(10, 15, 30);
 
+            _webView = new WebView2
+            {
+                Dock = DockStyle.Fill
+            };
+            this.Controls.Add(_webView);
+
             PositionOnTargetDisplay();
+            Program.Log($"InitializeWindow complete. Form Bounds: {this.Bounds}");
+        }
+
+        protected override async void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+            Program.Log("OnLoad triggered.");
+            PositionOnTargetDisplay();
+            this.Visible = true;
+            this.BringToFront();
+
+            await InitializeWebViewAsync();
+        }
+
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+            Program.Log("OnShown triggered.");
+            this.Visible = true;
+            this.WindowState = FormWindowState.Normal;
+            this.BringToFront();
         }
 
         private void PositionOnTargetDisplay()
         {
             var screens = Screen.AllScreens;
+            Program.Log($"Detected {screens.Length} screens.");
+            for (int i = 0; i < screens.Length; i++)
+            {
+                Program.Log($"Screen [{i}]: {screens[i].DeviceName} Bounds: {screens[i].Bounds} Primary: {screens[i].Primary}");
+            }
+
             if (screens.Length == 0) return;
 
             int targetIdx = 0;
             for (int i = 0; i < screens.Length; i++)
             {
                 var s = screens[i];
+                if (s.Bounds.X >= 3840 && s.Bounds.Y < 0)
+                {
+                    targetIdx = i;
+                    Program.Log($"Matched target Screen 2 (3840,-1200) at index {i}");
+                    break;
+                }
                 if (!s.Primary)
                 {
-                    // Prioritize Screen 2 (3840, -1200 or right/top secondary screen)
-                    if (s.Bounds.X >= 3840 && s.Bounds.Y < 0)
-                    {
-                        targetIdx = i;
-                        break;
-                    }
                     targetIdx = i;
                 }
             }
@@ -89,6 +155,9 @@ namespace AIDA64Panel
 
         private void ApplyScreenBounds(Screen screen)
         {
+            Program.Log($"Applying bounds for screen {screen.DeviceName}: {screen.Bounds}");
+            this.Location = screen.Bounds.Location;
+            this.Size = screen.Bounds.Size;
             this.Bounds = screen.Bounds;
         }
 
@@ -100,11 +169,14 @@ namespace AIDA64Panel
                 {
                     using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
                     var res = await client.GetAsync("http://localhost:8088/health");
-                    if (res.IsSuccessStatusCode) return;
+                    if (res.IsSuccessStatusCode)
+                    {
+                        Program.Log("Backend is already running.");
+                        return;
+                    }
                 }
                 catch { }
 
-                // Launch backend if not responsive
                 try
                 {
                     string baseDir = AppDomain.CurrentDomain.BaseDirectory;
@@ -117,6 +189,7 @@ namespace AIDA64Panel
 
                     if (Directory.Exists(backendDir))
                     {
+                        Program.Log($"Launching backend from {backendDir}");
                         var psi = new ProcessStartInfo
                         {
                             FileName = "pythonw",
@@ -128,18 +201,16 @@ namespace AIDA64Panel
                         Process.Start(psi);
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Program.Log($"Failed to launch backend: {ex.Message}");
+                }
             });
         }
 
         private async Task InitializeWebViewAsync()
         {
-            _webView = new WebView2
-            {
-                Dock = DockStyle.Fill
-            };
-            this.Controls.Add(_webView);
-
+            Program.Log("InitializeWebViewAsync starting...");
             string userDataDir = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "AIDA64_SensorPanel",
@@ -152,17 +223,22 @@ namespace AIDA64Panel
 
             try
             {
+                Program.Log($"Creating CoreWebView2Environment at: {userDataDir}");
                 var env = await CoreWebView2Environment.CreateAsync(null, userDataDir, envOptions);
+                Program.Log("CoreWebView2Environment created. Ensuring CoreWebView2Async...");
                 await _webView.EnsureCoreWebView2Async(env);
+                Program.Log("CoreWebView2Async ensured successfully.");
 
                 _webView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
                 _webView.CoreWebView2.Settings.IsStatusBarEnabled = false;
                 _webView.CoreWebView2.Settings.AreDevToolsEnabled = true;
 
+                Program.Log($"Navigating to: {DashboardUrl}");
                 _webView.CoreWebView2.Navigate(DashboardUrl);
             }
             catch (Exception ex)
             {
+                Program.Log($"Error in InitializeWebViewAsync: {ex}");
                 MessageBox.Show($"خطأ في تشغيل محرك WebView2:\n{ex.Message}", "خطأ في الواجهة", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -173,15 +249,12 @@ namespace AIDA64Panel
             using (var g = Graphics.FromImage(bmp))
             {
                 g.SmoothingMode = SmoothingMode.AntiAlias;
-                // Dark background pill
                 using var bgBrush = new SolidBrush(Color.FromArgb(15, 23, 42));
                 g.FillEllipse(bgBrush, 1, 1, 30, 30);
 
-                // Neon cyan border
                 using var pen = new Pen(Color.FromArgb(34, 211, 238), 2.5f);
                 g.DrawEllipse(pen, 2, 2, 28, 28);
 
-                // Lightning bolt / HUD symbol
                 using var boltBrush = new SolidBrush(Color.FromArgb(245, 158, 11));
                 Point[] bolt = new Point[]
                 {
@@ -237,6 +310,7 @@ namespace AIDA64Panel
             };
 
             _trayIcon.DoubleClick += (s, e) => OnToggleVisibility(s, e);
+            Program.Log("Tray icon initialized successfully.");
         }
 
         private void OnSwitchScreen(object? sender, EventArgs e)
@@ -245,17 +319,20 @@ namespace AIDA64Panel
             if (screens.Length <= 1) return;
 
             _currentScreenIndex = (_currentScreenIndex + 1) % screens.Length;
+            Program.Log($"User requested Switch Screen -> Moving to index {_currentScreenIndex} ({screens[_currentScreenIndex].DeviceName})");
             ApplyScreenBounds(screens[_currentScreenIndex]);
         }
 
         private void OnToggleTopMost(object? sender, EventArgs e)
         {
             this.TopMost = _topmostItem?.Checked ?? false;
+            Program.Log($"User toggled TopMost -> {this.TopMost}");
         }
 
         private void OnToggleVisibility(object? sender, EventArgs e)
         {
             this.Visible = !this.Visible;
+            Program.Log($"User toggled Visibility -> {this.Visible}");
             if (this.Visible)
             {
                 this.WindowState = FormWindowState.Normal;
@@ -265,6 +342,7 @@ namespace AIDA64Panel
 
         private void OnRefreshDashboard(object? sender, EventArgs e)
         {
+            Program.Log("User requested Reload.");
             _webView?.CoreWebView2?.Reload();
         }
 
@@ -289,10 +367,12 @@ namespace AIDA64Panel
                 {
                     string exePath = Application.ExecutablePath;
                     key.SetValue(AutoStartKeyName, $"\"{exePath}\"");
+                    Program.Log("Auto-Start registered in Registry.");
                 }
                 else
                 {
                     key.DeleteValue(AutoStartKeyName, false);
+                    Program.Log("Auto-Start removed from Registry.");
                 }
             }
             catch (Exception ex)
@@ -303,6 +383,7 @@ namespace AIDA64Panel
 
         private void OnExitApplication(object? sender, EventArgs e)
         {
+            Program.Log("User requested Exit Application.");
             if (_trayIcon != null)
             {
                 _trayIcon.Visible = false;
