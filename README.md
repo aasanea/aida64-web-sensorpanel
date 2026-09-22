@@ -166,6 +166,23 @@ pip install -r backend\requirements.txt
 .\scripts\start.bat
 ```
 
+### ⚡ Native Host Launcher (~75MB RAM & Zero-Taskbar Presence)
+
+For enthusiasts who prefer running the SensorPanel as a clean, dedicated desktop appliance with **zero Taskbar clutter**, Alt+Tab immunity, and ~75MB RAM consumption:
+
+```cmd
+# Launch Ultra-Lightweight Native Host with System Tray Icon
+launch_native.bat
+
+# Bring Panel immediately to Primary Display (4K / Main Screen)
+switch_to_primary.bat
+
+# Terminate Native Host cleanly
+stop_panel.bat
+```
+
+*Right-click the amber lightning bolt icon (⚡) in the Windows System Tray next to the clock to cycle displays, toggle Always-on-Top, or enable Windows Auto-Start.*
+
 ---
 
 ## ⚙️ AIDA64 Shared Memory Setup Guide
