@@ -1,8 +1,11 @@
 import { EventBus } from '../store/event_bus.js';
+import { GaugeEngine } from './gauge-styles-engine.js';
+import { GaugePicker } from './gauge-style-picker.js';
 
 const template = document.createElement('template');
 template.innerHTML = `
 <style>
+  @import url('css/gauge-styles.css');
   /* Local Component Styles */
   :host {
     display: block;
@@ -746,22 +749,9 @@ template.innerHTML = `
     </div>
 
     <div class="card-body-split">
-      <!-- Circular Temperature Ring -->
-      <div class="gauge-circular-container">
-        <div class="svg-ring-wrapper">
-          <svg class="temp-ring-svg" viewBox="0 0 180 180">
-            <circle class="ring-bg" cx="90" cy="90" r="75"></circle>
-            <circle class="ring-progress" id="cpu-temp-ring" cx="90" cy="90" r="75"></circle>
-          </svg>
-          <div class="ring-center-content">
-            <span class="arabic-ring-label">الحرارة الحالية</span>
-            <div class="temp-val-wrapper">
-              <span class="huge-number" id="cpu_temp">--</span>
-              <span class="huge-unit">°C</span>
-            </div>
-            <span class="status-descriptor" id="cpu-temp-desc">طبيعي</span>
-          </div>
-        </div>
+      <!-- Dynamic Circular Temperature Gauge (Right-click to customize) -->
+      <div class="gauge-circular-container" id="cpu-gauge-wrapper" data-gauge-id="cpu" title="انقر بزر الفأرة الأيمن لتغيير شكل العداد">
+        <div id="cpu-dynamic-gauge" class="gauge-dynamic-root" data-gauge-id="cpu"></div>
       </div>
 
       <!-- Performance Bars Stack -->
@@ -1180,6 +1170,45 @@ export class DashboardCPU extends HTMLElement {
       }
     }
 
+    // Dynamic Gauge Setup
+    this._currentGaugeStyle = GaugePicker.getSavedStyle('cpu');
+    this._gaugeMount = this.shadowRoot.getElementById('cpu-dynamic-gauge');
+    if (this._gaugeMount) {
+      GaugeEngine.renderGaugeSvg(this._currentGaugeStyle, this._gaugeMount, {
+        title: 'حرارة المعالج',
+        gaugeId: 'cpu',
+        unit: '°C'
+      });
+    }
+
+    const gaugeWrapper = this.shadowRoot.getElementById('cpu-gauge-wrapper');
+    if (gaugeWrapper) {
+      gaugeWrapper.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        window.GaugePicker?.open('cpu');
+      });
+    }
+
+    this._onStyleChanged = (detail) => {
+      if (detail.applyAll || detail.gaugeId === 'cpu') {
+        this._currentGaugeStyle = detail.styleId;
+        if (this._gaugeMount) {
+          GaugeEngine.renderGaugeSvg(this._currentGaugeStyle, this._gaugeMount, {
+            title: 'حرارة المعالج',
+            gaugeId: 'cpu',
+            unit: '°C'
+          });
+          const temp = this.currentValues.cpu_temp;
+          if (temp !== null && !isNaN(temp)) {
+            const desc = this.getTemperatureDesc(temp);
+            GaugeEngine.updateGaugeSvg(this._currentGaugeStyle, this._gaugeMount, temp, 20, 100, desc);
+          }
+        }
+      }
+    };
+    this.unsubscribeStyle = EventBus.on('gauge:style-changed', this._onStyleChanged);
+
     if (this.dom.btnFlipCores) {
       this.dom.btnFlipCores.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -1207,6 +1236,7 @@ export class DashboardCPU extends HTMLElement {
     this.isRunning = false;
     if (this.unsubscribe) this.unsubscribe();
     if (this.unsubscribeData) this.unsubscribeData();
+    if (this.unsubscribeStyle) this.unsubscribeStyle();
   }
 
   toggleFlip(forceState) {
@@ -1298,18 +1328,11 @@ export class DashboardCPU extends HTMLElement {
     this.updateText(this.dom.back_cpu_hotspot_temp, this.currentValues.cpu_hotspot_temp, 0);
     this.updateTempColor(this.dom.back_cpu_hotspot_temp, this.currentValues.cpu_hotspot_temp);
 
-    // CPU Temp Ring
+    // CPU Dynamic Gauge
     const temp = this.currentValues.cpu_temp;
-    this.updateText(this.dom.cpu_temp, temp, 0);
-    this.updateRing(this.dom['cpu-temp-ring'], temp, 0, 100, 471.24);
-    
-    if (this.dom['cpu-temp-desc']) {
+    if (this._gaugeMount && temp !== null && !isNaN(temp)) {
       const desc = this.getTemperatureDesc(temp);
-      const color = this.getTemperatureColor(temp);
-      if (this.dom['cpu-temp-desc'].textContent !== desc) {
-        this.dom['cpu-temp-desc'].textContent = desc;
-        this.dom['cpu-temp-desc'].style.color = color;
-      }
+      GaugeEngine.updateGaugeSvg(this._currentGaugeStyle, this._gaugeMount, temp, 20, 100, desc);
     }
 
     // Front Face Bars

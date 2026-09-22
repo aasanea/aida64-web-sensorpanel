@@ -1,8 +1,11 @@
 import { EventBus } from '../store/event_bus.js';
+import { GaugeEngine } from './gauge-styles-engine.js';
+import { GaugePicker } from './gauge-style-picker.js';
 
 const template = document.createElement('template');
 template.innerHTML = `
 <style>
+  @import url('css/gauge-styles.css');
   /* Local Component Styles */
   :host {
     display: block;
@@ -644,22 +647,9 @@ template.innerHTML = `
     </div>
 
     <div class="card-body-split">
-      <!-- Circular Temperature Ring -->
-      <div class="gauge-circular-container">
-        <div class="svg-ring-wrapper">
-          <svg class="temp-ring-svg" viewBox="0 0 180 180">
-            <circle class="ring-bg" cx="90" cy="90" r="75"></circle>
-            <circle class="ring-progress" id="gpu-temp-ring" cx="90" cy="90" r="75"></circle>
-          </svg>
-          <div class="ring-center-content">
-            <span class="arabic-ring-label">حرارة المعالج</span>
-            <div class="temp-val-wrapper">
-              <span class="huge-number" id="gpu_temp">--</span>
-              <span class="huge-unit">°C</span>
-            </div>
-            <span class="status-descriptor" id="gpu-temp-desc">مثالي</span>
-          </div>
-        </div>
+      <!-- Dynamic Circular Temperature Gauge (Right-click to customize) -->
+      <div class="gauge-circular-container" id="gpu-gauge-wrapper" data-gauge-id="gpu" title="انقر بزر الفأرة الأيمن لتغيير شكل العداد">
+        <div id="gpu-dynamic-gauge" class="gauge-dynamic-root" data-gauge-id="gpu"></div>
       </div>
 
       <!-- Performance Bars Stack -->
@@ -997,6 +987,45 @@ export class DashboardGPU extends HTMLElement {
       this.onStateChange(window.stateManager.currentState);
     }
 
+    // Dynamic Gauge Setup
+    this._currentGaugeStyle = GaugePicker.getSavedStyle('gpu');
+    this._gaugeMount = this.shadowRoot.getElementById('gpu-dynamic-gauge');
+    if (this._gaugeMount) {
+      GaugeEngine.renderGaugeSvg(this._currentGaugeStyle, this._gaugeMount, {
+        title: 'حرارة الكرت',
+        gaugeId: 'gpu',
+        unit: '°C'
+      });
+    }
+
+    const gaugeWrapper = this.shadowRoot.getElementById('gpu-gauge-wrapper');
+    if (gaugeWrapper) {
+      gaugeWrapper.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        window.GaugePicker?.open('gpu');
+      });
+    }
+
+    this._onStyleChanged = (detail) => {
+      if (detail.applyAll || detail.gaugeId === 'gpu') {
+        this._currentGaugeStyle = detail.styleId;
+        if (this._gaugeMount) {
+          GaugeEngine.renderGaugeSvg(this._currentGaugeStyle, this._gaugeMount, {
+            title: 'حرارة الكرت',
+            gaugeId: 'gpu',
+            unit: '°C'
+          });
+          const temp = this.currentValues.gpu_temp;
+          if (temp !== null && !isNaN(temp)) {
+            const desc = this.getTemperatureDesc(temp);
+            GaugeEngine.updateGaugeSvg(this._currentGaugeStyle, this._gaugeMount, temp, 20, 100, desc);
+          }
+        }
+      }
+    };
+    this.unsubscribeStyle = EventBus.on('gauge:style-changed', this._onStyleChanged);
+
     if (this.dom.btnFlipDetails) {
       this.dom.btnFlipDetails.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -1020,7 +1049,7 @@ export class DashboardGPU extends HTMLElement {
 
     // Flip on clicking the card itself (excluding buttons/interactive elements)
     this.addEventListener('click', (e) => {
-      if (e.composedPath().some(el => el.tagName === 'BUTTON' || (el.classList && el.classList.contains('btn-flip-toggle')))) {
+      if (e.composedPath().some(el => el.tagName === 'BUTTON' || (el.classList && el.classList.contains('btn-flip-toggle')) || (el.classList && el.classList.contains('gauge-dynamic-root')))) {
         return;
       }
       this.toggleFlip();
@@ -1034,6 +1063,7 @@ export class DashboardGPU extends HTMLElement {
     this.isRunning = false;
     if (this.unsubscribe) this.unsubscribe();
     if (this.unsubscribeData) this.unsubscribeData();
+    if (this.unsubscribeStyle) this.unsubscribeStyle();
   }
 
   toggleFlip(forceState) {
@@ -1113,17 +1143,10 @@ export class DashboardGPU extends HTMLElement {
     // Header Hotspot badge
     this.updateText(this.dom.gpu_hotspot_temp, hotspot, 0);
 
-    // Circular Temperature Ring
-    this.updateText(this.dom.gpu_temp, temp, 0);
-    this.updateRing(this.dom['gpu-temp-ring'], temp, 0, 100, 471.24);
-    
-    if (this.dom['gpu-temp-desc']) {
+    // GPU Dynamic Gauge
+    if (this._gaugeMount && temp !== null && !isNaN(temp)) {
       const desc = this.getTemperatureDesc(temp);
-      const color = this.getTemperatureColor(temp);
-      if (this.dom['gpu-temp-desc'].textContent !== desc) {
-        this.dom['gpu-temp-desc'].textContent = desc;
-      }
-      this.dom['gpu-temp-desc'].style.color = color;
+      GaugeEngine.updateGaugeSvg(this._currentGaugeStyle, this._gaugeMount, temp, 20, 100, desc);
     }
 
     // Front Face Mission-Critical Bars

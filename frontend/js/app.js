@@ -17,11 +17,13 @@ import './components/dashboard-display.js';
 import './components/dashboard-weather.js';
 import './components/dashboard-appointments.js';
 import './components/dashboard-matches.js';
+import { GaugePicker } from './components/gauge-style-picker.js';
 
-// Expose EventBus and StateManager globally for testing and diagnostics
+// Expose EventBus, StateManager, and GaugePicker globally
 if (typeof window !== 'undefined') {
   window.EventBus = EventBus;
   window.StateManager = StateManager;
+  window.GaugePicker = GaugePicker;
 }
 
 // ============================================================================
@@ -673,6 +675,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const stateManager = new StateManager();
   stateManager.start();
   window.stateManager = stateManager;
+
+  // Initialize Dynamic Gauge Style Context Picker
+  GaugePicker.init();
 
   console.log('%c[AIDA64 GLASS 2.0] Frontend Ready. Listening on WebSocket & Polling.', 'color: #10B981; font-weight: bold;');
 });

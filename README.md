@@ -103,6 +103,11 @@ Switch instantly between 4 cinematic themes with zero flicker and seamless CSS V
 | [![Live Matches](tests/screenshots/dashboard_e2e_live.png)](tests/screenshots/dashboard_e2e_live.png) | [![Appointments Modal](tests/screenshots/appointments_modal_live.png)](tests/screenshots/appointments_modal_live.png) |
 | *Pure SVG emblems, match minutes, and 18-team standings* | *Integrated agenda HUD with Riyadh prayer countdowns* |
 
+| 10-Style Dynamic Temperature Gauge Picker | 24-Blade Turbine Engine Live Telemetry |
+| :---: | :---: |
+| [![Gauge Picker](tests/screenshots/gauge_picker_modal_live.png)](tests/screenshots/gauge_picker_modal_live.png) | [![Turbine Live](tests/screenshots/gauge_1920x1200_live.png)](tests/screenshots/gauge_1920x1200_live.png) |
+| *Right-click contextual Glassmorphism picker with 10 vector styles* | *24-blade progressive turbine engine with 100% theme harmony* |
+
 ---
 
 ## 📊 Head-to-Head Comparison Matrix
