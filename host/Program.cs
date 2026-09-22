@@ -1,10 +1,10 @@
 using System;
 using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.IO;
 using System.Net.Http;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Win32;
@@ -16,6 +16,8 @@ namespace AIDA64Panel
     static class Program
     {
         private static readonly string LogFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "host.log");
+        private const string MutexName = "AIDA64_SensorPanel_Host_Mutex";
+        private const string SignalEventName = "AIDA64_SensorPanel_Show_Signal";
 
         public static void Log(string msg)
         {
@@ -27,28 +29,61 @@ namespace AIDA64Panel
         }
 
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
-            Log("AIDA64Panel starting...");
+            Log($"AIDA64Panel starting with args: [{string.Join(" ", args)}]");
 
-            using var mutex = new System.Threading.Mutex(true, "AIDA64_SensorPanel_Host_Mutex", out bool createdNew);
+            bool createdNew;
+            Mutex? mutex = null;
+            try
+            {
+                mutex = new Mutex(true, MutexName, out createdNew);
+            }
+            catch (AbandonedMutexException)
+            {
+                createdNew = true;
+            }
+
             if (!createdNew)
             {
-                Log("Mutex already held by existing instance.");
-                MessageBox.Show("لوحة AIDA64 SensorPanel تعمل بالفعل في صينية النظام بجوار الساعة.\nيمكنك النقر بزر الفأرة الأيمن على الأيقونة للتحكم بها أو تبديل الشاشة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
+                Log("Existing instance detected. Signaling activation...");
+                try
+                {
+                    if (EventWaitHandle.TryOpenExisting(SignalEventName, out var signalHandle))
+                    {
+                        signalHandle.Set();
+                        Log("Signal sent to running instance. Exiting secondary process.");
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log($"Failed to open signal handle: {ex.Message}");
+                }
+
+                // If signal could not be sent and another process exists
+                var procs = Process.GetProcessesByName("AIDA64Panel");
+                if (procs.Length > 1)
+                {
+                    MessageBox.Show("لوحة AIDA64 تعمل بالفعل في صينية النظام بجوار الساعة ⚡", "لوحة المراقبة AIDA64", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
             }
 
             try
             {
                 ApplicationConfiguration.Initialize();
                 Log("ApplicationConfiguration initialized.");
-                Application.Run(new DashboardHostForm());
+                Application.Run(new DashboardHostForm(args));
             }
             catch (Exception ex)
             {
                 Log($"Fatal Exception in Main: {ex}");
                 MessageBox.Show($"خطأ أثناء تشغيل اللوحة:\n{ex.Message}", "خطأ فادح", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                mutex?.Dispose();
             }
         }
     }
@@ -63,13 +98,43 @@ namespace AIDA64Panel
         private int _currentScreenIndex = 0;
         private const string DashboardUrl = "http://localhost:8088";
         private const string AutoStartKeyName = "AIDA64WebSensorPanel";
+        private const string SignalEventName = "AIDA64_SensorPanel_Show_Signal";
+        private EventWaitHandle? _showSignalEvent;
+        private RegisteredWaitHandle? _registeredWait;
 
-        public DashboardHostForm()
+        private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
+        private const uint SWP_NOSIZE = 0x0001;
+        private const uint SWP_NOMOVE = 0x0002;
+        private const uint SWP_SHOWWINDOW = 0x0040;
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        private static extern int RegisterWindowMessage(string lpString);
+
+        private int _wmTaskbarCreated = 0;
+
+        public DashboardHostForm(string[] args)
         {
             Program.Log("DashboardHostForm constructor called.");
+            _wmTaskbarCreated = RegisterWindowMessage("TaskbarCreated");
+
             InitializeWindow();
             InitializeTray();
+            SetupIpcSignal();
             EnsureBackendRunning();
+
+            if (args != null && args.Length > 0)
+            {
+                foreach (var arg in args)
+                {
+                    if (arg.Equals("--primary", StringComparison.OrdinalIgnoreCase))
+                    {
+                        MoveToPrimaryDisplay();
+                    }
+                }
+            }
         }
 
         protected override CreateParams CreateParams
@@ -77,7 +142,7 @@ namespace AIDA64Panel
             get
             {
                 CreateParams cp = base.CreateParams;
-                cp.ExStyle |= 0x00000080; // WS_EX_TOOLWINDOW
+                cp.ExStyle |= 0x00000080; // WS_EX_TOOLWINDOW (Eliminates taskbar button)
                 cp.ExStyle &= ~0x00040000; // Strip WS_EX_APPWINDOW
                 return cp;
             }
@@ -102,6 +167,108 @@ namespace AIDA64Panel
             Program.Log($"InitializeWindow complete. Form Bounds: {this.Bounds}");
         }
 
+        private Icon LoadPanelIcon()
+        {
+            try
+            {
+                string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon.ico");
+                if (File.Exists(iconPath))
+                {
+                    Program.Log($"Loading icon from file: {iconPath}");
+                    return new Icon(iconPath);
+                }
+
+                var assocIcon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+                if (assocIcon != null)
+                {
+                    Program.Log("Loaded icon from Executable resources.");
+                    return assocIcon;
+                }
+            }
+            catch (Exception ex)
+            {
+                Program.Log($"Icon load fallback due to: {ex.Message}");
+            }
+
+            return SystemIcons.Application;
+        }
+
+        private void InitializeTray()
+        {
+            var appIcon = LoadPanelIcon();
+            this.Icon = appIcon;
+
+            _trayMenu = new ContextMenuStrip();
+            _trayMenu.RightToLeft = RightToLeft.Yes;
+
+            var dedicatedItem = new ToolStripMenuItem("🖥️ الشاشة المخصصة (Dedicated 1920x1200)", null, (s, e) => MoveToDedicatedDisplay());
+            var primaryItem = new ToolStripMenuItem("💻 الشاشة الرئيسية (Primary Display)", null, (s, e) => MoveToPrimaryDisplay());
+            var cycleItem = new ToolStripMenuItem("🔄 تبديل الشاشات (Cycle Displays)", null, OnSwitchScreen);
+
+            _topmostItem = new ToolStripMenuItem("📌 تثبيت في المقدمة (Always On Top)", null, OnToggleTopMost)
+            {
+                CheckOnClick = true,
+                Checked = this.TopMost
+            };
+            var refreshItem = new ToolStripMenuItem("🔄 تحديث اللوحة (Reload)", null, OnRefreshDashboard);
+            var toggleItem = new ToolStripMenuItem("👁️ إخفاء / إظهار (Toggle Visibility)", null, OnToggleVisibility);
+
+            _autoStartItem = new ToolStripMenuItem("⚙️ التشغيل التلقائي مع ويندوز (Auto-Start)", null, OnToggleAutoStart)
+            {
+                CheckOnClick = true,
+                Checked = IsAutoStartEnabled()
+            };
+
+            var exitItem = new ToolStripMenuItem("❌ إغلاق اللوحة (Exit)", null, OnExitApplication);
+
+            _trayMenu.Items.Add(dedicatedItem);
+            _trayMenu.Items.Add(primaryItem);
+            _trayMenu.Items.Add(cycleItem);
+            _trayMenu.Items.Add(new ToolStripSeparator());
+            _trayMenu.Items.Add(_topmostItem);
+            _trayMenu.Items.Add(refreshItem);
+            _trayMenu.Items.Add(toggleItem);
+            _trayMenu.Items.Add(new ToolStripSeparator());
+            _trayMenu.Items.Add(_autoStartItem);
+            _trayMenu.Items.Add(new ToolStripSeparator());
+            _trayMenu.Items.Add(exitItem);
+
+            _trayIcon = new NotifyIcon
+            {
+                Text = "AIDA64 SensorPanel Host",
+                Icon = appIcon,
+                ContextMenuStrip = _trayMenu,
+                Visible = true
+            };
+
+            _trayIcon.DoubleClick += (s, e) => OnToggleVisibility(s, e);
+            Program.Log("Tray icon initialized successfully.");
+        }
+
+        private void SetupIpcSignal()
+        {
+            try
+            {
+                _showSignalEvent = new EventWaitHandle(false, EventResetMode.AutoReset, SignalEventName);
+                _registeredWait = ThreadPool.RegisterWaitForSingleObject(_showSignalEvent, (state, timedOut) =>
+                {
+                    this.BeginInvoke(() =>
+                    {
+                        Program.Log("Received IPC wake/show signal.");
+                        this.Visible = true;
+                        this.WindowState = FormWindowState.Normal;
+                        SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+                        this.BringToFront();
+                        _trayIcon?.ShowBalloonTip(3000, "لوحة AIDA64 SensorPanel", "تم تنشيط اللوحة وإظهارها في المقدمة ⚡", ToolTipIcon.Info);
+                    });
+                }, null, Timeout.Infinite, false);
+            }
+            catch (Exception ex)
+            {
+                Program.Log($"Failed to setup IPC signal: {ex.Message}");
+            }
+        }
+
         protected override async void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
@@ -109,6 +276,12 @@ namespace AIDA64Panel
             PositionOnTargetDisplay();
             this.Visible = true;
             this.BringToFront();
+
+            if (_trayIcon != null)
+            {
+                _trayIcon.Visible = true;
+                _trayIcon.ShowBalloonTip(3500, "لوحة AIDA64 SensorPanel", $"اللوحة قيد العمل الآن على الشاشة ({this.Bounds.Width}x{this.Bounds.Height}) وبجوار الساعة ⚡", ToolTipIcon.Info);
+            }
 
             await InitializeWebViewAsync();
         }
@@ -119,7 +292,23 @@ namespace AIDA64Panel
             Program.Log("OnShown triggered.");
             this.Visible = true;
             this.WindowState = FormWindowState.Normal;
+            SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
             this.BringToFront();
+        }
+
+        protected override void WndProc(ref Message m)
+        {
+            // If explorer restarts, re-register tray icon
+            if (_wmTaskbarCreated != 0 && m.Msg == _wmTaskbarCreated)
+            {
+                Program.Log("Explorer restarted: Re-registering tray icon.");
+                if (_trayIcon != null)
+                {
+                    _trayIcon.Visible = false;
+                    _trayIcon.Visible = true;
+                }
+            }
+            base.WndProc(ref m);
         }
 
         private void PositionOnTargetDisplay()
@@ -153,12 +342,44 @@ namespace AIDA64Panel
             ApplyScreenBounds(screens[_currentScreenIndex]);
         }
 
+        public void MoveToDedicatedDisplay()
+        {
+            var screens = Screen.AllScreens;
+            for (int i = 0; i < screens.Length; i++)
+            {
+                if (screens[i].Bounds.X >= 3840 && screens[i].Bounds.Y < 0)
+                {
+                    _currentScreenIndex = i;
+                    ApplyScreenBounds(screens[i]);
+                    _trayIcon?.ShowBalloonTip(3000, "تبديل الشاشة", $"تم نقل اللوحة إلى الشاشة المخصصة ({screens[i].Bounds.Width}x{screens[i].Bounds.Height})", ToolTipIcon.Info);
+                    return;
+                }
+            }
+            OnSwitchScreen(null, EventArgs.Empty);
+        }
+
+        public void MoveToPrimaryDisplay()
+        {
+            var screens = Screen.AllScreens;
+            for (int i = 0; i < screens.Length; i++)
+            {
+                if (screens[i].Primary)
+                {
+                    _currentScreenIndex = i;
+                    ApplyScreenBounds(screens[i]);
+                    _trayIcon?.ShowBalloonTip(3000, "تبديل الشاشة", $"تم نقل اللوحة إلى الشاشة الرئيسية ({screens[i].Bounds.Width}x{screens[i].Bounds.Height})", ToolTipIcon.Info);
+                    return;
+                }
+            }
+        }
+
         private void ApplyScreenBounds(Screen screen)
         {
             Program.Log($"Applying bounds for screen {screen.DeviceName}: {screen.Bounds}");
             this.Location = screen.Bounds.Location;
             this.Size = screen.Bounds.Size;
             this.Bounds = screen.Bounds;
+            SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
         }
 
         private void EnsureBackendRunning()
@@ -243,76 +464,6 @@ namespace AIDA64Panel
             }
         }
 
-        private Icon CreateDynamicTrayIcon()
-        {
-            using var bmp = new Bitmap(32, 32);
-            using (var g = Graphics.FromImage(bmp))
-            {
-                g.SmoothingMode = SmoothingMode.AntiAlias;
-                using var bgBrush = new SolidBrush(Color.FromArgb(15, 23, 42));
-                g.FillEllipse(bgBrush, 1, 1, 30, 30);
-
-                using var pen = new Pen(Color.FromArgb(34, 211, 238), 2.5f);
-                g.DrawEllipse(pen, 2, 2, 28, 28);
-
-                using var boltBrush = new SolidBrush(Color.FromArgb(245, 158, 11));
-                Point[] bolt = new Point[]
-                {
-                    new Point(18, 5),
-                    new Point(9, 17),
-                    new Point(15, 17),
-                    new Point(13, 27),
-                    new Point(23, 14),
-                    new Point(17, 14)
-                };
-                g.FillPolygon(boltBrush, bolt);
-            }
-            return Icon.FromHandle(bmp.GetHicon());
-        }
-
-        private void InitializeTray()
-        {
-            _trayMenu = new ContextMenuStrip();
-            _trayMenu.RightToLeft = RightToLeft.Yes;
-
-            var switchItem = new ToolStripMenuItem("🖥️ تبديل الشاشة (Switch Display)", null, OnSwitchScreen);
-            _topmostItem = new ToolStripMenuItem("📌 تثبيت في المقدمة (Always On Top)", null, OnToggleTopMost)
-            {
-                CheckOnClick = true,
-                Checked = this.TopMost
-            };
-            var refreshItem = new ToolStripMenuItem("🔄 تحديث اللوحة (Reload)", null, OnRefreshDashboard);
-            var toggleItem = new ToolStripMenuItem("👁️ إخفاء / إظهار (Toggle Visibility)", null, OnToggleVisibility);
-
-            _autoStartItem = new ToolStripMenuItem("⚙️ التشغيل التلقائي مع ويندوز (Auto-Start)", null, OnToggleAutoStart)
-            {
-                CheckOnClick = true,
-                Checked = IsAutoStartEnabled()
-            };
-
-            var exitItem = new ToolStripMenuItem("❌ إغلاق اللوحة (Exit)", null, OnExitApplication);
-
-            _trayMenu.Items.Add(switchItem);
-            _trayMenu.Items.Add(_topmostItem);
-            _trayMenu.Items.Add(refreshItem);
-            _trayMenu.Items.Add(toggleItem);
-            _trayMenu.Items.Add(new ToolStripSeparator());
-            _trayMenu.Items.Add(_autoStartItem);
-            _trayMenu.Items.Add(new ToolStripSeparator());
-            _trayMenu.Items.Add(exitItem);
-
-            _trayIcon = new NotifyIcon
-            {
-                Text = "AIDA64 SensorPanel Host",
-                Icon = CreateDynamicTrayIcon(),
-                ContextMenuStrip = _trayMenu,
-                Visible = true
-            };
-
-            _trayIcon.DoubleClick += (s, e) => OnToggleVisibility(s, e);
-            Program.Log("Tray icon initialized successfully.");
-        }
-
         private void OnSwitchScreen(object? sender, EventArgs e)
         {
             var screens = Screen.AllScreens;
@@ -327,6 +478,10 @@ namespace AIDA64Panel
         {
             this.TopMost = _topmostItem?.Checked ?? false;
             Program.Log($"User toggled TopMost -> {this.TopMost}");
+            if (this.TopMost)
+            {
+                SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+            }
         }
 
         private void OnToggleVisibility(object? sender, EventArgs e)
@@ -336,6 +491,7 @@ namespace AIDA64Panel
             if (this.Visible)
             {
                 this.WindowState = FormWindowState.Normal;
+                SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
                 this.BringToFront();
             }
         }
@@ -396,6 +552,8 @@ namespace AIDA64Panel
         {
             if (disposing)
             {
+                _registeredWait?.Unregister(null);
+                _showSignalEvent?.Dispose();
                 _trayIcon?.Dispose();
                 _trayMenu?.Dispose();
                 _webView?.Dispose();
