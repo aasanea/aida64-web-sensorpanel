@@ -31,13 +31,13 @@ template.innerHTML = `
     inset: 0;
     width: 100%;
     height: 100%;
-    padding: 4px 12px;
+    padding: 6px 12px;
     box-sizing: border-box;
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start;
   }
 
   .card-front {
@@ -75,22 +75,22 @@ template.innerHTML = `
 
   .card-title {
     font-family: var(--font-arabic);
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 800;
     color: #FFFFFF;
     letter-spacing: 0.3px;
-    line-height: 1.2;
+    line-height: 1.15;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     text-shadow: 0 0 12px rgba(255, 255, 255, 0.2);
   }
 
   .card-subtitle {
     font-family: var(--font-numbers);
-    font-size: 15px;
+    font-size: 11px;
     font-weight: 700;
-    letter-spacing: 1px;
+    letter-spacing: 0.8px;
     color: var(--neon-cyan);
     opacity: 0.95;
     text-shadow: 0 0 10px rgba(34, 211, 238, 0.4);
@@ -99,19 +99,19 @@ template.innerHTML = `
   .header-actions {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
   }
 
   .btn-flip {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 12px;
+    gap: 5px;
+    padding: 2px 9px;
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 10px;
+    border-radius: 8px;
     font-family: var(--font-arabic);
-    font-size: 15px;
+    font-size: 12px;
     font-weight: 800;
     color: #FFFFFF;
     cursor: pointer;
@@ -133,32 +133,32 @@ template.innerHTML = `
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 2px 8px;
+    padding: 2px 6px;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 8px;
-    margin-bottom: 2px;
+    margin-bottom: 4px;
     flex-shrink: 0;
-    gap: 8px;
+    gap: 6px;
   }
 
   .filter-buttons {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
   }
 
   .filter-btn {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 4px;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.12);
     color: var(--text-muted);
     font-family: var(--font-arabic);
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 800;
-    padding: 2px 9px;
+    padding: 2px 7px;
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -187,14 +187,19 @@ template.innerHTML = `
 
   .round-meta-tag {
     font-family: var(--font-arabic);
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 800;
     color: var(--neon-yellow);
-    display: flex;
+    display: none;
     align-items: center;
     gap: 4px;
     white-space: nowrap;
     flex-shrink: 0;
+  }
+  @media (min-width: 480px) {
+    .round-meta-tag {
+      display: flex;
+    }
   }
 
   /* Matches List Container */
@@ -467,17 +472,85 @@ template.innerHTML = `
     font-family: var(--font-arabic);
     font-size: 11px;
     font-weight: 800;
-    padding: 1px 5px;
-    border-radius: 4px;
-    margin-top: 1px;
+    padding: 2px 7px;
+    border-radius: 6px;
+    margin-top: 2px;
     white-space: nowrap;
     line-height: 1.1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
   }
 
   .status-live {
-    background: rgba(239, 68, 68, 0.25);
-    color: #F87171;
-    border: 1px solid rgba(239, 68, 68, 0.45);
+    background: rgba(239, 68, 68, 0.22);
+    color: #FEE2E2;
+    border: 1px solid rgba(239, 68, 68, 0.55);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+  }
+
+  .status-live.status-halftime {
+    background: rgba(245, 158, 11, 0.2);
+    color: #FEF3C7;
+    border-color: rgba(245, 158, 11, 0.45);
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
+  }
+
+  .status-live.status-extra-time {
+    background: rgba(239, 68, 68, 0.32);
+    border-color: #EF4444;
+    box-shadow: 0 0 14px rgba(239, 68, 68, 0.45);
+  }
+
+  .live-dot-pulse {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #EF4444;
+    box-shadow: 0 0 8px #EF4444;
+    animation: live-dot-glow 1.2s infinite ease-in-out alternate;
+    flex-shrink: 0;
+  }
+
+  @keyframes live-dot-glow {
+    0% { transform: scale(0.85); opacity: 0.5; }
+    100% { transform: scale(1.3); opacity: 1; }
+  }
+
+  .live-minute-badge {
+    font-family: var(--font-numbers);
+    font-size: 13px;
+    font-weight: 900;
+    color: var(--neon-yellow, #FACC15);
+    direction: ltr;
+    display: inline-flex;
+    align-items: baseline;
+    letter-spacing: 0.5px;
+    text-shadow: 0 0 8px rgba(250, 204, 21, 0.55);
+  }
+
+  .live-added-badge {
+    font-size: 11px;
+    font-weight: 800;
+    color: #FF8080;
+    background: rgba(239, 68, 68, 0.35);
+    padding: 0 3px;
+    border-radius: 3px;
+    margin-left: 2px;
+  }
+
+  .live-sep {
+    opacity: 0.5;
+    font-size: 9px;
+  }
+
+  .live-period-text {
+    font-family: var(--font-arabic);
+    font-size: 11px;
+    font-weight: 700;
+    color: #F8FAFC;
+    opacity: 0.95;
   }
 
   .status-ended {
@@ -1090,7 +1163,7 @@ export class DashboardMatches extends HTMLElement {
         anchorPlaced = true;
       }
 
-      if (matchDateKey && matchDateKey !== lastDateKey) {
+      if (this._currentFilter !== 'live' && matchDateKey && matchDateKey !== lastDateKey) {
         lastDateKey = matchDateKey;
         const isToday = matchDateKey === todayKey;
         const dayText = m.day_label || matchDateKey;
@@ -1123,7 +1196,54 @@ export class DashboardMatches extends HTMLElement {
 
       if (isLive) {
         scoreHtml = `<div class="score-numbers live-score">${m.home_score ?? 0} - ${m.away_score ?? 0}</div>`;
-        statusBadge = `<div class="match-status-badge status-live">🔴 مباشر ${m.status_text || ''}</div>`;
+        const isHalftime = m.is_halftime || (m.status_text && (m.status_text.includes('استراحة') || m.status_text.includes('بين الشوطين')));
+        const addedTime = m.added_time;
+        const liveMin = m.live_minute || (m.game_time ? `${m.game_time}'` : '');
+        const periodText = m.status_text || (m.game_time && m.game_time > 45 ? 'الشوط الثاني' : 'الشوط الأول');
+
+        if (isHalftime) {
+          statusBadge = `
+            <div class="match-status-badge status-live status-halftime">
+              <span>⏸️</span>
+              <span class="live-period-text">استراحة بين الشوطين</span>
+            </div>
+          `;
+        } else if ((addedTime && addedTime > 0) || (liveMin && liveMin.includes('+'))) {
+          let baseMin = '90';
+          let addedDisplay = '+';
+          if (addedTime && addedTime > 0) {
+            baseMin = m.game_time ? (m.game_time >= 90 ? '90' : (m.game_time >= 45 ? '45' : String(m.game_time))) : '90';
+            addedDisplay = `+${addedTime}'`;
+          } else if (liveMin && liveMin.includes('+')) {
+            const parts = liveMin.replace("'", '').split('+');
+            baseMin = parts[0] || '90';
+            addedDisplay = `+${parts[1] || ''}'`;
+          }
+          statusBadge = `
+            <div class="match-status-badge status-live status-extra-time">
+              <span class="live-dot-pulse"></span>
+              <span class="live-minute-badge">${baseMin}<span class="live-added-badge">${addedDisplay}</span></span>
+              <span class="live-sep">•</span>
+              <span class="live-period-text">وقت بدل ضائع</span>
+            </div>
+          `;
+        } else if (liveMin) {
+          statusBadge = `
+            <div class="match-status-badge status-live">
+              <span class="live-dot-pulse"></span>
+              <span class="live-minute-badge">${liveMin}</span>
+              <span class="live-sep">•</span>
+              <span class="live-period-text">${periodText}</span>
+            </div>
+          `;
+        } else {
+          statusBadge = `
+            <div class="match-status-badge status-live">
+              <span class="live-dot-pulse"></span>
+              <span class="live-period-text">مباشر ${m.status_text || ''}</span>
+            </div>
+          `;
+        }
       } else if (isEnded) {
         scoreHtml = `<div class="score-numbers">${m.home_score ?? 0} - ${m.away_score ?? 0}</div>`;
         statusBadge = `<div class="match-status-badge status-ended">${m.status_text || 'انتهت'}</div>`;

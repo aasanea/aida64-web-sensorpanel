@@ -254,11 +254,13 @@ class MatchesService:
         logger.info("MatchesService stopped.")
 
     async def _poll_loop(self) -> None:
-        """Periodic background refresh: matches every 60s, standings every 300s."""
+        """Periodic background refresh: matches every 30s if live matches exist, otherwise 60s, standings every 300s."""
         tick = 0
         while self._running:
             try:
-                await asyncio.sleep(60)
+                has_live = any(m.get("is_live") for m in self._matches)
+                sleep_sec = 30 if has_live else 60
+                await asyncio.sleep(sleep_sec)
                 tick += 1
                 await self.fetch_matches()
                 if tick % 5 == 0:
@@ -541,6 +543,63 @@ class MatchesService:
             away_id = away.get("id", 0)
             c_id = comp_id or g.get("competitionId")
 
+            # Live Game Time, Extra/Stoppage Time & Halftime detection
+            raw_gt = g.get("gameTime")
+            game_time: Optional[int] = None
+            if raw_gt is not None:
+                try:
+                    gt_float = float(raw_gt)
+                    if gt_float > 0:
+                        game_time = int(round(gt_float))
+                except (ValueError, TypeError):
+                    pass
+
+            raw_added = g.get("addedTime")
+            added_time: Optional[int] = None
+            if raw_added is not None:
+                try:
+                    added_int = int(raw_added)
+                    if added_int > 0:
+                        added_time = added_int
+                except (ValueError, TypeError):
+                    pass
+
+            game_time_display = str(g.get("gameTimeDisplay") or "").strip()
+
+            is_halftime = (
+                "استراحة" in status_text or
+                "بين الشوطين" in status_text or
+                game_time_status == 2
+            )
+
+            # Determine live minute text
+            live_minute = ""
+            if is_live:
+                if is_halftime:
+                    live_minute = "HT"
+                elif game_time_display and any(c.isdigit() for c in game_time_display):
+                    live_minute = game_time_display if game_time_display.endswith("'") else f"{game_time_display}'"
+                elif game_time is not None and game_time > 0:
+                    if added_time and added_time > 0:
+                        live_minute = f"{game_time}+{added_time}'"
+                    else:
+                        live_minute = f"{game_time}'"
+                elif start_time:
+                    try:
+                        dt_start = datetime.fromisoformat(start_time.replace("Z", "+00:00"))
+                        now_tz = datetime.now().astimezone()
+                        elapsed_min = int((now_tz - dt_start.astimezone()).total_seconds() / 60)
+                        if 0 < elapsed_min <= 47:
+                            live_minute = f"{min(45, elapsed_min)}'"
+                        elif 47 < elapsed_min <= 62:
+                            live_minute = "HT"
+                            is_halftime = True
+                        elif 62 < elapsed_min <= 115:
+                            second_half_min = 45 + (elapsed_min - 62)
+                            live_minute = f"{min(90, second_half_min)}'"
+                    except Exception:
+                        pass
+
             is_saudi_nt = (home_id == SAUDI_NT_ID or away_id == SAUDI_NT_ID)
             is_roshn = (c_id == SAUDI_LEAGUE_ID)
             is_s = (
@@ -588,6 +647,11 @@ class MatchesService:
                 "status_text": status_text,
                 "is_live": is_live,
                 "is_ended": is_ended,
+                "game_time": game_time,
+                "added_time": added_time,
+                "game_time_display": game_time_display,
+                "live_minute": live_minute,
+                "is_halftime": is_halftime,
                 "start_time": start_time,
                 "start_time_display": start_time_str,
                 "start_date_display": start_date_str,

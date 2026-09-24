@@ -177,23 +177,26 @@ async def test_cache_ttl_and_force_refresh(fresh_service):
     with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
         mock_get.return_value = mock_resp
 
+        def github_call_count():
+            return len([c for c in mock_get.call_args_list if "api.github.com" in str(c)])
+
         # Call 1: Fetches and caches
         res1 = await fresh_service.check_for_updates(force=False)
-        assert mock_get.call_count == 1
+        assert github_call_count() == 1
 
         # Call 2: Within TTL, should return cached result without hitting network
         res2 = await fresh_service.check_for_updates(force=False)
-        assert mock_get.call_count == 1
+        assert github_call_count() == 1
         assert res1 == res2
 
         # Call 3: Artificially expire cache
         fresh_service._last_checked_time = time.time() - (CACHE_TTL_SECONDS + 10)
         res3 = await fresh_service.check_for_updates(force=False)
-        assert mock_get.call_count == 2
+        assert github_call_count() == 2
 
         # Call 4: force=True should bypass cache even if fresh
         res4 = await fresh_service.check_for_updates(force=True)
-        assert mock_get.call_count == 3
+        assert github_call_count() == 3
 
 
 # ==============================================================================
