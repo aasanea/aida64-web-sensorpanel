@@ -528,6 +528,14 @@ template.innerHTML = `
     align-items: baseline;
     letter-spacing: 0.5px;
     text-shadow: 0 0 8px rgba(250, 204, 21, 0.55);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .timer-digits {
+    font-family: var(--font-numbers);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.8px;
+    display: inline-block;
   }
 
   .live-added-badge {
@@ -1069,6 +1077,9 @@ export class DashboardMatches extends HTMLElement {
 
     // Periodic Refresh every 30s
     this._pollTimer = setInterval(() => this.fetchData(), 30000);
+
+    // Live Stopwatch Ticker every 1s
+    this._liveTimerInterval = setInterval(() => this._tickLiveTimers(), 1000);
   }
 
   disconnectedCallback() {
@@ -1076,6 +1087,39 @@ export class DashboardMatches extends HTMLElement {
       clearInterval(this._pollTimer);
       this._pollTimer = null;
     }
+    if (this._liveTimerInterval) {
+      clearInterval(this._liveTimerInterval);
+      this._liveTimerInterval = null;
+    }
+  }
+
+  _tickLiveTimers() {
+    if (!this.shadowRoot) return;
+    const timerEls = this.shadowRoot.querySelectorAll('.live-timer');
+    if (!timerEls.length) return;
+
+    const now = Date.now();
+    timerEls.forEach(el => {
+      if (el.dataset.isHalftime === 'true') return;
+      if (el.dataset.autoProgress === 'false') return;
+
+      const baseMin = parseInt(el.dataset.baseMin, 10);
+      const baseSec = parseInt(el.dataset.baseSec, 10);
+      const baseEpoch = parseInt(el.dataset.baseEpoch, 10);
+
+      if (isNaN(baseMin) || isNaN(baseSec) || isNaN(baseEpoch)) return;
+
+      const elapsedSec = Math.max(0, Math.floor((now - baseEpoch) / 1000));
+      const totalSec = (baseMin * 60 + baseSec) + elapsedSec;
+
+      const curMin = Math.floor(totalSec / 60);
+      const curSec = totalSec % 60;
+
+      const digitsEl = el.querySelector('.timer-digits');
+      if (digitsEl) {
+        digitsEl.textContent = `${curMin}:${String(curSec).padStart(2, '0')}`;
+      }
+    });
   }
 
   async fetchData() {
@@ -1198,8 +1242,20 @@ export class DashboardMatches extends HTMLElement {
         scoreHtml = `<div class="score-numbers live-score">${m.home_score ?? 0} - ${m.away_score ?? 0}</div>`;
         const isHalftime = m.is_halftime || (m.status_text && (m.status_text.includes('استراحة') || m.status_text.includes('بين الشوطين')));
         const addedTime = m.added_time;
-        const liveMin = m.live_minute || (m.game_time ? `${m.game_time}'` : '');
         const periodText = m.status_text || (m.game_time && m.game_time > 45 ? 'الشوط الثاني' : 'الشوط الأول');
+
+        const baseMin = m.game_time_minutes ?? m.game_time ?? (m.live_minute ? parseInt(m.live_minute, 10) : 0);
+        const baseSec = m.game_time_seconds ?? 0;
+        const baseEpoch = m.game_time_epoch ? Math.round(m.game_time_epoch * 1000) : Date.now();
+        const autoProg = (m.auto_progress !== false && !isHalftime) ? 'true' : 'false';
+
+        // Calculate initial ticking clock
+        const now = Date.now();
+        const elapsedSec = (autoProg === 'true') ? Math.max(0, Math.floor((now - baseEpoch) / 1000)) : 0;
+        const totalSec = (baseMin * 60 + baseSec) + elapsedSec;
+        const curMin = Math.floor(totalSec / 60);
+        const curSec = totalSec % 60;
+        const clockStr = `${curMin}:${String(curSec).padStart(2, '0')}`;
 
         if (isHalftime) {
           statusBadge = `
@@ -1208,39 +1264,44 @@ export class DashboardMatches extends HTMLElement {
               <span class="live-period-text">استراحة بين الشوطين</span>
             </div>
           `;
-        } else if ((addedTime && addedTime > 0) || (liveMin && liveMin.includes('+'))) {
-          let baseMin = '90';
+        } else if ((addedTime && addedTime > 0) || (m.live_minute && m.live_minute.includes('+'))) {
           let addedDisplay = '+';
           if (addedTime && addedTime > 0) {
-            baseMin = m.game_time ? (m.game_time >= 90 ? '90' : (m.game_time >= 45 ? '45' : String(m.game_time))) : '90';
             addedDisplay = `+${addedTime}'`;
-          } else if (liveMin && liveMin.includes('+')) {
-            const parts = liveMin.replace("'", '').split('+');
-            baseMin = parts[0] || '90';
+          } else if (m.live_minute && m.live_minute.includes('+')) {
+            const parts = m.live_minute.replace("'", '').split('+');
             addedDisplay = `+${parts[1] || ''}'`;
           }
           statusBadge = `
             <div class="match-status-badge status-live status-extra-time">
               <span class="live-dot-pulse"></span>
-              <span class="live-minute-badge">${baseMin}<span class="live-added-badge">${addedDisplay}</span></span>
+              <span class="live-minute-badge live-timer"
+                    data-base-min="${baseMin}"
+                    data-base-sec="${baseSec}"
+                    data-base-epoch="${baseEpoch}"
+                    data-auto-progress="${autoProg}"
+                    data-is-halftime="false">
+                <span class="timer-digits">${clockStr}</span>
+                <span class="live-added-badge">${addedDisplay}</span>
+              </span>
               <span class="live-sep">•</span>
               <span class="live-period-text">وقت بدل ضائع</span>
-            </div>
-          `;
-        } else if (liveMin) {
-          statusBadge = `
-            <div class="match-status-badge status-live">
-              <span class="live-dot-pulse"></span>
-              <span class="live-minute-badge">${liveMin}</span>
-              <span class="live-sep">•</span>
-              <span class="live-period-text">${periodText}</span>
             </div>
           `;
         } else {
           statusBadge = `
             <div class="match-status-badge status-live">
               <span class="live-dot-pulse"></span>
-              <span class="live-period-text">مباشر ${m.status_text || ''}</span>
+              <span class="live-minute-badge live-timer"
+                    data-base-min="${baseMin}"
+                    data-base-sec="${baseSec}"
+                    data-base-epoch="${baseEpoch}"
+                    data-auto-progress="${autoProg}"
+                    data-is-halftime="false">
+                <span class="timer-digits">${clockStr}</span>
+              </span>
+              <span class="live-sep">•</span>
+              <span class="live-period-text">${periodText}</span>
             </div>
           `;
         }

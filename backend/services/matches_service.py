@@ -13,6 +13,7 @@ Provides:
 
 import os
 import json
+import time
 import asyncio
 from datetime import datetime
 from typing import Dict, Any, List, Optional
@@ -489,6 +490,42 @@ class MatchesService:
                 # 3. "الكل" (All Matches): Recent ended matches with final scores + live + all upcoming fixtures
                 recent_ended = [m for m in deduped_all if m["is_ended"]][-30:]
                 live_games = [m for m in deduped_all if m["is_live"]]
+                if live_games:
+                    async def enrich_live(m_item: dict) -> None:
+                        gid = m_item.get("id")
+                        if not gid:
+                            return
+                        try:
+                            g_url = f"{API_BASE}/game/?gameId={gid}&langId=27"
+                            g_resp = await client.get(g_url, timeout=3.5)
+                            if g_resp.status_code == 200:
+                                g_obj = g_resp.json().get("game", {})
+                                pgt = g_obj.get("preciseGameTime")
+                                if pgt and isinstance(pgt, dict):
+                                    p_min = pgt.get("minutes")
+                                    p_sec = pgt.get("seconds")
+                                    if p_min is not None and p_sec is not None:
+                                        m_item["game_time_minutes"] = int(p_min)
+                                        m_item["game_time_seconds"] = int(p_sec)
+                                        m_item["auto_progress"] = bool(pgt.get("autoProgress", True))
+                                        m_item["clock_direction"] = pgt.get("clockDirection", 1)
+                                        m_item["game_time_epoch"] = time.time()
+                                        m_item["live_timer"] = f"{int(p_min)}:{int(p_sec):02d}"
+                                if g_obj.get("addedTime") is not None:
+                                    try:
+                                        m_item["added_time"] = int(g_obj["addedTime"])
+                                    except (ValueError, TypeError):
+                                        pass
+                                if g_obj.get("gameTime") is not None:
+                                    try:
+                                        m_item["game_time"] = int(round(float(g_obj["gameTime"])))
+                                    except (ValueError, TypeError):
+                                        pass
+                        except Exception as e_live:
+                            logger.debug(f"Live match {gid} detail fetch error: {e_live}")
+
+                    await asyncio.gather(*[enrich_live(m) for m in live_games], return_exceptions=True)
+
                 all_feed = recent_ended + live_games + all_upcoming[:50]
                 all_feed.sort(key=lambda x: x.get("start_time") or "9999")
                 self._matches = all_feed
@@ -651,6 +688,12 @@ class MatchesService:
                 "added_time": added_time,
                 "game_time_display": game_time_display,
                 "live_minute": live_minute,
+                "game_time_minutes": game_time,
+                "game_time_seconds": 0 if game_time is not None else None,
+                "auto_progress": True if is_live and not is_halftime else False,
+                "clock_direction": 1,
+                "game_time_epoch": time.time(),
+                "live_timer": f"{game_time}:00" if game_time is not None else live_minute,
                 "is_halftime": is_halftime,
                 "start_time": start_time,
                 "start_time_display": start_time_str,
