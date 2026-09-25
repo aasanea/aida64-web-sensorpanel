@@ -120,7 +120,7 @@ For enthusiasts who prefer running the SensorPanel as a clean, dedicated desktop
 
 ## 🖼️ Visual Showcase & Themes
 
-Switch instantly between 4 cinematic themes with zero flicker and seamless CSS View Transitions:
+Switch instantly between 6 cinematic themes with zero flicker and seamless CSS View Transitions:
 
 | Theme | Preview | Accent Palette |
 | :--- | :--- | :--- |
@@ -128,6 +128,8 @@ Switch instantly between 4 cinematic themes with zero flicker and seamless CSS V
 | **Cyberpunk 2077** | ![Cyberpunk](tests/screenshots/dashboard_theme_cyberpunk.png) | `#FFE600` Neon Yellow / `#FF0055` Cyber Red |
 | **OLED Pure Black** | ![OLED Black](tests/screenshots/dashboard_theme_oled.png) | `#000000` Deep Contrast / `#38BDF8` Ice Blue |
 | **Emerald Matrix** | ![Emerald](tests/screenshots/dashboard_theme_emerald.png) | `#00FF66` Acid Green / `#059669` Emerald |
+| **Deep Space Aurora** | ![Deep Space Aurora](tests/screenshots/dashboard_theme_aurora.png) | `#00FFC2` Emerald Aurora Teal / `#BD00FF` Cosmic Violet |
+| **Formula 1 Pitwall Telemetry** | ![F1 Pitwall](tests/screenshots/dashboard_theme_f1_pitwall.png) | `#FF3344` Pirelli Soft Red / `#FFD700` Medium Yellow |
 
 ### 🎛️ Interactive Hardware Inspections
 

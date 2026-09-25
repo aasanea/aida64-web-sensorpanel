@@ -273,6 +273,8 @@ def test_preset_themes_and_switcher():
     assert 'html[data-theme="oled"]' in tokens_css, "OLED Black theme missing in design-tokens.css"
     assert 'html[data-theme="cyberpunk"]' in tokens_css, "Cyberpunk theme missing in design-tokens.css"
     assert 'html[data-theme="emerald"]' in tokens_css, "Emerald theme missing in design-tokens.css"
+    assert 'html[data-theme="aurora"]' in tokens_css, "Deep Space Aurora theme missing in design-tokens.css"
+    assert 'html[data-theme="f1-pitwall"]' in tokens_css, "Formula 1 Pitwall theme missing in design-tokens.css"
 
     with open(INDEX_HTML, "r", encoding="utf-8") as f:
         index_html = f.read()

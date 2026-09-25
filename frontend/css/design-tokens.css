@@ -99,3 +99,51 @@ html[data-theme="emerald"] {
   --mesh-opacity: 0.75;
   --theme-accent: #00FF66;
 }
+
+/* ==========================================================================
+   4. Deep Space Aurora (🌌) - Obsidian Void, Aurora Emerald & Cosmic Violet
+   ========================================================================== */
+html[data-theme="aurora"] {
+  --bg-deep-indigo: #040714;
+  --neon-cyan: #00FFC2;
+  --neon-violet: #BD00FF;
+  --neon-purple: #7928CA;
+  --neon-green: #00FF88;
+  --neon-yellow: #FFE600;
+  --neon-orange: #FF8000;
+  --neon-red: #FF0055;
+  --text-pure-white: #F0FDFA;
+  --text-muted: rgba(240, 253, 250, 0.65);
+
+  --glass-bg: rgba(6, 12, 26, 0.75);
+  --glass-blur: blur(22px) saturate(190%);
+  --glass-border: 1px solid rgba(0, 255, 194, 0.28);
+  --glass-shadow: 0 0 24px rgba(0, 255, 194, 0.14), inset 0 1px 0 rgba(189, 0, 255, 0.2);
+
+  --mesh-opacity: 0.9;
+  --theme-accent: #00FFC2;
+}
+
+/* ==========================================================================
+   5. Formula 1 Pitwall Telemetry (🏎️) - Pirelli Soft Red, Medium Yellow & Hard White
+   ========================================================================== */
+html[data-theme="f1-pitwall"] {
+  --bg-deep-indigo: #0A0C10;
+  --neon-cyan: #FF3344;
+  --neon-violet: #FF5500;
+  --neon-purple: #E10600;
+  --neon-green: #00E676;
+  --neon-yellow: #FFD700;
+  --neon-orange: #FF6D00;
+  --neon-red: #FF1E00;
+  --text-pure-white: #FFFFFF;
+  --text-muted: rgba(255, 255, 255, 0.62);
+
+  --glass-bg: rgba(16, 18, 24, 0.85);
+  --glass-blur: blur(18px) saturate(160%);
+  --glass-border: 1px solid rgba(255, 51, 68, 0.35);
+  --glass-shadow: 0 0 20px rgba(255, 51, 68, 0.18), inset 0 1px 0 rgba(255, 215, 0, 0.2);
+
+  --mesh-opacity: 0.65;
+  --theme-accent: #FF3344;
+}

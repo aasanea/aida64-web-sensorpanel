@@ -540,6 +540,20 @@ def test_playwright_e2e_browser_ui():
             assert theme_attr == "emerald", f"Expected theme 'emerald', got: {theme_attr}"
             page.screenshot(path=os.path.join(screenshots_dir, "dashboard_theme_emerald.png"), full_page=True)
 
+            # Switch to Deep Space Aurora
+            btn_theme.click()
+            page.wait_for_timeout(800)
+            theme_attr = page.locator("html").get_attribute("data-theme")
+            assert theme_attr == "aurora", f"Expected theme 'aurora', got: {theme_attr}"
+            page.screenshot(path=os.path.join(screenshots_dir, "dashboard_theme_aurora.png"), full_page=True)
+
+            # Switch to Formula 1 Pitwall Telemetry
+            btn_theme.click()
+            page.wait_for_timeout(800)
+            theme_attr = page.locator("html").get_attribute("data-theme")
+            assert theme_attr == "f1-pitwall", f"Expected theme 'f1-pitwall', got: {theme_attr}"
+            page.screenshot(path=os.path.join(screenshots_dir, "dashboard_theme_f1_pitwall.png"), full_page=True)
+
             # Switch back to Default (Cyan Glass)
             btn_theme.click()
             page.wait_for_timeout(800)

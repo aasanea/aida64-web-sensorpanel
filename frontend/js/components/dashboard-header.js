@@ -4,7 +4,9 @@ const THEMES = [
   { id: 'default', name: 'Cyan Glass', icon: '🌊', color: '#22D3EE' },
   { id: 'oled', name: 'OLED Black', icon: '🖤', color: '#38BDF8' },
   { id: 'cyberpunk', name: 'Cyberpunk', icon: '⚡', color: '#FFE600' },
-  { id: 'emerald', name: 'Emerald', icon: '🍃', color: '#00FF66' }
+  { id: 'emerald', name: 'Emerald', icon: '🍃', color: '#00FF66' },
+  { id: 'aurora', name: 'Aurora', icon: '🌌', color: '#00FFC2' },
+  { id: 'f1-pitwall', name: 'F1 Pitwall', icon: '🏎️', color: '#FF3344' }
 ];
 
 const template = document.createElement('template');
