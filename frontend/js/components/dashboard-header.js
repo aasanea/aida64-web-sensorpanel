@@ -1,12 +1,13 @@
 import { EventBus } from '../store/event_bus.js';
 
 const THEMES = [
-  { id: 'default', name: 'Cyan Glass', icon: '🌊', color: '#22D3EE' },
-  { id: 'oled', name: 'OLED Black', icon: '🖤', color: '#38BDF8' },
-  { id: 'cyberpunk', name: 'Cyberpunk', icon: '⚡', color: '#FFE600' },
-  { id: 'emerald', name: 'Emerald', icon: '🍃', color: '#00FF66' },
-  { id: 'aurora', name: 'Aurora', icon: '🌌', color: '#00FFC2' },
-  { id: 'f1-pitwall', name: 'F1 Pitwall', icon: '🏎️', color: '#FF3344' }
+  { id: 'default', name: 'Cyan Glass', nameAr: 'زجاج سيان', icon: '🌊', color: '#22D3EE' },
+  { id: 'oled', name: 'OLED Black', nameAr: 'أوليد أسود', icon: '🖤', color: '#38BDF8' },
+  { id: 'cyberpunk', name: 'Cyberpunk', nameAr: 'سايبر بانك', icon: '⚡', color: '#FFE600' },
+  { id: 'emerald', name: 'Emerald', nameAr: 'زمردي أخضر', icon: '🍃', color: '#00FF66' },
+  { id: 'aurora', name: 'Aurora', nameAr: 'أورورا الشفق', icon: '🌌', color: '#00FFC2' },
+  { id: 'f1-pitwall', name: 'F1 Pitwall', nameAr: 'فورمولا 1', icon: '🏎️', color: '#FF3344' },
+  { id: 'neo-tactile', name: 'Neo-Tactile', nameAr: 'سيراميك تكتيكي', icon: '🏺', color: '#C8754E' }
 ];
 
 const template = document.createElement('template');
@@ -14,6 +15,7 @@ template.innerHTML = `
 <style>
   :host {
     position: relative;
+    z-index: 100;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -249,7 +251,14 @@ template.innerHTML = `
     50% { opacity: 0.2; }
   }
 
-  /* Theme Switcher Button */
+  /* Theme Dropdown Container */
+  .theme-dropdown-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Theme Switcher Button (Trigger) */
   .theme-toggle-btn {
     display: inline-flex;
     align-items: center;
@@ -265,13 +274,16 @@ template.innerHTML = `
     font-weight: 700;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     user-select: none;
+    outline: none;
   }
 
-  .theme-toggle-btn:hover {
+  .theme-toggle-btn:hover,
+  .theme-dropdown-container.open .theme-toggle-btn {
     background: rgba(255, 255, 255, 0.1);
     border-color: var(--neon-cyan, #22D3EE);
     color: var(--neon-cyan, #22D3EE);
     transform: translateY(-1px);
+    box-shadow: 0 0 14px rgba(34, 211, 238, 0.25);
   }
 
   .theme-indicator-dot {
@@ -281,11 +293,162 @@ template.innerHTML = `
     background-color: var(--theme-accent, #22D3EE);
     box-shadow: 0 0 8px var(--theme-accent, #22D3EE);
     transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    flex-shrink: 0;
   }
 
   .theme-label-text {
-    direction: rtl;
     white-space: nowrap;
+    line-height: 1;
+  }
+
+  .theme-chevron-icon {
+    font-size: 11px;
+    line-height: 1;
+    margin-left: 2px;
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    opacity: 0.75;
+    display: inline-block;
+  }
+
+  .theme-dropdown-container.open .theme-chevron-icon {
+    transform: rotate(180deg);
+    opacity: 1;
+  }
+
+  /* Dropdown Menu Panel */
+  .theme-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: auto;
+    z-index: 1000;
+    min-width: 240px;
+    background: var(--dropdown-bg, rgba(15, 23, 42, 0.96));
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.14));
+    border-radius: 14px;
+    padding: 6px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    display: none;
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+    transform-origin: top left;
+    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+    box-sizing: border-box;
+  }
+
+  .theme-dropdown-menu.open {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+    animation: dropdown-pop-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes dropdown-pop-in {
+    0% {
+      opacity: 0;
+      transform: translateY(-8px) scale(0.96);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  /* Theme Menu Item */
+  .theme-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-pure-white, #FFFFFF);
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    text-align: left;
+    font-family: var(--font-arabic, 'Cairo', sans-serif);
+    width: 100%;
+    box-sizing: border-box;
+    outline: none;
+  }
+
+  .theme-menu-item:hover,
+  .theme-menu-item:focus-visible {
+    background: var(--dropdown-hover, rgba(255, 255, 255, 0.08));
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateX(-2px);
+  }
+
+  .theme-menu-item.active {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: var(--theme-accent, #22D3EE);
+    box-shadow: inset 0 0 10px rgba(34, 211, 238, 0.12);
+  }
+
+  .theme-item-icon {
+    font-size: 16px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    flex-shrink: 0;
+  }
+
+  .theme-item-labels {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    gap: 1px;
+  }
+
+  .theme-item-name-en {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-pure-white, #FFFFFF);
+    line-height: 1.2;
+    letter-spacing: 0.2px;
+  }
+
+  .theme-item-name-ar {
+    font-size: 10.5px;
+    color: var(--text-muted, rgba(255, 255, 255, 0.55));
+    line-height: 1.2;
+    direction: rtl;
+    text-align: right;
+  }
+
+  .theme-item-color-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .theme-item-check {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--neon-cyan, #22D3EE);
+    opacity: 0;
+    transform: scale(0.6);
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    width: 14px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .theme-menu-item.active .theme-item-check {
+    opacity: 1;
+    transform: scale(1);
   }
 
   .kiosk-toggle-btn {
@@ -400,11 +563,81 @@ template.innerHTML = `
       <span class="update-badge-text" id="update-badge-text">تحديث متوفر</span>
     </button>
 
-    <!-- Theme Switcher Button -->
-    <button class="theme-toggle-btn" id="btn-theme-toggle" title="تبديل النمط المظهري" aria-label="تبديل النمط">
-      <span class="theme-indicator-dot" id="theme-dot"></span>
-      <span class="theme-label-text" id="theme-text">🌊 Cyan Glass</span>
-    </button>
+    <!-- Theme Dropdown Container -->
+    <div class="theme-dropdown-container" id="theme-dropdown-container">
+      <button class="theme-toggle-btn" id="btn-theme-toggle" title="اختيار النمط المظهري" aria-label="اختيار النمط المظهري" aria-haspopup="true" aria-expanded="false">
+        <span class="theme-indicator-dot" id="theme-dot"></span>
+        <span class="theme-label-text" id="theme-text">🌊 Cyan Glass</span>
+        <span class="theme-chevron-icon">▾</span>
+      </button>
+
+      <!-- Dropdown Menu Panel -->
+      <div class="theme-dropdown-menu" id="theme-dropdown-menu" role="menu" aria-label="قائمة الأنماط المظهرية">
+        <div class="theme-menu-item" data-theme-id="default" role="menuitem" tabindex="0">
+          <span class="theme-item-icon">🌊</span>
+          <div class="theme-item-labels">
+            <span class="theme-item-name-en">Cyan Glass</span>
+            <span class="theme-item-name-ar">زجاج سيان</span>
+          </div>
+          <span class="theme-item-color-dot" style="background-color: #22D3EE; box-shadow: 0 0 6px #22D3EE;"></span>
+          <span class="theme-item-check">✓</span>
+        </div>
+        <div class="theme-menu-item" data-theme-id="oled" role="menuitem" tabindex="0">
+          <span class="theme-item-icon">🖤</span>
+          <div class="theme-item-labels">
+            <span class="theme-item-name-en">OLED Black</span>
+            <span class="theme-item-name-ar">أوليد أسود</span>
+          </div>
+          <span class="theme-item-color-dot" style="background-color: #38BDF8; box-shadow: 0 0 6px #38BDF8;"></span>
+          <span class="theme-item-check">✓</span>
+        </div>
+        <div class="theme-menu-item" data-theme-id="cyberpunk" role="menuitem" tabindex="0">
+          <span class="theme-item-icon">⚡</span>
+          <div class="theme-item-labels">
+            <span class="theme-item-name-en">Cyberpunk</span>
+            <span class="theme-item-name-ar">سايبر بانك</span>
+          </div>
+          <span class="theme-item-color-dot" style="background-color: #FFE600; box-shadow: 0 0 6px #FFE600;"></span>
+          <span class="theme-item-check">✓</span>
+        </div>
+        <div class="theme-menu-item" data-theme-id="emerald" role="menuitem" tabindex="0">
+          <span class="theme-item-icon">🍃</span>
+          <div class="theme-item-labels">
+            <span class="theme-item-name-en">Emerald</span>
+            <span class="theme-item-name-ar">زمردي أخضر</span>
+          </div>
+          <span class="theme-item-color-dot" style="background-color: #00FF66; box-shadow: 0 0 6px #00FF66;"></span>
+          <span class="theme-item-check">✓</span>
+        </div>
+        <div class="theme-menu-item" data-theme-id="aurora" role="menuitem" tabindex="0">
+          <span class="theme-item-icon">🌌</span>
+          <div class="theme-item-labels">
+            <span class="theme-item-name-en">Aurora</span>
+            <span class="theme-item-name-ar">أورورا الشفق</span>
+          </div>
+          <span class="theme-item-color-dot" style="background-color: #00FFC2; box-shadow: 0 0 6px #00FFC2;"></span>
+          <span class="theme-item-check">✓</span>
+        </div>
+        <div class="theme-menu-item" data-theme-id="f1-pitwall" role="menuitem" tabindex="0">
+          <span class="theme-item-icon">🏎️</span>
+          <div class="theme-item-labels">
+            <span class="theme-item-name-en">F1 Pitwall</span>
+            <span class="theme-item-name-ar">فورمولا 1</span>
+          </div>
+          <span class="theme-item-color-dot" style="background-color: #FF3344; box-shadow: 0 0 6px #FF3344;"></span>
+          <span class="theme-item-check">✓</span>
+        </div>
+        <div class="theme-menu-item" data-theme-id="neo-tactile" role="menuitem" tabindex="0">
+          <span class="theme-item-icon">🏺</span>
+          <div class="theme-item-labels">
+            <span class="theme-item-name-en">Neo-Tactile</span>
+            <span class="theme-item-name-ar">سيراميك تكتيكي</span>
+          </div>
+          <span class="theme-item-color-dot" style="background-color: #C8754E; box-shadow: 0 0 6px #C8754E;"></span>
+          <span class="theme-item-check">✓</span>
+        </div>
+      </div>
+    </div>
 
     <!-- Fullscreen Button -->
     <button class="kiosk-toggle-btn" id="btn-fullscreen" title="ملء الشاشة Kiosk Mode" aria-label="ملء الشاشة">
@@ -435,7 +668,10 @@ export class DashboardHeader extends HTMLElement {
       updateBadge: this.shadowRoot.getElementById('btn-update-badge'),
       updateBadgeText: this.shadowRoot.getElementById('update-badge-text'),
       fullscreenBtn: this.shadowRoot.getElementById('btn-fullscreen'),
+      themeContainer: this.shadowRoot.getElementById('theme-dropdown-container'),
       themeToggleBtn: this.shadowRoot.getElementById('btn-theme-toggle'),
+      themeDropdownMenu: this.shadowRoot.getElementById('theme-dropdown-menu'),
+      themeMenuItems: this.shadowRoot.querySelectorAll('.theme-menu-item'),
       themeDot: this.shadowRoot.getElementById('theme-dot'),
       themeText: this.shadowRoot.getElementById('theme-text'),
     };
@@ -444,12 +680,18 @@ export class DashboardHeader extends HTMLElement {
     this.timerId = null;
     this._updateData = null;
     this.updateCheckTimer = null;
+    this._isThemeMenuOpen = false;
 
     this.onConnectionStatus = this.onConnectionStatus.bind(this);
     this.onConnectionPing = this.onConnectionPing.bind(this);
     this.onTelemetryData = this.onTelemetryData.bind(this);
     this.toggleFullscreen = this.toggleFullscreen.bind(this);
+    this.toggleThemeMenu = this.toggleThemeMenu.bind(this);
+    this.openThemeMenu = this.openThemeMenu.bind(this);
+    this.closeThemeMenu = this.closeThemeMenu.bind(this);
+    this.setTheme = this.setTheme.bind(this);
     this.cycleTheme = this.cycleTheme.bind(this);
+    this._onOutsideClick = this._onOutsideClick.bind(this);
     this.openUpdateModal = this.openUpdateModal.bind(this);
     this.closeUpdateModal = this.closeUpdateModal.bind(this);
     this._onKeyDown = this._onKeyDown.bind(this);
@@ -467,13 +709,33 @@ export class DashboardHeader extends HTMLElement {
     }
 
     if (this.dom.themeToggleBtn) {
-      this.dom.themeToggleBtn.addEventListener('click', this.cycleTheme);
+      this.dom.themeToggleBtn.addEventListener('click', this.toggleThemeMenu);
+    }
+
+    if (this.dom.themeMenuItems) {
+      this.dom.themeMenuItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+          const themeId = item.getAttribute('data-theme-id');
+          this.setTheme(themeId, e);
+          this.closeThemeMenu();
+        });
+        item.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            const themeId = item.getAttribute('data-theme-id');
+            this.setTheme(themeId, e);
+            this.closeThemeMenu();
+          }
+        });
+      });
     }
 
     if (this.dom.updateBadge) {
       this.dom.updateBadge.addEventListener('click', this.openUpdateModal);
     }
 
+    window.addEventListener('pointerdown', this._onOutsideClick);
+    window.addEventListener('click', this._onOutsideClick);
     window.addEventListener('keydown', this._onKeyDown);
 
     this.initTheme();
@@ -500,6 +762,8 @@ export class DashboardHeader extends HTMLElement {
       clearTimeout(this.updateCheckTimer);
       this.updateCheckTimer = null;
     }
+    window.removeEventListener('pointerdown', this._onOutsideClick);
+    window.removeEventListener('click', this._onOutsideClick);
     window.removeEventListener('keydown', this._onKeyDown);
     if (this.unsubStatus) this.unsubStatus();
     if (this.unsubPing) this.unsubPing();
@@ -511,7 +775,7 @@ export class DashboardHeader extends HTMLElement {
     }
 
     if (this.dom.themeToggleBtn) {
-      this.dom.themeToggleBtn.removeEventListener('click', this.cycleTheme);
+      this.dom.themeToggleBtn.removeEventListener('click', this.toggleThemeMenu);
     }
 
     if (this.dom.updateBadge) {
@@ -534,13 +798,58 @@ export class DashboardHeader extends HTMLElement {
       document.documentElement.setAttribute('data-theme', theme.id);
     }
     this.updateThemeUI(theme);
+    this.syncActiveThemeItem(theme.id);
   }
 
-  cycleTheme(e) {
-    const currentThemeId = document.documentElement.getAttribute('data-theme') || 'default';
-    const currentIndex = THEMES.findIndex(t => t.id === currentThemeId);
-    const nextIndex = (currentIndex + 1) % THEMES.length;
-    const nextTheme = THEMES[nextIndex];
+  toggleThemeMenu(e) {
+    if (e) {
+      e.stopPropagation();
+    }
+    if (this._isThemeMenuOpen) {
+      this.closeThemeMenu();
+    } else {
+      this.openThemeMenu();
+    }
+  }
+
+  openThemeMenu() {
+    this._isThemeMenuOpen = true;
+    if (this.dom.themeContainer) {
+      this.dom.themeContainer.classList.add('open');
+    }
+    if (this.dom.themeDropdownMenu) {
+      this.dom.themeDropdownMenu.classList.add('open');
+    }
+    if (this.dom.themeToggleBtn) {
+      this.dom.themeToggleBtn.setAttribute('aria-expanded', 'true');
+    }
+    this.syncActiveThemeItem();
+  }
+
+  closeThemeMenu() {
+    this._isThemeMenuOpen = false;
+    if (this.dom.themeContainer) {
+      this.dom.themeContainer.classList.remove('open');
+    }
+    if (this.dom.themeDropdownMenu) {
+      this.dom.themeDropdownMenu.classList.remove('open');
+    }
+    if (this.dom.themeToggleBtn) {
+      this.dom.themeToggleBtn.setAttribute('aria-expanded', 'false');
+    }
+  }
+
+  _onOutsideClick(e) {
+    if (!this._isThemeMenuOpen) return;
+    const path = e.composedPath ? e.composedPath() : [];
+    if (path.includes(this.dom.themeContainer)) {
+      return;
+    }
+    this.closeThemeMenu();
+  }
+
+  setTheme(themeId, e) {
+    const theme = THEMES.find(t => t.id === themeId) || THEMES[0];
 
     // Determine click coordinates for CSS View Transitions ripple
     let x = '85%';
@@ -553,16 +862,17 @@ export class DashboardHeader extends HTMLElement {
     document.documentElement.style.setProperty('--click-y', y);
 
     const applyTheme = () => {
-      if (nextTheme.id === 'default') {
+      if (theme.id === 'default') {
         document.documentElement.removeAttribute('data-theme');
       } else {
-        document.documentElement.setAttribute('data-theme', nextTheme.id);
+        document.documentElement.setAttribute('data-theme', theme.id);
       }
       try {
-        localStorage.setItem('aida64_theme', nextTheme.id);
+        localStorage.setItem('aida64_theme', theme.id);
       } catch (err) {}
-      this.updateThemeUI(nextTheme);
-      EventBus.emit('theme:changed', nextTheme.id);
+      this.updateThemeUI(theme);
+      this.syncActiveThemeItem(theme.id);
+      EventBus.emit('theme:changed', theme.id);
     };
 
     // Use CSS View Transitions API with graceful fallback
@@ -575,8 +885,36 @@ export class DashboardHeader extends HTMLElement {
     }
   }
 
+  cycleTheme(e) {
+    const currentThemeId = document.documentElement.getAttribute('data-theme') || 'default';
+    const currentIndex = THEMES.findIndex(t => t.id === currentThemeId);
+    const nextIndex = (currentIndex + 1) % THEMES.length;
+    const nextTheme = THEMES[nextIndex];
+    this.setTheme(nextTheme.id, e);
+  }
+
+  syncActiveThemeItem(activeThemeId) {
+    const currentThemeId = activeThemeId || document.documentElement.getAttribute('data-theme') || 'default';
+    if (this.dom.themeMenuItems) {
+      this.dom.themeMenuItems.forEach(item => {
+        const id = item.getAttribute('data-theme-id');
+        const isActive = id === currentThemeId;
+        if (isActive) {
+          item.classList.add('active');
+          item.setAttribute('aria-selected', 'true');
+        } else {
+          item.classList.remove('active');
+          item.setAttribute('aria-selected', 'false');
+        }
+      });
+    }
+  }
+
   updateThemeUI(theme) {
-    if (!this.dom.themeText || !this.dom.themeDot) return;
+    if (typeof theme === 'string') {
+      theme = THEMES.find(t => t.id === theme) || THEMES[0];
+    }
+    if (!this.dom.themeText || !this.dom.themeDot || !theme) return;
     this.dom.themeText.textContent = `${theme.icon} ${theme.name}`;
     this.dom.themeDot.style.backgroundColor = theme.color;
     this.dom.themeDot.style.boxShadow = `0 0 8px ${theme.color}`;
@@ -1004,6 +1342,9 @@ export class DashboardHeader extends HTMLElement {
 
   _onKeyDown(e) {
     if (e.key === 'Escape') {
+      if (this._isThemeMenuOpen) {
+        this.closeThemeMenu();
+      }
       this.closeUpdateModal();
     }
   }

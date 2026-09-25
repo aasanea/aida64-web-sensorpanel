@@ -51,7 +51,7 @@ template.innerHTML = `
     font-size: 15px;
     font-weight: 700;
     letter-spacing: 1px;
-    color: #94A3B8;
+    color: var(--text-muted, #94A3B8);
   }
 
   .header-actions-group {
@@ -96,7 +96,7 @@ template.innerHTML = `
   .badge-label {
     font-family: var(--font-arabic, 'Cairo', sans-serif);
     font-weight: 800;
-    color: #F8FAFC;
+    color: var(--text-pure-white, #F8FAFC);
     font-size: 17px;
   }
   .badge-val-group {
@@ -240,7 +240,7 @@ template.innerHTML = `
     gap: 8px;
     font-family: var(--font-arabic, 'Cairo', sans-serif);
     font-size: 13px;
-    color: #94A3B8;
+    color: var(--text-muted, #94A3B8);
   }
 
   .apt-meta-item {
@@ -274,7 +274,7 @@ template.innerHTML = `
     font-family: var(--font-arabic, 'Cairo', sans-serif);
     font-size: 13px;
     font-weight: 700;
-    color: #94A3B8;
+    color: var(--text-muted, #94A3B8);
   }
 
   .apt-hero-countdown-box .countdown-hero-digits {
@@ -345,7 +345,7 @@ template.innerHTML = `
     font-family: var(--font-arabic, 'Cairo', sans-serif);
     font-size: 15px;
     font-weight: 700;
-    color: #E2E8F0;
+    color: var(--text-pure-white, #E2E8F0);
     min-width: 68px;
     direction: rtl;
     text-align: right;
@@ -356,7 +356,7 @@ template.innerHTML = `
     font-family: var(--font-arabic, 'Cairo', sans-serif);
     font-size: 15px;
     font-weight: 700;
-    color: #F8FAFC;
+    color: var(--text-pure-white, #F8FAFC);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

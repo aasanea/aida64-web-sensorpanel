@@ -60,11 +60,10 @@ template.innerHTML = `
     font-family: var(--font-arabic);
     font-size: 19px;
     font-weight: 800;
-    color: #FFFFFF;
+    color: var(--text-pure-white);
     opacity: 1;
     letter-spacing: 0.3px;
     line-height: 1.2;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
   }
 
   .huge-number {
@@ -125,7 +124,7 @@ template.innerHTML = `
     font-size: 15px;
     font-weight: 700;
     letter-spacing: 1px;
-    color: #94A3B8;
+    color: var(--text-muted, #94A3B8);
   }
   
   .header-actions {

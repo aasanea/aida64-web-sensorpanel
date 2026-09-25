@@ -144,6 +144,28 @@ html[data-theme="f1-pitwall"] .orb-4 {
   background: radial-gradient(circle, rgba(225, 6, 0, 0.28) 0%, rgba(225, 6, 0) 70%);
 }
 
+html[data-theme="neo-tactile"] .orb-1 {
+  background: radial-gradient(circle, rgba(200, 117, 78, 0.25) 0%, rgba(200, 117, 78, 0) 70%);
+}
+html[data-theme="neo-tactile"] .orb-2 {
+  background: radial-gradient(circle, rgba(222, 142, 104, 0.22) 0%, rgba(222, 142, 104, 0) 70%);
+}
+html[data-theme="neo-tactile"] .orb-3 {
+  background: radial-gradient(circle, rgba(217, 155, 38, 0.18) 0%, rgba(217, 155, 38, 0) 70%);
+}
+html[data-theme="neo-tactile"] .orb-4 {
+  background: radial-gradient(circle, rgba(168, 90, 50, 0.20) 0%, rgba(168, 90, 50, 0) 70%);
+}
+
+html[data-theme="neo-tactile"] .mesh-background {
+  background: 
+    radial-gradient(circle at 15% 20%, rgba(200, 117, 78, 0.08) 0%, transparent 45%),
+    radial-gradient(circle at 85% 15%, rgba(222, 142, 104, 0.08) 0%, transparent 45%),
+    radial-gradient(circle at 50% 85%, rgba(217, 155, 38, 0.06) 0%, transparent 50%),
+    radial-gradient(circle at 85% 80%, rgba(168, 90, 50, 0.06) 0%, transparent 45%),
+    #F3ECE6;
+}
+
 /* SVG Noise Overlay (0.03 opacity) */
 .noise-overlay {
   position: fixed;
@@ -158,6 +180,23 @@ html[data-theme="f1-pitwall"] .orb-4 {
   contain: strict;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
 }
+
+html[data-theme="neo-tactile"] .noise-overlay {
+  opacity: 0.015 !important;
+}
+
+/* Debossed Inset Track Styling for Neo-Skeuomorphic Tactile System */
+html[data-theme="neo-tactile"] .metric-bar-track,
+html[data-theme="neo-tactile"] .vram-progress-track,
+html[data-theme="neo-tactile"] .storage-progress-track,
+html[data-theme="neo-tactile"] .ram-progress-track,
+html[data-theme="neo-tactile"] .track-inset,
+html[data-theme="neo-tactile"] .progress-track {
+  background: #E5DBD2 !important;
+  box-shadow: inset 2px 2px 5px rgba(150, 125, 110, 0.28), inset -2px -2px 5px rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(200, 180, 168, 0.3) !important;
+}
+
 
 /* --------------------------------------------------------------------------
    3. Main Dashboard Layout & Containers
@@ -176,6 +215,11 @@ html[data-theme="f1-pitwall"] .orb-4 {
   gap: 8px;
   box-sizing: border-box;
   overflow: hidden;
+}
+
+dashboard-header {
+  position: relative;
+  z-index: 100;
 }
 
 /* Top Bar */

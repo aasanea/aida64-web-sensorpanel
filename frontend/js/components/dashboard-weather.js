@@ -51,7 +51,7 @@ template.innerHTML = `
     font-size: 15px;
     font-weight: 700;
     letter-spacing: 1px;
-    color: #94A3B8;
+    color: var(--text-muted, #94A3B8);
   }
 
   /* Prayer Grid */
@@ -112,7 +112,7 @@ template.innerHTML = `
     font-family: var(--font-numbers, monospace);
     font-size: 24px;
     font-weight: 900;
-    color: #F8FAFF;
+    color: var(--text-pure-white, #F8FAFF);
     letter-spacing: 0.5px;
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
   }
@@ -161,8 +161,7 @@ template.innerHTML = `
     font-family: var(--font-arabic, 'Cairo', sans-serif);
     font-size: 16px;
     font-weight: 800;
-    color: #F8FAFC;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    color: var(--text-pure-white, #F8FAFC);
   }
 
   .badge-val-group {
@@ -200,7 +199,7 @@ template.innerHTML = `
     font-family: var(--font-arabic, 'Cairo', sans-serif);
     font-size: 13px;
     font-weight: 700;
-    color: #94A3B8;
+    color: var(--text-muted, #94A3B8);
     white-space: nowrap;
   }
 
@@ -208,7 +207,7 @@ template.innerHTML = `
     font-family: var(--font-numbers, monospace);
     font-size: 13px;
     font-weight: 800;
-    color: #F8FAFC;
+    color: var(--text-pure-white, #F8FAFC);
     direction: ltr;
     letter-spacing: 0.5px;
   }

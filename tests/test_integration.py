@@ -515,47 +515,47 @@ def test_playwright_e2e_browser_ui():
             import shutil
             shutil.copyfile(screenshot_path, screenshot_rec_path)
 
-            # 6. Test Theme Switcher (OLED -> Cyberpunk -> Emerald -> Default)
+            # 6. Test Interactive Theme Dropdown Menu & Direct Theme Selection
             btn_theme = page.locator("#btn-theme-toggle")
-            assert btn_theme.is_visible(), "Theme toggle button must be visible"
+            assert btn_theme.is_visible(), "Theme dropdown trigger button must be visible"
 
-            # Switch to OLED Black
+            # Open Theme Dropdown Menu
             btn_theme.click()
-            page.wait_for_timeout(800)
+            page.wait_for_timeout(600)
+            dropdown_menu = page.locator("#theme-dropdown-menu")
+            assert dropdown_menu.is_visible(), "Theme dropdown menu must open upon trigger click"
+            page.screenshot(path=os.path.join(screenshots_dir, "theme_dropdown_menu_open.png"), full_page=True)
+
+            # Direct Selection 1: Neo-Skeuomorphic Tactile System
+            item_neo = page.locator(".theme-menu-item[data-theme-id='neo-tactile']")
+            assert item_neo.is_visible(), "Neo-tactile theme item must be visible in dropdown"
+            item_neo.click()
+            # Wait for circular ripple View Transition animation (0.65s) to fully finish and remove pseudo-elements
+            page.wait_for_timeout(1400)
             theme_attr = page.locator("html").get_attribute("data-theme")
-            assert theme_attr == "oled", f"Expected theme 'oled', got: {theme_attr}"
-            page.screenshot(path=os.path.join(screenshots_dir, "dashboard_theme_oled.png"), full_page=True)
+            assert theme_attr == "neo-tactile", f"Expected theme 'neo-tactile', got: {theme_attr}"
+            page.screenshot(path=os.path.join(screenshots_dir, "dashboard_theme_neo_tactile.png"), full_page=True)
 
-            # Switch to Cyberpunk 2077
+            # Direct Selection 2: Deep Space Aurora
             btn_theme.click()
-            page.wait_for_timeout(800)
-            theme_attr = page.locator("html").get_attribute("data-theme")
-            assert theme_attr == "cyberpunk", f"Expected theme 'cyberpunk', got: {theme_attr}"
-            page.screenshot(path=os.path.join(screenshots_dir, "dashboard_theme_cyberpunk.png"), full_page=True)
-
-            # Switch to Emerald Matrix
-            btn_theme.click()
-            page.wait_for_timeout(800)
-            theme_attr = page.locator("html").get_attribute("data-theme")
-            assert theme_attr == "emerald", f"Expected theme 'emerald', got: {theme_attr}"
-            page.screenshot(path=os.path.join(screenshots_dir, "dashboard_theme_emerald.png"), full_page=True)
-
-            # Switch to Deep Space Aurora
-            btn_theme.click()
+            page.wait_for_timeout(400)
+            page.locator(".theme-menu-item[data-theme-id='aurora']").click()
             page.wait_for_timeout(800)
             theme_attr = page.locator("html").get_attribute("data-theme")
             assert theme_attr == "aurora", f"Expected theme 'aurora', got: {theme_attr}"
-            page.screenshot(path=os.path.join(screenshots_dir, "dashboard_theme_aurora.png"), full_page=True)
 
-            # Switch to Formula 1 Pitwall Telemetry
+            # Direct Selection 3: Formula 1 Pitwall
             btn_theme.click()
+            page.wait_for_timeout(400)
+            page.locator(".theme-menu-item[data-theme-id='f1-pitwall']").click()
             page.wait_for_timeout(800)
             theme_attr = page.locator("html").get_attribute("data-theme")
             assert theme_attr == "f1-pitwall", f"Expected theme 'f1-pitwall', got: {theme_attr}"
-            page.screenshot(path=os.path.join(screenshots_dir, "dashboard_theme_f1_pitwall.png"), full_page=True)
 
-            # Switch back to Default (Cyan Glass)
+            # Direct Selection 4: Reset back to Default (Cyan Glass)
             btn_theme.click()
+            page.wait_for_timeout(400)
+            page.locator(".theme-menu-item[data-theme-id='default']").click()
             page.wait_for_timeout(800)
             theme_attr = page.locator("html").get_attribute("data-theme")
             assert theme_attr is None or theme_attr == "default", f"Expected default theme, got: {theme_attr}"

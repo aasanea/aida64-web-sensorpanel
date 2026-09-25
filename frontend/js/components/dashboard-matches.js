@@ -77,13 +77,12 @@ template.innerHTML = `
     font-family: var(--font-arabic);
     font-size: 20px;
     font-weight: 800;
-    color: #FFFFFF;
+    color: var(--text-pure-white, #FFFFFF);
     letter-spacing: 0.3px;
     line-height: 1.15;
     display: flex;
     align-items: center;
     gap: 6px;
-    text-shadow: 0 0 12px rgba(255, 255, 255, 0.2);
   }
 
   .card-subtitle {
@@ -113,7 +112,7 @@ template.innerHTML = `
     font-family: var(--font-arabic);
     font-size: 12px;
     font-weight: 800;
-    color: #FFFFFF;
+    color: var(--text-pure-white, #FFFFFF);
     cursor: pointer;
     backdrop-filter: blur(8px);
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -286,7 +285,7 @@ template.innerHTML = `
     font-family: var(--font-arabic);
     font-size: 18px;
     font-weight: 800;
-    color: #FFFFFF;
+    color: var(--text-pure-white, #FFFFFF);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

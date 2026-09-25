@@ -275,6 +275,7 @@ def test_preset_themes_and_switcher():
     assert 'html[data-theme="emerald"]' in tokens_css, "Emerald theme missing in design-tokens.css"
     assert 'html[data-theme="aurora"]' in tokens_css, "Deep Space Aurora theme missing in design-tokens.css"
     assert 'html[data-theme="f1-pitwall"]' in tokens_css, "Formula 1 Pitwall theme missing in design-tokens.css"
+    assert 'html[data-theme="neo-tactile"]' in tokens_css, "Neo-Tactile theme missing in design-tokens.css"
 
     with open(INDEX_HTML, "r", encoding="utf-8") as f:
         index_html = f.read()
@@ -286,6 +287,7 @@ def test_preset_themes_and_switcher():
         header_js = f.read()
 
     assert "btn-theme-toggle" in header_js, "btn-theme-toggle missing from dashboard-header.js"
+    assert "theme-dropdown-menu" in header_js, "theme-dropdown-menu missing from dashboard-header.js"
     assert "startViewTransition" in header_js, "View Transitions API call missing in dashboard-header.js"
     assert "THEMES" in header_js, "THEMES list missing in dashboard-header.js"
 

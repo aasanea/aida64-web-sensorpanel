@@ -23,6 +23,12 @@
   --glass-radius: 20px;
   --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 8px 32px 0 rgba(0, 0, 0, 0.4);
 
+  /* Surfaces & Dropdowns */
+  --surface-raised: rgba(255, 255, 255, 0.04);
+  --surface-inset: rgba(0, 0, 0, 0.25);
+  --dropdown-bg: rgba(15, 23, 42, 0.96);
+  --dropdown-hover: rgba(255, 255, 255, 0.08);
+
   /* Ambient Mesh & Accent */
   --mesh-opacity: 1;
   --theme-accent: #22D3EE;
@@ -147,3 +153,39 @@ html[data-theme="f1-pitwall"] {
   --mesh-opacity: 0.65;
   --theme-accent: #FF3344;
 }
+
+/* ==========================================================================
+   6. Neo-Skeuomorphic Tactile System (🪵) - Warm Matte Ceramic & Brushed Copper
+   ========================================================================== */
+html[data-theme="neo-tactile"] {
+  /* Background & Surfaces */
+  --bg-deep-indigo: #F3ECE6;
+  --surface-raised: #FAF5F0;
+  --surface-inset: #E7DDD4;
+  --dropdown-bg: #FAF5F0;
+  --dropdown-hover: rgba(200, 117, 78, 0.12);
+
+  /* Glass & Card Elevation (Dual-light physics: 45deg top-left highlight, bottom-right soft shadow) */
+  --glass-bg: #FAF5F0;
+  --glass-blur: none;
+  --glass-border: 1px solid rgba(255, 255, 255, 0.9);
+  --glass-shadow: 6px 6px 18px rgba(165, 138, 125, 0.22), -6px -6px 18px rgba(255, 255, 255, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+
+  /* Color Accents (Brushed Copper & Terracotta Palette) */
+  --theme-accent: #C8754E;
+  --neon-cyan: #C8754E;
+  --neon-violet: #A85A32;
+  --neon-purple: #B25D33;
+  --neon-green: #5A9E6F;
+  --neon-yellow: #D99B26;
+  --neon-orange: #DE8E68;
+  --neon-red: #C94A3D;
+
+  /* High Contrast Typography (100cm kiosk legibility) */
+  --text-pure-white: #241A15;
+  --text-muted: #7E6F65;
+
+  /* Mesh Opacity */
+  --mesh-opacity: 0.15;
+}
+

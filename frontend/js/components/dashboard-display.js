@@ -178,18 +178,17 @@ template.innerHTML = `
     font-family: var(--font-arabic, 'Cairo', sans-serif);
     font-size: 17px;
     font-weight: 800;
-    color: #FFFFFF;
+    color: var(--text-pure-white, #FFFFFF);
     display: flex;
     align-items: center;
     gap: 6px;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
   }
 
   .wing-status {
     font-family: var(--font-numbers, monospace);
     font-size: 11px;
     font-weight: 700;
-    color: #94A3B8;
+    color: var(--text-muted, #94A3B8);
     letter-spacing: 0.5px;
   }
 
@@ -223,8 +222,7 @@ template.innerHTML = `
     font-family: var(--font-arabic, 'Cairo', sans-serif);
     font-size: 19px;
     font-weight: 800;
-    color: #FFFFFF;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+    color: var(--text-pure-white, #FFFFFF);
   }
 
   .fps-status-live {
@@ -417,8 +415,7 @@ template.innerHTML = `
     font-family: var(--font-arabic, 'Cairo', sans-serif);
     font-size: 18px;
     font-weight: 800;
-    color: #FFFFFF;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+    color: var(--text-pure-white, #FFFFFF);
   }
 
   .master-val-group {

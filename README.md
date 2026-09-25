@@ -34,7 +34,7 @@
   - [7. 🔊 Web Audio API Sonar Pings & ISA-18.2 Thermal Alarms](#7--web-audio-api-sonar-pings--isa-182-thermal-alarms)
   - [8. ⚡ Dedicated Native Host Appliance (~75MB RAM & Zero-Taskbar Presence)](#8--dedicated-native-host-appliance-75mb-ram--zero-taskbar-presence)
   - [9. 🚀 In-App & CLI Live Auto-Updater](#9--in-app--cli-live-auto-updater)
-- [🖼️ Visual Showcase & Themes](#️-visual-showcase--themes)
+- [🖼️ Visual Showcase & 7 Cinematic Themes](#️-visual-showcase--themes)
 - [📊 Head-to-Head Comparison Matrix](#-head-to-head-comparison-matrix)
 - [🚀 Quickstart & Turnkey Installation](#-quickstart--turnkey-installation)
 - [⚙️ AIDA64 Shared Memory Setup Guide](#️-aida64-shared-memory-setup-guide)
@@ -46,6 +46,7 @@
   - [المواصفات التقنية الفائقة](#المواصفات-التقنية-الفائقة)
   - [محرك العدادات المتجهة بـ 10 تصاميم فريدة](#محرك-العدادات-المتجهة-بـ-10-تصاميم-فريدة)
   - [ساعة التوقيت اللحظية للمباريات بالثواني](#ساعة-التوقيت-اللحظية-للمباريات-بالثواني)
+  - [القائمة المنسدلة التفاعلية والثيم النيوسكيومورفي](#9-القائمة-المنسدلة-التفاعلية-للثيمات-والثيم-النيوسكيومورفي-الفخاري-neo-skeuomorphic-tactile)
   - [طريقة التثبيت بأمر واحد](#طريقة-التثبيت-بأمر-واحد)
   - [إعداد برنامج AIDA64 خطوة بخطوة](#إعداد-برنامج-aida64-خطوة-بخطوة)
   - [إدارة التحديثات](#إدارة-التحديثات)
@@ -120,7 +121,7 @@ For enthusiasts who prefer running the SensorPanel as a clean, dedicated desktop
 
 ## 🖼️ Visual Showcase & Themes
 
-Switch instantly between 6 cinematic themes with zero flicker and seamless CSS View Transitions:
+Switch instantly between 7 cinematic themes with zero flicker and seamless CSS View Transitions:
 
 | Theme | Preview | Accent Palette |
 | :--- | :--- | :--- |
@@ -130,8 +131,14 @@ Switch instantly between 6 cinematic themes with zero flicker and seamless CSS V
 | **Emerald Matrix** | ![Emerald](tests/screenshots/dashboard_theme_emerald.png) | `#00FF66` Acid Green / `#059669` Emerald |
 | **Deep Space Aurora** | ![Deep Space Aurora](tests/screenshots/dashboard_theme_aurora.png) | `#00FFC2` Emerald Aurora Teal / `#BD00FF` Cosmic Violet |
 | **Formula 1 Pitwall Telemetry** | ![F1 Pitwall](tests/screenshots/dashboard_theme_f1_pitwall.png) | `#FF3344` Pirelli Soft Red / `#FFD700` Medium Yellow |
+| **Neo-Skeuomorphic Tactile** | ![Neo-Tactile](tests/screenshots/dashboard_theme_neo_tactile.png) | `#C8754E` Brushed Copper / `#241A15` Espresso / `#F3ECE6` Warm Ceramic |
 
-### 🎛️ Interactive Hardware Inspections
+### 🎛️ Interactive Hardware Inspections & Kiosk Controls
+
+| Interactive Theme Dropdown Menu | Neo-Skeuomorphic Tactile System |
+| :---: | :---: |
+| [![Theme Dropdown Menu](tests/screenshots/theme_dropdown_menu_open.png)](tests/screenshots/theme_dropdown_menu_open.png) | [![Neo-Tactile Theme](tests/screenshots/dashboard_theme_neo_tactile.png)](tests/screenshots/dashboard_theme_neo_tactile.png) |
+| *Direct 1-click theme switching with bilingual labels & color swatches* | *Warm matte ceramic cards with debossed inset tracks & brushed copper* |
 
 | 20-Core Arrow Lake Flip Matrix | GPU & VRAM Deep Telemetry Flip |
 | :---: | :---: |
@@ -398,6 +405,10 @@ python -m pytest tests/ -v -s
 8. **تكامل كامل مع SteelSeries GG Sonar ونظام الإنذار الحراري ISA-18.2**:
    - قراءة مستويات الصوت والقنوات الافتراضية (Game / Chat / Media / Aux / Mic).
    - نظام إنذار حراري بوميض نيون متوهج ونغمات تنبيه عند تجاوز درجات الحرارة الحرجة (85°C / 95°C).
+
+9. **القائمة المنسدلة التفاعلية للثيمات والثيم النيوسكيومورفي الفخاري (Neo-Skeuomorphic Tactile)**:
+   - **قائمة منسدلة ذكية 1-Click Dropdown**: تتيح التنقل المباشر والسريع بين كافة الثيمات السبعة مع مؤشرات لونية وأسماء ثنائية اللغة ودعم كامل للفأرة ولوحة المفاتيح والإغلاق التلقائي بالنقر الخارجي.
+   - **ثيم النحت الملموس الفاخر (Neo-Tactile)**: فيزياء نحت ثنائية الضوء بأسطح خزفية مطفأة دافئة (`#F3ECE6`)، مسارات تقدم غائرة (Debossed Inset Tracks)، لمسات من النحاس المصقول والفخار، وخطوط اسبريسو داكنة واضحة ومقروءة من مسافة 100 سم على الشاشات المخصصة.
 
 ---
 
