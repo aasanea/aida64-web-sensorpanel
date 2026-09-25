@@ -25,6 +25,15 @@
 ## 📑 Table of Contents / فهرس المحتويات
 
 - [✨ Key Architectural Highlights](#-key-architectural-highlights)
+  - [1. ⚡ 0ms ctypes Windows Shared Memory Bridge](#1--0ms-ctypes-windows-shared-memory-bridge)
+  - [2. 🧠 20-Core Arrow Lake Hybrid Architecture & Liquid Cooling Loop](#2--20-core-arrow-lake-hybrid-architecture--liquid-cooling-loop)
+  - [3. 🔄 Interactive 3D Flip Cards (Bento-Grid HUD)](#3--interactive-3d-flip-cards-bento-grid-hud)
+  - [4. ⚽ Live Saudi & Global Sports Center with Second-Level Precision](#4--live-saudi--global-sports-center-with-second-level-precision)
+  - [5. 🎛️ 10-Style Dynamic Vector Gauge Engine & Contextual Picker](#5-️-10-style-dynamic-vector-gauge-engine--contextual-picker)
+  - [6. 📅 Interactive Agenda & Riyadh Prayer Times HUD](#6--interactive-agenda--riyadh-prayer-times-hud)
+  - [7. 🔊 Web Audio API Sonar Pings & ISA-18.2 Thermal Alarms](#7--web-audio-api-sonar-pings--isa-182-thermal-alarms)
+  - [8. ⚡ Dedicated Native Host Appliance (~75MB RAM & Zero-Taskbar Presence)](#8--dedicated-native-host-appliance-75mb-ram--zero-taskbar-presence)
+  - [9. 🚀 In-App & CLI Live Auto-Updater](#9--in-app--cli-live-auto-updater)
 - [🖼️ Visual Showcase & Themes](#️-visual-showcase--themes)
 - [📊 Head-to-Head Comparison Matrix](#-head-to-head-comparison-matrix)
 - [🚀 Quickstart & Turnkey Installation](#-quickstart--turnkey-installation)
@@ -35,10 +44,11 @@
 - [🧪 Automated Verification & Test Suite](#-automated-verification--test-suite)
 - [🇸🇦 الدليل العربي الكامل والشامل (Arabic Comprehensive Guide)](#-الدليل-العربي-الكامل-والشامل-arabic-comprehensive-guide)
   - [المواصفات التقنية الفائقة](#المواصفات-التقنية-الفائقة)
+  - [محرك العدادات المتجهة بـ 10 تصاميم فريدة](#محرك-العدادات-المتجهة-بـ-10-تصاميم-فريدة)
+  - [ساعة التوقيت اللحظية للمباريات بالثواني](#ساعة-التوقيت-اللحظية-للمباريات-بالثواني)
   - [طريقة التثبيت بأمر واحد](#طريقة-التثبيت-بأمر-واحد)
   - [إعداد برنامج AIDA64 خطوة بخطوة](#إعداد-برنامج-aida64-خطوة-بخطوة)
   - [إدارة التحديثات](#إدارة-التحديثات)
-  - [خارطة الطريق المعمارية للمشروع](ROADMAP.md)
 
 ---
 
@@ -50,30 +60,58 @@ Unlike legacy web dashboards that query sluggish HTTP endpoints or poll external
 - **Zero File I/O Overhead:** No temporary disk polling or SSD wear.
 - **Automated Registry Fallback:** Gracefully degrades to Windows Registry querying (`Software\FinalWire\AIDA64\SensorValues`) if memory mapping is temporarily locked.
 
-### 2. 🧠 20-Core Arrow Lake Hybrid Architecture (8 P-Cores + 12 E-Cores)
+### 2. 🧠 20-Core Arrow Lake Hybrid Architecture & Liquid Cooling Loop
 Custom-tailored telemetry pipeline specifically optimized for modern hybrid processor architectures such as Intel Core Ultra 200S Series (Arrow Lake) and Raptor Lake:
+- **Liquid Cooling Pump Speed Telemetry:** Real-time RPM tracking (`مضخة التبريد PUMP 1500+ RPM`) with visual flow vital indicator positioned directly alongside CPU vitals.
 - **Front Face Micro Heatmap Strip:** Real-time mini-bars showing per-core loads and temperatures directly on the main card.
 - **Dedicated P-Core & E-Core Clusters:** Clustered analytics reporting individual core frequencies, clock distribution, load percentages, and package hotspot temperatures.
 - **Dynamic Voltage & Platform Thermals:** High-precision monitoring of CPU VCore, VRM, Motherboard, PCH Chipset, and NVMe SSD temps.
 
 ### 3. 🔄 Interactive 3D Flip Cards (Bento-Grid HUD)
 Every major tile on the dashboard is an interactive, GPU-accelerated 3D flipper card with hardware-accelerated CSS `transform: rotateY(180deg)`:
-- **CPU Card Flip:** Flips to reveal the full 20-core telemetry matrix, individual core health, and motherboard VRM power stages.
+- **CPU Card Flip:** Flips to reveal the full 20-core telemetry matrix (8 P-Cores + 12 E-Cores), individual frequencies, and motherboard VRM / PCH power stages.
+- **GPU & VRAM Card Flip:** Front face displays integrated VRAM usage (GB used / GB total) and load % progress track; 3D flip reveals VRAM junction temperature, hotspot temperature, memory clock (MHz), cooling fan speeds (RPM), and core voltage.
 - **Matches Card Flip:** Flips between today's live football fixtures and the complete 18-team Saudi Pro League Standings table.
-- **Audio & Media HUD Flip:** Flips to reveal SteelSeries Sonar mixer channel levels and A/V controls.
+- **Audio & Media HUD Flip:** Flips to reveal SteelSeries Sonar mixer channel levels and A/V display controls.
 
-### 4. ⚽ Live Saudi & Global Sports Center (Pure SVG Vector Emblems)
+### 4. ⚽ Live Saudi & Global Sports Center with Second-Level Precision
 Integrated sports telemetry center tracking live scores, upcoming fixtures, and league standings:
+- **Sub-Second Live Match Stopwatch:** Real-time match minute and seconds ticking (`MM:SS`) updated second-by-second via `_tickLiveTimers` without page reloads.
+- **Stoppage & Extra Time Badges:** Dynamic badges (`+4'`, `+7'`), halftime (`HT`) indicators, and live score pulses.
 - **Zero Raster Asset Overhead:** 100% lightweight pure SVG vector emblems for clubs and competitions (Saudi Pro League, AFC Champions League, UEFA Champions League, Premier League, La Liga, Serie A, and more).
-- **Sub-second Match Clock & Status:** Real-time match minute updates, live score badges, and kickoff countdown timers.
 - **Dynamic 18-Team Table:** Complete Saudi Pro League standings with points, goal differential, and match history.
 
-### 5. 🔊 Web Audio API Sonar Pings & ISA-18.2 Thermal Alarms
+### 5. 🎛️ 10-Style Dynamic Vector Gauge Engine & Contextual Picker
+Full customization freedom: Right-click any circular temperature gauge on the dashboard to open the Glassmorphism style picker:
+- **10 Mathematically Rendered Vector Styles:**
+  1. **Racing Tachometer (النمط الرياضي):** Aggressive sports car speedometer needle with progressive LED warning arc.
+  2. **Turbine Engine (التوربين النفاث):** 24-blade aeronautic turbine ring with dynamic blade-lighting physics.
+  3. **Hexa-Matrix (الشبكة السداسية):** Futuristic sci-fi honeycomb grid with modular segment lighting.
+  4. **Liquid Mercury (المدار الزئبقي):** Smooth viscous liquid level indicator with buoyant meniscus effects.
+  5. **Tactical Radar (الرادار التكتيكي):** Military-grade radar sweep with targeting reticle and telemetry coordinates.
+  6. **Holo Minimal (الهولوغرام العائم):** Floating holographic ring with ultra-thin glowing laser edge.
+  7. **Arc Reactor (مفاعل القوس):** Glowing particle accelerator core with magnetic field lines.
+  8. **Retro Nixie (أنابيب النيكسي):** Vintage warm neon filament gas tube aesthetic.
+  9. **Dual Split Arc (ثنائية الجليد والنار):** Symmetrical dual-arc balancing cold baseline against load thermals.
+  10. **Prism Glass (المنشور الزجاجي):** Crystal facet reflections with refractive dispersion gradients.
+- **Flexible Scope:** Apply styles individually (CPU only / GPU only) or toggle "Apply to All".
+- **Instant Persistence:** Choices persist across restarts via `localStorage` with Web Audio feedback chimes.
+
+### 6. 📅 Interactive Agenda & Riyadh Prayer Times HUD
+- **Daily Appointments Hub:** Integrated modal allowing viewing, creating, and managing daily calendar events and meetings with category tags (`عمل`, `شخصي`).
+- **Precision Riyadh Prayer Times:** Automated countdown timers for Fajr, Dhuhr, Asr, Maghrib, and Isha prayers with dynamic elapsed indicators.
+
+### 7. 🔊 Web Audio API Sonar Pings & ISA-18.2 Thermal Alarms
 - **SteelSeries GG Sonar Integration:** Automatic sub-system discovery via `%PROGRAMDATA%/SteelSeries/SteelSeries Engine 3/coreProps.json`, syncing master volume, mic mute state, and virtual channel allocations.
 - **Synthesized Acoustic Sonar Ping:** In-browser audio feedback powered by Web Audio API synthesizers.
 - **ISA-18.2 Compliant Thermal Warning Alarms:** Multi-stage thermal hysteresis alarm triggering glowing neon alert borders and acoustic warnings when CPU, GPU, or Hotspot thermals exceed critical safety thresholds (85°C / 95°C).
 
-### 6. 🚀 In-App & CLI Live Auto-Updater
+### 8. ⚡ Dedicated Native Host Appliance (~75MB RAM & Zero-Taskbar Presence)
+For enthusiasts who prefer running the SensorPanel as a clean, dedicated desktop appliance:
+- **C# / WebView2 Engine:** Ultra-low ~75MB RAM usage, Alt+Tab immunity, and zero Taskbar presence.
+- **System Tray Management:** Amber lightning bolt icon (`⚡`) in the Windows System Tray to switch displays, toggle Always-on-Top, or configure auto-start.
+
+### 9. 🚀 In-App & CLI Live Auto-Updater
 - **GitHub Releases API Integration:** Automated background release checking comparing current deployment against the latest GitHub release tag.
 - **Non-Intrusive In-App Toast:** One-click visual notification alerting users when a new version is available.
 - **One-Command CLI Updater:** Automated script (`scripts\update.bat`) that pulls updates, merges patches, and upgrades Python virtual environment packages cleanly.
@@ -93,20 +131,25 @@ Switch instantly between 4 cinematic themes with zero flicker and seamless CSS V
 
 ### 🎛️ Interactive Hardware Inspections
 
-| 20-Core Arrow Lake Flip Matrix | Critical Thermal Alert (ISA-18.2) |
+| 20-Core Arrow Lake Flip Matrix | GPU & VRAM Deep Telemetry Flip |
 | :---: | :---: |
-| [![Arrow Lake Flipped](tests/screenshots/dashboard_cpu_cores_flipped.png)](tests/screenshots/dashboard_cpu_cores_flipped.png) | [![Thermal Alert](tests/screenshots/dashboard_thermal_alert_live.png)](tests/screenshots/dashboard_thermal_alert_live.png) |
-| *8 P-Cores + 12 E-Cores breakdown with platform thermals* | *Pulsing neon warning aura and acoustic alarm triggers* |
+| [![Arrow Lake Flipped](tests/screenshots/dashboard_cpu_cores_flipped.png)](tests/screenshots/dashboard_cpu_cores_flipped.png) | [![GPU Flipped](tests/screenshots/dashboard_gpu_flipped.png)](tests/screenshots/dashboard_gpu_flipped.png) |
+| *8 P-Cores + 12 E-Cores breakdown with platform thermals & VRM* | *VRAM Junction temp, Memory Clock, Hotspot, and Fan RPM* |
 
-| Live Saudi Pro League & Global Matches | Daily Schedule & Appointments Center |
+| 18-Team Saudi Pro League Standings Table | Real-Time Live Match Stopwatch (`MM:SS`) |
 | :---: | :---: |
-| [![Live Matches](tests/screenshots/dashboard_e2e_live.png)](tests/screenshots/dashboard_e2e_live.png) | [![Appointments Modal](tests/screenshots/appointments_modal_live.png)](tests/screenshots/appointments_modal_live.png) |
-| *Pure SVG emblems, match minutes, and 18-team standings* | *Integrated agenda HUD with Riyadh prayer countdowns* |
+| [![Standings Table](tests/screenshots/dashboard_matches_standings_flipped.png)](tests/screenshots/dashboard_matches_standings_flipped.png) | [![Live Stopwatch](tests/screenshots/dashboard_matches_live_stopwatch.png)](tests/screenshots/dashboard_matches_live_stopwatch.png) |
+| *Complete 18-team Saudi Pro League table with points & pure SVG emblems* | *Second-by-second live match ticker with stoppage time badges (`+4'`)* |
 
-| 10-Style Dynamic Temperature Gauge Picker | 24-Blade Turbine Engine Live Telemetry |
+| 10-Style Dynamic Temperature Gauge Picker | Critical Thermal Alert (ISA-18.2) |
 | :---: | :---: |
-| [![Gauge Picker](tests/screenshots/gauge_picker_modal_live.png)](tests/screenshots/gauge_picker_modal_live.png) | [![Turbine Live](tests/screenshots/gauge_1920x1200_live.png)](tests/screenshots/gauge_1920x1200_live.png) |
-| *Right-click contextual Glassmorphism picker with 10 vector styles* | *24-blade progressive turbine engine with 100% theme harmony* |
+| [![Gauge Picker](tests/screenshots/gauge_picker_modal_live.png)](tests/screenshots/gauge_picker_modal_live.png) | [![Thermal Alert](tests/screenshots/dashboard_thermal_alert_live.png)](tests/screenshots/dashboard_thermal_alert_live.png) |
+| *Right-click contextual Glassmorphism picker with 10 vector styles* | *Pulsing neon warning aura and acoustic alarm triggers* |
+
+| Daily Schedule & Appointments Center | CPU Master Front with Water Pump Telemetry |
+| :---: | :---: |
+| [![Appointments Modal](tests/screenshots/appointments_modal_live.png)](tests/screenshots/appointments_modal_live.png) | [![CPU Front](tests/screenshots/dashboard_cpu_front.png)](tests/screenshots/dashboard_cpu_front.png) |
+| *Integrated agenda HUD with Riyadh prayer countdowns* | *Liquid Cooling Pump RPM (1500+ RPM) & Micro Heatmap Strip* |
 
 ---
 
@@ -307,22 +350,52 @@ python -m pytest tests/ -v -s
    - قراءة فورية من ذاكرة ويندوز العشوائية (`AIDA64_SensorValues`) عبر مكتبة `ctypes` وواجهات `Kernel32` لنظام 64-bit دون أي استهلاك للقرص أو تأخير شبكي.
    - دعم التراجع التلقائي إلى سجل النظام (`Windows Registry`) في حال إغلاق الذاكرة المشتركة.
 
-2. **دعم معمارية إنتل الهجينة بـ 20 نواة (Arrow Lake & Raptor Lake)**:
-   - شريط حراري مصغر (Micro Heatmap Strip) على واجهة البطاقة لمتابعة الأنوية الـ 20 لحظياً.
-   - بطاقة ثلاثية الأبعاد تنقلب بزاوية 180 درجة لعرض مصفوفة تفصيلية:
-     - **8 أنوية أداء (P-Cores)** مع التردد ونسبة الحمل والحرارة الفردية.
-     - **12 نواة كفاءة (E-Cores)** مع المتوسط الحسابي للأحمال.
-     - مستشعرات اللوحة الأم، منظم الجهد (VRM)، شريحة PCH، ووحدات تخزين NVMe SSD فائقة السرعة.
+2. **البطاقة الموحدة للمعالج والتبريد المائي بـ 20 نواة (Arrow Lake & Raptor Lake)**:
+   - **مراقبة مضخة التبريد المائي:** قراءة حية لسرعة دوران المضخة (`مضخة التبريد PUMP 1500+ RPM`) مع مؤشر تدفق حيوي بجانب حرارة المعالج لضمان سلامة حلقة التبريد.
+   - **شريط حراري مصغر (Micro Heatmap):** متابعة الأنوية الـ 20 لحظياً على الواجهة الرئيسية للبطاقة.
+   - **بطاقة ثلاثية الأبعاد (3D Flip):** تنقلب بزاوية 180 درجة لعرض مصفوفة تفصيلية متكاملة:
+     - **8 أنوية أداء (P-Cores):** تردد كل نواة ونسبة حملها وحرارتها الفردية.
+     - **12 نواة كفاءة (E-Cores):** أحمال الأنوية المجمعة وتردداتها.
+     - **حرارة المنصة المتكاملة:** مستشعرات منظم الجهد (VRM)، اللوحة الأم، شريحة PCH، ووحدات تخزين NVMe SSD فائقة السرعة.
 
-3. **مركز المباريات السعودية والعالمية المباشر (شعار SVG نقي)**:
-   - متابعة حية لمباريات اليوم مع نتائج لحظية ودقائق اللعب.
-   - شعارات نوادي وبطولات متجهة (Vector Pure SVG) بالغة الدقة بدون أي صور نقطية خارجية تستهلك الذاكرة.
-   - جدول ترتيب دوري روشن السعودي للمحترفين بـ 18 نادياً مع النقاط وفارق الأهداف.
+3. **البطاقة الموحدة لمعالج الرسوميات والذاكرة (GPU & VRAM Master)**:
+   - **الواجهة الأمامية:** استهلاك ذاكرة الفيديو VRAM بالجيجابايت (GB used / GB total) وشريط التقدم، تردد النواة، واستهلاك الطاقة بالواط.
+   - **الوجه الخلفي المنقلب ثلاثي الأبعاد:** حرارة رقاقات الذاكرة (VRAM Junction Temp)، حرارة البقعة الساخنة (Hotspot)، تردد الذاكرة (Memory Clock)، سرعة المراوح (RPM)، وفولتية الكرت (mV).
 
-4. **تكامل كامل مع SteelSeries GG Sonar والتنبيهات الصوتية**:
-   - قراءة مستويات الصوت والقنوات الصوتية الافتراضية (Game / Chat / Media / Aux / Mic).
-   - إطلاق نبضات السونار الصوتية عبر واجهة `Web Audio API`.
-   - نظام إنذار حراري متقدم متوافق مع معيار **ISA-18.2** يطلق وميضاً نيونياً متوهجاً وتنبيهات صوتية فور تجاوز العتبات الحرارية الحرجة.
+4. **محرك العدادات المتجهة بـ 10 تصاميم فريدة (Dynamic Vector Gauge Engine)**:
+   - تخصيص مطلق: اضغط بالزر الأيمن للفأرة (Right-Click) على أي عداد حراري دائري لفتح نافذة الاختيار الزجاجية.
+   - **10 تصاميم متجهة مرسومة رياضياً:**
+     1. **النمط الرياضي (Racing Tachometer):** مؤشر سيارات السباق مع شريط LED تصاعدي.
+     2. **التوربين النفاث (Turbine Engine):** محرك نفاث بـ 24 شفرة مع فيزياء إضاءة ديناميكية.
+     3. **الشبكة السداسية (Hexa-Matrix):** نمط خلايا النحل المستقبلي مع إضاءة مقطعية ذكية.
+     4. **المدار الزئبقي (Liquid Mercury):** مؤشر سائل لزج ناعم مع تأثيرات التوتر السطحي.
+     5. **الرادار التكتيكي (Tactical Radar):** ماسح رادار حربي مع شبكة استهداف وإحداثيات عتاد.
+     6. **الهولوغرام العائم (Holo Minimal):** حلقة هولوغرافية عائمة بحواف ليزرية متوهجة.
+     7. **مفاعل القوس (Arc Reactor):** قلب مسرع الجسيمات مع خطوط المجال المغناطيسي.
+     8. **أنابيب النيكسي (Retro Nixie):** جماليات كلاسيكية دافئة تحاكي أنابيب الغاز النيونية القديمة.
+     9. **ثنائية الجليد والنار (Dual Split Arc):** قوسان متقابلان يوازنان درجات الحرارة والأحمال.
+     10. **المنشور الزجاجي (Prism Glass):** أوجه كريستالية عاكسة مع تدرجات لونية منكسرة.
+   - إمكانية التطبيق الفردي على عداد محدد أو تفعيل خيار "تطبيق على جميع العدادات".
+   - حفظ التفضيلات تلقائياً في التخزين المحلي (`localStorage`) مع مؤثرات صوتية عبر `Web Audio API`.
+
+5. **مركز المباريات وساعة التوقيت اللحظية بالثواني**:
+   - **ساعة توقيت لحظية فائقة الدقة:** متابعة دقائق وثواني المباريات الجارية بالثواني الحية (`MM:SS`) عبر دالة `_tickLiveTimers`.
+   - **شارات الوقت بدل الضائع:** عرض الوقت الإضافي بدقة (`+4'`, `+7'`)، وحالة الاستراحة (`HT`)، ونبضات تسجيل الأهداف.
+   - **شعارات نوادي وبطولات متجهة (Pure SVG):** خفيفة جداً وعالية الدقة وبدون استهلاك للذاكرة.
+   - **جدول ترتيب دوري روشن بـ 18 نادياً:** ينقلب ثلاثي الأبعاد ليعرض جدول الترتيب والنقاط وفارق الأهداف.
+
+6. **مركز المواعيد والجدول اليومي ومواقيت صلاة الرياض**:
+   - نافذة منبثقة تفاعلية لإدارة وجدولة المواعيد اليومية وتصنيفها (`عمل` / `شخصي`).
+   - عداد تنازلي دقيق لمواقيت الصلاة الخمس لمدينة الرياض مع تنبيهات دخول الوقت ومؤشر الوقت المنقضي.
+
+7. **تطبيق الديسكتوب الأصلي (Native Host Appliance)**:
+   - مشغل مكتبي مبني بلغة C# و WebView2 باستهلاك ذاكرة منخفض جداً (~75MB RAM).
+   - يعمل كجهاز مخصص مستقل دون أي ظهور في شريط المهام ومحصن ضد التبديل غير المقصود (Alt+Tab).
+   - أيقونة صاعقة برتقالية (`⚡`) في علبة النظام (System Tray) لتبديل الشاشات وتفعيل الشاشة الكاملة.
+
+8. **تكامل كامل مع SteelSeries GG Sonar ونظام الإنذار الحراري ISA-18.2**:
+   - قراءة مستويات الصوت والقنوات الافتراضية (Game / Chat / Media / Aux / Mic).
+   - نظام إنذار حراري بوميض نيون متوهج ونغمات تنبيه عند تجاوز درجات الحرارة الحرجة (85°C / 95°C).
 
 ---
 
