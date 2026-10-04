@@ -206,7 +206,7 @@ Write-Color "[4/5] Creating Windows Desktop Shortcut..." Yellow
 try {
     $wshShell = New-Object -ComObject WScript.Shell
     $desktopPath = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::Desktop)
-    $shortcutPath = Join-Path $desktopPath "AIDA64 Web SensorPanel.lnk"
+    $shortcutPath = Join-Path $desktopPath "AIDA64 Dashboard.lnk"
     $nativeExe = Join-Path $InstallDir "bin\AIDA64Panel.exe"
     $nativeIcon = Join-Path $InstallDir "bin\icon.ico"
     $targetBatch = Join-Path $InstallDir "scripts\start.bat"
@@ -232,22 +232,7 @@ try {
     $shortcut.Description = "AIDA64 Glassmorphism 2.0 Web SensorPanel HUD"
     $shortcut.Save()
 
-    Write-Color "[OK] Created Desktop shortcut: 'AIDA64 Web SensorPanel'" Green
-
-    # Create Show on Primary shortcut
-    if (Test-Path $nativeExe) {
-        $primaryShortcutPath = Join-Path $desktopPath "AIDA64 Show on Primary.lnk"
-        $primaryShortcut = $wshShell.CreateShortcut($primaryShortcutPath)
-        $primaryShortcut.TargetPath = $nativeExe
-        $primaryShortcut.Arguments = "--primary"
-        $primaryShortcut.WorkingDirectory = (Join-Path $InstallDir "bin")
-        if (Test-Path $nativeIcon) {
-            $primaryShortcut.IconLocation = "$nativeIcon,0"
-        }
-        $primaryShortcut.Description = "Bring AIDA64 SensorPanel to Primary Screen"
-        $primaryShortcut.Save()
-        Write-Color "[OK] Created Desktop shortcut: 'AIDA64 Show on Primary'" Green
-    }
+    Write-Color "[OK] Created Desktop shortcut: 'AIDA64 Dashboard'" Green
 } catch {
     Write-Color "[WARNING] Could not create desktop shortcut: $_" Gray
 }
