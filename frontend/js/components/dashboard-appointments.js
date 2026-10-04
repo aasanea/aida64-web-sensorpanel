@@ -781,6 +781,16 @@ function formatSecondsToHMS(totalSecs) {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export class DashboardAppointments extends HTMLElement {
   constructor() {
     super();
@@ -999,6 +1009,7 @@ export class DashboardAppointments extends HTMLElement {
   }
 
   onStateChange(data) {
+    if (!data) return;
     if (data.appointments_remaining !== undefined && this.dom.remaining) {
       this.dom.remaining.textContent = (data.appointments_remaining !== null) ? data.appointments_remaining : '--';
     }
@@ -1059,17 +1070,21 @@ export class DashboardAppointments extends HTMLElement {
     }
     let html = '';
     items.forEach(item => {
-      const statusClass = `status-${item.status || 'upcoming'}`;
-      const categoryClass = `category-${item.category || 'work'}`;
+      const statusClass = `status-${escapeHtml(item.status || 'upcoming')}`;
+      const categoryClass = `category-${escapeHtml(item.category || 'work')}`;
+      const timeDisplay = escapeHtml(item.time_12h || item.time || '');
+      const title = escapeHtml(item.title || '');
+      const categoryLabel = escapeHtml(item.category_label || item.category || '');
+      const statusLabel = escapeHtml(item.status_label || item.status || '');
       html += `
         <div class="apt-item ${statusClass}">
           <div class="apt-item-main">
-            <span class="apt-item-time" dir="rtl"><bdi>${item.time_12h || item.time}</bdi></span>
-            <span class="apt-item-title">${item.title}</span>
+            <span class="apt-item-time" dir="rtl"><bdi>${timeDisplay}</bdi></span>
+            <span class="apt-item-title">${title}</span>
           </div>
           <div class="apt-item-badges">
-            <span class="apt-category-pill ${categoryClass}">${item.category_label || item.category}</span>
-            <span class="apt-item-status-pill ${statusClass}">${item.status_label || item.status}</span>
+            <span class="apt-category-pill ${categoryClass}">${categoryLabel}</span>
+            <span class="apt-item-status-pill ${statusClass}">${statusLabel}</span>
           </div>
         </div>
       `;

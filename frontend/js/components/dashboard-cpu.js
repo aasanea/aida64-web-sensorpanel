@@ -55,6 +55,14 @@ template.innerHTML = `
     z-index: 1;
   }
 
+  :host(.flipped) .card-front {
+    pointer-events: none;
+  }
+
+  :host(.flipped) .card-back {
+    pointer-events: auto;
+  }
+
   /* Typography (Mirrors GPU Component 1:1) */
   .arabic-label {
     font-family: var(--font-arabic);
@@ -750,7 +758,7 @@ template.innerHTML = `
     <div class="card-body-split">
       <!-- Dynamic Circular Temperature Gauge (Right-click to customize) -->
       <div class="gauge-circular-container" id="cpu-gauge-wrapper" data-gauge-id="cpu" title="انقر بزر الفأرة الأيمن لتغيير شكل العداد">
-        <div id="cpu-dynamic-gauge" class="gauge-dynamic-root" data-gauge-id="cpu"></div>
+        <div id="cpu-dynamic-gauge" class="gauge-dynamic-root" data-gauge-id="cpu"><!-- id="cpu_temp" dynamic mount --></div>
       </div>
 
       <!-- Performance Bars Stack -->
@@ -1025,10 +1033,6 @@ export class DashboardCPU extends HTMLElement {
     this.isRunning = false;
 
     this.dom = {
-      cpu_temp: this.shadowRoot.getElementById('cpu_temp'),
-      'cpu-temp-ring': this.shadowRoot.getElementById('cpu-temp-ring'),
-      'cpu-temp-desc': this.shadowRoot.getElementById('cpu-temp-desc'),
-      
       cpu_load: this.shadowRoot.getElementById('cpu_load'),
       cpu_load_bar: this.shadowRoot.getElementById('cpu_load_bar'),
       
@@ -1153,20 +1157,10 @@ export class DashboardCPU extends HTMLElement {
 
   connectedCallback() {
     this.unsubscribe = EventBus.on('state-changed', this.onStateChange);
-    this.unsubscribeData = EventBus.on('telemetry:data', (data) => {
-      this.onStateChange(data);
-      if (data && data.cpu_cores) {
-        this.cpuCores = data.cpu_cores;
-        this.renderCores();
-      }
-    });
+    this.unsubscribeData = EventBus.on('telemetry:data', this.onStateChange);
 
     if (window.stateManager && window.stateManager.currentState) {
       this.onStateChange(window.stateManager.currentState);
-      if (window.stateManager.currentState.cpu_cores) {
-        this.cpuCores = window.stateManager.currentState.cpu_cores;
-        this.renderCores();
-      }
     }
 
     // Dynamic Gauge Setup
@@ -1381,8 +1375,8 @@ export class DashboardCPU extends HTMLElement {
   renderCores() {
     if (!this.cpuCores || !Array.isArray(this.cpuCores)) return;
 
-    let pLoadSum = 0, pTempSum = 0, pCount = 0;
-    let eLoadSum = 0, eTempSum = 0, eCount = 0;
+    let pLoadSum = 0, pTempSum = 0, pCount = 0, pTempCount = 0;
+    let eLoadSum = 0, eTempSum = 0, eCount = 0, eTempCount = 0;
 
     for (let i = 0; i < this.cpuCores.length; i++) {
       const core = this.cpuCores[i];
@@ -1393,11 +1387,17 @@ export class DashboardCPU extends HTMLElement {
 
       if (core.type === 'P') {
         pLoadSum += load;
-        if (temp !== null) pTempSum += temp;
+        if (temp !== null) {
+          pTempSum += temp;
+          pTempCount++;
+        }
         pCount++;
       } else {
         eLoadSum += load;
-        if (temp !== null) eTempSum += temp;
+        if (temp !== null) {
+          eTempSum += temp;
+          eTempCount++;
+        }
         eCount++;
       }
 
@@ -1425,12 +1425,12 @@ export class DashboardCPU extends HTMLElement {
     // Averages on Back Face
     if (this.dom.pCoresAvg && pCount > 0) {
       const avgLoad = Math.round(pLoadSum / pCount);
-      const avgTemp = pTempSum > 0 ? Math.round(pTempSum / pCount) : '--';
+      const avgTemp = pTempCount > 0 ? Math.round(pTempSum / pTempCount) : '--';
       this.dom.pCoresAvg.textContent = `متوسط: ${avgLoad}% | ${avgTemp}°C`;
     }
     if (this.dom.eCoresAvg && eCount > 0) {
       const avgLoad = Math.round(eLoadSum / eCount);
-      const avgTemp = eTempSum > 0 ? Math.round(eTempSum / eCount) : '--';
+      const avgTemp = eTempCount > 0 ? Math.round(eTempSum / eTempCount) : '--';
       this.dom.eCoresAvg.textContent = `متوسط: ${avgLoad}% | ${avgTemp}°C`;
     }
   }

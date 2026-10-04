@@ -16,8 +16,11 @@ namespace AIDA64Panel
     static class Program
     {
         private static readonly string LogFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "host.log");
-        private const string MutexName = "AIDA64_SensorPanel_Host_Mutex";
-        private const string SignalEventName = "AIDA64_SensorPanel_Show_Signal";
+        public const string MutexName = "AIDA64_SensorPanel_Host_Mutex";
+        public const string ShowSignalEventName = "AIDA64_SensorPanel_Show_Signal";
+        public const string PrimarySignalEventName = "AIDA64_SensorPanel_Primary_Signal";
+        public const string DedicatedSignalEventName = "AIDA64_SensorPanel_Dedicated_Signal";
+        public const string ToggleSignalEventName = "AIDA64_SensorPanel_Toggle_Signal";
 
         public static void Log(string msg)
         {
@@ -26,6 +29,26 @@ namespace AIDA64Panel
                 File.AppendAllText(LogFile, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {msg}\r\n");
             }
             catch { }
+        }
+
+        public static bool TrySignalEvent(string eventName)
+        {
+            try
+            {
+                if (EventWaitHandle.TryOpenExisting(eventName, out var handle))
+                {
+                    using (handle)
+                    {
+                        handle.Set();
+                    }
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Failed to open or set event '{eventName}': {ex.Message}");
+            }
+            return false;
         }
 
         [STAThread]
@@ -46,19 +69,79 @@ namespace AIDA64Panel
 
             if (!createdNew)
             {
-                Log("Existing instance detected. Signaling activation...");
-                try
+                Log($"Existing instance detected. Checking arguments: [{string.Join(" ", args)}]");
+
+                bool isPrimary = false;
+                bool isDedicated = false;
+                bool isToggle = false;
+
+                if (args != null && args.Length > 0)
                 {
-                    if (EventWaitHandle.TryOpenExisting(SignalEventName, out var signalHandle))
+                    foreach (var arg in args)
                     {
-                        signalHandle.Set();
-                        Log("Signal sent to running instance. Exiting secondary process.");
-                        return;
+                        if (arg.Equals("--primary", StringComparison.OrdinalIgnoreCase) ||
+                            arg.Equals("-p", StringComparison.OrdinalIgnoreCase) ||
+                            arg.Equals("/primary", StringComparison.OrdinalIgnoreCase) ||
+                            arg.Equals("--main", StringComparison.OrdinalIgnoreCase))
+                        {
+                            isPrimary = true;
+                            break;
+                        }
+                        else if (arg.Equals("--dedicated", StringComparison.OrdinalIgnoreCase) ||
+                                 arg.Equals("-d", StringComparison.OrdinalIgnoreCase) ||
+                                 arg.Equals("/dedicated", StringComparison.OrdinalIgnoreCase) ||
+                                 arg.Equals("--lcd", StringComparison.OrdinalIgnoreCase))
+                        {
+                            isDedicated = true;
+                            break;
+                        }
+                        else if (arg.Equals("--toggle", StringComparison.OrdinalIgnoreCase) ||
+                                 arg.Equals("-t", StringComparison.OrdinalIgnoreCase) ||
+                                 arg.Equals("/toggle", StringComparison.OrdinalIgnoreCase))
+                        {
+                            isToggle = true;
+                            break;
+                        }
                     }
                 }
-                catch (Exception ex)
+
+                if (isPrimary)
                 {
-                    Log($"Failed to open signal handle: {ex.Message}");
+                    Log("Signaling primary display relocation...");
+                    if (TrySignalEvent(PrimarySignalEventName))
+                    {
+                        Log("Primary signal sent to running instance. Exiting secondary process.");
+                        return;
+                    }
+                    Log("Primary signal event not found, falling back to show signal...");
+                }
+                else if (isDedicated)
+                {
+                    Log("Signaling dedicated display relocation...");
+                    if (TrySignalEvent(DedicatedSignalEventName))
+                    {
+                        Log("Dedicated signal sent to running instance. Exiting secondary process.");
+                        return;
+                    }
+                    Log("Dedicated signal event not found, falling back to show signal...");
+                }
+                else if (isToggle)
+                {
+                    Log("Signaling toggle visibility...");
+                    if (TrySignalEvent(ToggleSignalEventName))
+                    {
+                        Log("Toggle signal sent to running instance. Exiting secondary process.");
+                        return;
+                    }
+                    Log("Toggle signal event not found, falling back to show signal...");
+                }
+
+                // Default: signal activation/show
+                Log("Signaling activation (show)...");
+                if (TrySignalEvent(ShowSignalEventName))
+                {
+                    Log("Show signal sent to running instance. Exiting secondary process.");
+                    return;
                 }
 
                 // If signal could not be sent and another process exists
@@ -96,13 +179,24 @@ namespace AIDA64Panel
         private ToolStripMenuItem? _topmostItem;
         private ToolStripMenuItem? _autoStartItem;
         private int _currentScreenIndex = 0;
+        private bool _startOnPrimary = false;
         private const string DashboardUrl = "http://localhost:8088";
         private const string AutoStartKeyName = "AIDA64WebSensorPanel";
-        private const string SignalEventName = "AIDA64_SensorPanel_Show_Signal";
+
         private EventWaitHandle? _showSignalEvent;
-        private RegisteredWaitHandle? _registeredWait;
+        private RegisteredWaitHandle? _registeredShowWait;
+
+        private EventWaitHandle? _primarySignalEvent;
+        private RegisteredWaitHandle? _registeredPrimaryWait;
+
+        private EventWaitHandle? _dedicatedSignalEvent;
+        private RegisteredWaitHandle? _registeredDedicatedWait;
+
+        private EventWaitHandle? _toggleSignalEvent;
+        private RegisteredWaitHandle? _registeredToggleWait;
 
         private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
+        private static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);
         private const uint SWP_NOSIZE = 0x0001;
         private const uint SWP_NOMOVE = 0x0002;
         private const uint SWP_SHOWWINDOW = 0x0040;
@@ -120,21 +214,24 @@ namespace AIDA64Panel
             Program.Log("DashboardHostForm constructor called.");
             _wmTaskbarCreated = RegisterWindowMessage("TaskbarCreated");
 
-            InitializeWindow();
-            InitializeTray();
-            SetupIpcSignal();
-            EnsureBackendRunning();
-
             if (args != null && args.Length > 0)
             {
                 foreach (var arg in args)
                 {
-                    if (arg.Equals("--primary", StringComparison.OrdinalIgnoreCase))
+                    if (arg.Equals("--primary", StringComparison.OrdinalIgnoreCase) ||
+                        arg.Equals("-p", StringComparison.OrdinalIgnoreCase) ||
+                        arg.Equals("/primary", StringComparison.OrdinalIgnoreCase) ||
+                        arg.Equals("--main", StringComparison.OrdinalIgnoreCase))
                     {
-                        MoveToPrimaryDisplay();
+                        _startOnPrimary = true;
+                        Program.Log("Startup argument: --primary/--main detected.");
                     }
                 }
             }
+
+            InitializeWindow();
+            InitializeTray();
+            SetupIpcSignal();
         }
 
         protected override CreateParams CreateParams
@@ -163,7 +260,14 @@ namespace AIDA64Panel
             };
             this.Controls.Add(_webView);
 
-            PositionOnTargetDisplay();
+            if (_startOnPrimary)
+            {
+                MoveToPrimaryDisplay();
+            }
+            else
+            {
+                PositionOnTargetDisplay();
+            }
             Program.Log($"InitializeWindow complete. Form Bounds: {this.Bounds}");
         }
 
@@ -247,25 +351,62 @@ namespace AIDA64Panel
 
         private void SetupIpcSignal()
         {
+            RegisterIpcEvent(ref _showSignalEvent, ref _registeredShowWait, Program.ShowSignalEventName, () =>
+            {
+                Program.Log("Received IPC wake/show signal.");
+                this.Visible = true;
+                this.WindowState = FormWindowState.Normal;
+                IntPtr insertAfter = this.TopMost ? HWND_TOPMOST : HWND_NOTOPMOST;
+                SetWindowPos(this.Handle, insertAfter, this.Bounds.X, this.Bounds.Y, this.Bounds.Width, this.Bounds.Height, SWP_SHOWWINDOW);
+                this.BringToFront();
+                try { _webView?.CoreWebView2?.Reload(); } catch { }
+                _trayIcon?.ShowBalloonTip(3000, "لوحة AIDA64 SensorPanel", $"تم تنشيط اللوحة وإظهارها ⚡ ({this.Bounds.Width}x{this.Bounds.Height})", ToolTipIcon.Info);
+            });
+
+            RegisterIpcEvent(ref _primarySignalEvent, ref _registeredPrimaryWait, Program.PrimarySignalEventName, () =>
+            {
+                Program.Log("Received IPC primary display signal. Moving to primary screen...");
+                MoveToPrimaryDisplay();
+                try { _webView?.CoreWebView2?.Reload(); } catch { }
+            });
+
+            RegisterIpcEvent(ref _dedicatedSignalEvent, ref _registeredDedicatedWait, Program.DedicatedSignalEventName, () =>
+            {
+                Program.Log("Received IPC dedicated display signal. Moving to dedicated screen...");
+                MoveToDedicatedDisplay();
+                try { _webView?.CoreWebView2?.Reload(); } catch { }
+            });
+
+            RegisterIpcEvent(ref _toggleSignalEvent, ref _registeredToggleWait, Program.ToggleSignalEventName, () =>
+            {
+                Program.Log("Received IPC toggle signal.");
+                OnToggleVisibility(null, EventArgs.Empty);
+            });
+        }
+
+        private void RegisterIpcEvent(ref EventWaitHandle? evtHandle, ref RegisteredWaitHandle? regWait, string eventName, Action onSignaled)
+        {
             try
             {
-                _showSignalEvent = new EventWaitHandle(false, EventResetMode.AutoReset, SignalEventName);
-                _registeredWait = ThreadPool.RegisterWaitForSingleObject(_showSignalEvent, (state, timedOut) =>
+                evtHandle = new EventWaitHandle(false, EventResetMode.AutoReset, eventName);
+                regWait = ThreadPool.RegisterWaitForSingleObject(evtHandle, (state, timedOut) =>
                 {
-                    this.BeginInvoke(() =>
+                    if (timedOut) return;
+                    if (this.IsDisposed || !this.IsHandleCreated) return;
+                    try
                     {
-                        Program.Log("Received IPC wake/show signal.");
-                        this.Visible = true;
-                        this.WindowState = FormWindowState.Normal;
-                        SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-                        this.BringToFront();
-                        _trayIcon?.ShowBalloonTip(3000, "لوحة AIDA64 SensorPanel", "تم تنشيط اللوحة وإظهارها في المقدمة ⚡", ToolTipIcon.Info);
-                    });
+                        this.BeginInvoke(onSignaled);
+                    }
+                    catch (Exception ex)
+                    {
+                        Program.Log($"Error executing IPC callback for {eventName}: {ex.Message}");
+                    }
                 }, null, Timeout.Infinite, false);
+                Program.Log($"IPC signal listener registered for: {eventName}");
             }
             catch (Exception ex)
             {
-                Program.Log($"Failed to setup IPC signal: {ex.Message}");
+                Program.Log($"Failed to setup IPC signal '{eventName}': {ex.Message}");
             }
         }
 
@@ -273,7 +414,14 @@ namespace AIDA64Panel
         {
             base.OnLoad(e);
             Program.Log("OnLoad triggered.");
-            PositionOnTargetDisplay();
+            if (_startOnPrimary)
+            {
+                MoveToPrimaryDisplay();
+            }
+            else
+            {
+                PositionOnTargetDisplay();
+            }
             this.Visible = true;
             this.BringToFront();
 
@@ -292,7 +440,8 @@ namespace AIDA64Panel
             Program.Log("OnShown triggered.");
             this.Visible = true;
             this.WindowState = FormWindowState.Normal;
-            SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+            IntPtr insertAfter = this.TopMost ? HWND_TOPMOST : HWND_NOTOPMOST;
+            SetWindowPos(this.Handle, insertAfter, this.Bounds.X, this.Bounds.Y, this.Bounds.Width, this.Bounds.Height, SWP_SHOWWINDOW);
             this.BringToFront();
         }
 
@@ -350,8 +499,11 @@ namespace AIDA64Panel
                 if (screens[i].Bounds.X >= 3840 && screens[i].Bounds.Y < 0)
                 {
                     _currentScreenIndex = i;
+                    this.Visible = true;
+                    this.WindowState = FormWindowState.Normal;
                     ApplyScreenBounds(screens[i]);
-                    _trayIcon?.ShowBalloonTip(3000, "تبديل الشاشة", $"تم نقل اللوحة إلى الشاشة المخصصة ({screens[i].Bounds.Width}x{screens[i].Bounds.Height})", ToolTipIcon.Info);
+                    this.BringToFront();
+                    _trayIcon?.ShowBalloonTip(3000, "تبديل الشاشة", $"تم نقل اللوحة إلى الشاشة المخصصة ({screens[i].Bounds.Width}x{screens[i].Bounds.Height}) ⚡", ToolTipIcon.Info);
                     return;
                 }
             }
@@ -366,8 +518,11 @@ namespace AIDA64Panel
                 if (screens[i].Primary)
                 {
                     _currentScreenIndex = i;
+                    this.Visible = true;
+                    this.WindowState = FormWindowState.Normal;
                     ApplyScreenBounds(screens[i]);
-                    _trayIcon?.ShowBalloonTip(3000, "تبديل الشاشة", $"تم نقل اللوحة إلى الشاشة الرئيسية ({screens[i].Bounds.Width}x{screens[i].Bounds.Height})", ToolTipIcon.Info);
+                    this.BringToFront();
+                    _trayIcon?.ShowBalloonTip(3000, "تبديل الشاشة", $"تم نقل اللوحة إلى الشاشة الرئيسية ({screens[i].Bounds.Width}x{screens[i].Bounds.Height}) ⚡", ToolTipIcon.Info);
                     return;
                 }
             }
@@ -379,54 +534,72 @@ namespace AIDA64Panel
             this.Location = screen.Bounds.Location;
             this.Size = screen.Bounds.Size;
             this.Bounds = screen.Bounds;
-            SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+            IntPtr insertAfter = this.TopMost ? HWND_TOPMOST : HWND_NOTOPMOST;
+            SetWindowPos(this.Handle, insertAfter, screen.Bounds.X, screen.Bounds.Y, screen.Bounds.Width, screen.Bounds.Height, SWP_SHOWWINDOW);
         }
 
-        private void EnsureBackendRunning()
+        private async Task EnsureBackendReadyAsync()
         {
-            Task.Run(async () =>
+            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(1) };
+
+            try
             {
+                var res = await client.GetAsync("http://localhost:8088/health");
+                if (res.IsSuccessStatusCode)
+                {
+                    Program.Log("Backend is already running and healthy.");
+                    return;
+                }
+            }
+            catch { }
+
+            try
+            {
+                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                string backendDir = Path.GetFullPath(Path.Combine(baseDir, "..", "backend"));
+                if (!Directory.Exists(backendDir))
+                {
+                    backendDir = @"D:\Services\aida64_dashboard\backend";
+                }
+
+                string pythonExe = @"C:\Python314\pythonw.exe";
+                if (!File.Exists(pythonExe))
+                {
+                    pythonExe = "pythonw";
+                }
+
+                Program.Log($"Launching backend using {pythonExe} from {backendDir}");
+                var psi = new ProcessStartInfo
+                {
+                    FileName = pythonExe,
+                    Arguments = "main.py",
+                    WorkingDirectory = backendDir,
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    CreateNoWindow = true
+                };
+                Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                Program.Log($"Failed to launch backend: {ex.Message}");
+            }
+
+            // Wait up to 25 seconds for /health to respond
+            for (int i = 0; i < 50; i++)
+            {
+                await Task.Delay(500);
                 try
                 {
-                    using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
                     var res = await client.GetAsync("http://localhost:8088/health");
                     if (res.IsSuccessStatusCode)
                     {
-                        Program.Log("Backend is already running.");
+                        Program.Log($"Backend reported healthy after {(i + 1) * 500}ms.");
                         return;
                     }
                 }
                 catch { }
-
-                try
-                {
-                    string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                    string projectRoot = Path.GetFullPath(Path.Combine(baseDir, @"..\..\..\..\"));
-                    string backendDir = Path.Combine(projectRoot, "backend");
-                    if (!Directory.Exists(backendDir))
-                    {
-                        backendDir = @"D:\Services\aida64_dashboard\backend";
-                    }
-
-                    if (Directory.Exists(backendDir))
-                    {
-                        Program.Log($"Launching backend from {backendDir}");
-                        var psi = new ProcessStartInfo
-                        {
-                            FileName = "pythonw",
-                            Arguments = "-m uvicorn main:app --host 0.0.0.0 --port 8088",
-                            WorkingDirectory = backendDir,
-                            WindowStyle = ProcessWindowStyle.Hidden,
-                            CreateNoWindow = true
-                        };
-                        Process.Start(psi);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Program.Log($"Failed to launch backend: {ex.Message}");
-                }
-            });
+            }
+            Program.Log("Warning: Backend health check timed out after 25s.");
         }
 
         private async Task InitializeWebViewAsync()
@@ -454,6 +627,27 @@ namespace AIDA64Panel
                 _webView.CoreWebView2.Settings.IsStatusBarEnabled = false;
                 _webView.CoreWebView2.Settings.AreDevToolsEnabled = true;
 
+                _webView.NavigationCompleted += (s, args) =>
+                {
+                    if (!args.IsSuccess)
+                    {
+                        Program.Log($"Navigation to {DashboardUrl} failed (WebErrorStatus: {args.WebErrorStatus}). Retrying in 2 seconds...");
+                        Task.Delay(2000).ContinueWith(_ =>
+                        {
+                            if (!this.IsDisposed && _webView?.CoreWebView2 != null)
+                            {
+                                try { this.BeginInvoke(() => _webView.CoreWebView2.Navigate(DashboardUrl)); } catch { }
+                            }
+                        });
+                    }
+                    else
+                    {
+                        Program.Log("Dashboard loaded successfully in WebView2.");
+                    }
+                };
+
+                await EnsureBackendReadyAsync();
+
                 Program.Log($"Navigating to: {DashboardUrl}");
                 _webView.CoreWebView2.Navigate(DashboardUrl);
             }
@@ -478,10 +672,8 @@ namespace AIDA64Panel
         {
             this.TopMost = _topmostItem?.Checked ?? false;
             Program.Log($"User toggled TopMost -> {this.TopMost}");
-            if (this.TopMost)
-            {
-                SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-            }
+            IntPtr insertAfter = this.TopMost ? HWND_TOPMOST : HWND_NOTOPMOST;
+            SetWindowPos(this.Handle, insertAfter, this.Bounds.X, this.Bounds.Y, this.Bounds.Width, this.Bounds.Height, SWP_SHOWWINDOW);
         }
 
         private void OnToggleVisibility(object? sender, EventArgs e)
@@ -491,7 +683,8 @@ namespace AIDA64Panel
             if (this.Visible)
             {
                 this.WindowState = FormWindowState.Normal;
-                SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+                IntPtr insertAfter = this.TopMost ? HWND_TOPMOST : HWND_NOTOPMOST;
+                SetWindowPos(this.Handle, insertAfter, this.Bounds.X, this.Bounds.Y, this.Bounds.Width, this.Bounds.Height, SWP_SHOWWINDOW);
                 this.BringToFront();
             }
         }
@@ -552,8 +745,18 @@ namespace AIDA64Panel
         {
             if (disposing)
             {
-                _registeredWait?.Unregister(null);
+                _registeredShowWait?.Unregister(null);
                 _showSignalEvent?.Dispose();
+
+                _registeredPrimaryWait?.Unregister(null);
+                _primarySignalEvent?.Dispose();
+
+                _registeredDedicatedWait?.Unregister(null);
+                _dedicatedSignalEvent?.Dispose();
+
+                _registeredToggleWait?.Unregister(null);
+                _toggleSignalEvent?.Dispose();
+
                 _trayIcon?.Dispose();
                 _trayMenu?.Dispose();
                 _webView?.Dispose();

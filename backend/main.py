@@ -4,7 +4,15 @@ Provides REST endpoints (/health, /api/sensors) and real-time WebSocket streamin
 """
 
 import asyncio
+import os
 import sys
+
+# Ensure sys.stdout and sys.stderr are valid file-like streams even under pythonw.exe
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, "w", encoding="utf-8")
+if sys.stderr is None:
+    sys.stderr = open(os.devnull, "w", encoding="utf-8")
+
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional

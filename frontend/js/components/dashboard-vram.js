@@ -323,6 +323,9 @@ export class DashboardVRAM extends HTMLElement {
     };
 
     this.isRunning = false;
+    this.rafId = null;
+    this.unsubscribe = null;
+    this.unsubscribeData = null;
 
     this.dom = {
       vram_used_percent: this.shadowRoot.getElementById('vram_used_percent'),
@@ -338,23 +341,70 @@ export class DashboardVRAM extends HTMLElement {
   }
 
   connectedCallback() {
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = null;
+    }
+    if (this.unsubscribeData) {
+      this.unsubscribeData();
+      this.unsubscribeData = null;
+    }
+
     this.unsubscribe = EventBus.on('state-changed', this.onStateChange);
     this.unsubscribeData = EventBus.on('telemetry:data', this.onStateChange);
-    this.isRunning = true;
-    requestAnimationFrame(this.tick);
+
+    if (typeof window !== 'undefined' && window.stateManager && window.stateManager.currentState) {
+      this.onStateChange(window.stateManager.currentState);
+    }
+
+    if (!this.isRunning) {
+      this.isRunning = true;
+      this.rafId = requestAnimationFrame(this.tick);
+    }
   }
 
   disconnectedCallback() {
     this.isRunning = false;
-    if (this.unsubscribe) this.unsubscribe();
-    if (this.unsubscribeData) this.unsubscribeData();
+    if (this.rafId) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = null;
+    }
+    if (this.unsubscribeData) {
+      this.unsubscribeData();
+      this.unsubscribeData = null;
+    }
+  }
+
+  _sanitizeNumber(val) {
+    if (val === null || val === undefined) return null;
+    if (typeof val === 'number') return Number.isFinite(val) ? val : null;
+    if (typeof val === 'string') {
+      const trimmed = val.trim();
+      if (!trimmed) return null;
+      const num = Number(trimmed);
+      return Number.isFinite(num) ? num : null;
+    }
+    return null;
   }
 
   onStateChange(delta) {
+    if (!delta || typeof delta !== 'object') return;
     for (const key in this.targetValues) {
       if (delta[key] !== undefined) {
-        this.targetValues[key] = delta[key];
+        this.targetValues[key] = this._sanitizeNumber(delta[key]);
       }
+    }
+
+    // Defensive fallback: derive vram_used_percent if missing from telemetry
+    if (this.targetValues.vram_used_percent === null &&
+        this.targetValues.vram_used_gb !== null &&
+        this.targetValues.vram_total_gb !== null &&
+        this.targetValues.vram_total_gb > 0) {
+      this.targetValues.vram_used_percent = Math.min(100, Math.max(0, (this.targetValues.vram_used_gb / this.targetValues.vram_total_gb) * 100));
     }
   }
 
@@ -367,15 +417,15 @@ export class DashboardVRAM extends HTMLElement {
       const target = this.targetValues[key];
       let current = this.currentValues[key];
 
-      if (target === null || target === undefined) {
-         if (current !== null) {
-           this.currentValues[key] = null;
-           needsRender = true;
-         }
-         continue;
+      if (target === null || target === undefined || !Number.isFinite(target)) {
+        if (current !== null) {
+          this.currentValues[key] = null;
+          needsRender = true;
+        }
+        continue;
       }
 
-      if (current === null) {
+      if (current === null || !Number.isFinite(current)) {
         current = target;
         needsRender = true;
       } else {
@@ -397,7 +447,7 @@ export class DashboardVRAM extends HTMLElement {
       this.render();
     }
 
-    requestAnimationFrame(this.tick);
+    this.rafId = requestAnimationFrame(this.tick);
   }
 
   render() {
@@ -410,40 +460,42 @@ export class DashboardVRAM extends HTMLElement {
     this.updateBar(null, this.dom.vram_used_percent_bar, this.currentValues.vram_used_percent, 0, 100, 0);
   }
 
-  updateText(element, value, decimals) {
+  updateText(element, value, decimals = 0) {
     if (!element) return;
-    const text = (value === null || value === undefined) ? '--' : 
+    const text = (value === null || value === undefined || !Number.isFinite(value)) ? '--' : 
                  (decimals > 0 ? value.toFixed(decimals) : Math.round(value).toString());
     if (element.textContent !== text) {
       element.textContent = text;
     }
   }
 
-  updateBar(textEl, barEl, value, min, max, decimals) {
+  updateBar(textEl, barEl, value, min = 0, max = 100, decimals = 0) {
     if (textEl) {
       this.updateText(textEl, value, decimals);
     }
     if (!barEl) return;
     
-    if (value === null || value === undefined) {
+    if (value === null || value === undefined || !Number.isFinite(value)) {
       if (barEl.style.width !== '0%') {
         barEl.style.width = '0%';
+      }
+      if (barEl.classList.contains('active')) {
         barEl.classList.remove('active');
       }
       return;
     }
 
-    const ratio = Math.min(1, Math.max(0, (value - min) / (max - min)));
+    const range = (max - min) || 1;
+    const ratio = Math.min(1, Math.max(0, (value - min) / range));
     const percent = Math.round(ratio * 100);
     const widthStr = `${percent}%`;
     
     if (barEl.style.width !== widthStr) {
       barEl.style.width = widthStr;
-      if (percent > 0) {
-        barEl.classList.add('active');
-      } else {
-        barEl.classList.remove('active');
-      }
+    }
+    const shouldBeActive = percent > 0;
+    if (barEl.classList.contains('active') !== shouldBeActive) {
+      barEl.classList.toggle('active', shouldBeActive);
     }
   }
 }

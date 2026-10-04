@@ -282,6 +282,9 @@ export class DashboardThermals extends HTMLElement {
     };
 
     this.isRunning = false;
+    this.rafId = null;
+    this.unsubscribe = null;
+    this.unsubscribeData = null;
 
     this.dom = {
       max_temp: this.shadowRoot.getElementById('max_temp'),
@@ -298,22 +301,61 @@ export class DashboardThermals extends HTMLElement {
   }
 
   connectedCallback() {
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = null;
+    }
+    if (this.unsubscribeData) {
+      this.unsubscribeData();
+      this.unsubscribeData = null;
+    }
+
     this.unsubscribe = EventBus.on('state-changed', this.onStateChange);
     this.unsubscribeData = EventBus.on('telemetry:data', this.onStateChange);
-    this.isRunning = true;
-    requestAnimationFrame(this.tick);
+
+    if (typeof window !== 'undefined' && window.stateManager && window.stateManager.currentState) {
+      this.onStateChange(window.stateManager.currentState);
+    }
+
+    if (!this.isRunning) {
+      this.isRunning = true;
+      this.rafId = requestAnimationFrame(this.tick);
+    }
   }
 
   disconnectedCallback() {
     this.isRunning = false;
-    if (this.unsubscribe) this.unsubscribe();
-    if (this.unsubscribeData) this.unsubscribeData();
+    if (this.rafId) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = null;
+    }
+    if (this.unsubscribeData) {
+      this.unsubscribeData();
+      this.unsubscribeData = null;
+    }
+  }
+
+  _sanitizeNumber(val) {
+    if (val === null || val === undefined) return null;
+    if (typeof val === 'number') return Number.isFinite(val) ? val : null;
+    if (typeof val === 'string') {
+      const trimmed = val.trim();
+      if (!trimmed) return null;
+      const num = Number(trimmed);
+      return Number.isFinite(num) ? num : null;
+    }
+    return null;
   }
 
   onStateChange(delta) {
+    if (!delta || typeof delta !== 'object') return;
     for (const key in this.targetValues) {
       if (delta[key] !== undefined) {
-        this.targetValues[key] = delta[key];
+        this.targetValues[key] = this._sanitizeNumber(delta[key]);
       }
     }
   }
@@ -327,15 +369,15 @@ export class DashboardThermals extends HTMLElement {
       const target = this.targetValues[key];
       let current = this.currentValues[key];
 
-      if (target === null || target === undefined) {
-         if (current !== null) {
-           this.currentValues[key] = null;
-           needsRender = true;
-         }
-         continue;
+      if (target === null || target === undefined || !Number.isFinite(target)) {
+        if (current !== null) {
+          this.currentValues[key] = null;
+          needsRender = true;
+        }
+        continue;
       }
 
-      if (current === null) {
+      if (current === null || !Number.isFinite(current)) {
         current = target;
         needsRender = true;
       } else {
@@ -357,7 +399,7 @@ export class DashboardThermals extends HTMLElement {
       this.render();
     }
 
-    requestAnimationFrame(this.tick);
+    this.rafId = requestAnimationFrame(this.tick);
   }
 
   render() {
@@ -370,9 +412,9 @@ export class DashboardThermals extends HTMLElement {
     this.updateText(this.dom.pump_rpm, this.currentValues.pump_rpm, 0);
   }
 
-  updateText(element, value, decimals) {
+  updateText(element, value, decimals = 0) {
     if (!element) return;
-    const text = (value === null || value === undefined) ? '--' : 
+    const text = (value === null || value === undefined || !Number.isFinite(value)) ? '--' : 
                  (decimals > 0 ? value.toFixed(decimals) : Math.round(value).toString());
     if (element.textContent !== text) {
       element.textContent = text;

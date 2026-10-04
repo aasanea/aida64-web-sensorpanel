@@ -123,9 +123,21 @@ export class StateManager {
 
     // Compare new state with current state
     for (const key in newState) {
-      if (this.currentState[key] !== newState[key]) {
-        delta[key] = newState[key];
-        this.currentState[key] = newState[key];
+      const currentVal = this.currentState[key];
+      const newVal = newState[key];
+
+      let isChanged = currentVal !== newVal;
+      if (isChanged && typeof currentVal === 'object' && currentVal !== null && typeof newVal === 'object' && newVal !== null) {
+        try {
+          isChanged = JSON.stringify(currentVal) !== JSON.stringify(newVal);
+        } catch {
+          isChanged = true;
+        }
+      }
+
+      if (isChanged) {
+        delta[key] = newVal;
+        this.currentState[key] = newVal;
         hasChanges = true;
       }
     }
@@ -180,8 +192,10 @@ export class StateManager {
       try {
         const start = performance.now();
         const response = await fetch(endpoints.http, { cache: 'no-store' });
+        if (!this.isPolling) return;
         if (response.ok) {
           const data = await response.json();
+          if (!this.isPolling) return;
           const latency = Math.round(performance.now() - start);
           EventBus.emit('connection:ping', latency);
           
@@ -195,6 +209,7 @@ export class StateManager {
           });
         }
       } catch (err) {
+        if (!this.isPolling) return;
         this.pollFailures++;
         EventBus.emit('connection:status', {
           mode: 'offline',
@@ -234,6 +249,10 @@ export class StateManager {
   }
 
   cleanupWebSocket() {
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+      this.pingInterval = null;
+    }
     if (this.ws) {
       this.ws.onopen = null;
       this.ws.onmessage = null;

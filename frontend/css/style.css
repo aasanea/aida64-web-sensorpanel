@@ -138,10 +138,10 @@ html[data-theme="f1-pitwall"] .orb-2 {
   background: radial-gradient(circle, rgba(255, 215, 0, 0.30) 0%, rgba(255, 215, 0, 0) 70%);
 }
 html[data-theme="f1-pitwall"] .orb-3 {
-  background: radial-gradient(circle, rgba(255, 85, 0, 0.24) 0%, rgba(255, 85, 0) 0);
+  background: radial-gradient(circle, rgba(255, 85, 0, 0.24) 0%, rgba(255, 85, 0, 0) 70%);
 }
 html[data-theme="f1-pitwall"] .orb-4 {
-  background: radial-gradient(circle, rgba(225, 6, 0, 0.28) 0%, rgba(225, 6, 0) 70%);
+  background: radial-gradient(circle, rgba(225, 6, 0, 0.28) 0%, rgba(225, 6, 0, 0) 70%);
 }
 
 html[data-theme="neo-tactile"] .orb-1 {
@@ -217,7 +217,7 @@ html[data-theme="neo-tactile"] .progress-track {
   overflow: hidden;
 }
 
-dashboard-header {
+.dashboard-header {
   position: relative;
   z-index: 100;
 }
@@ -453,7 +453,7 @@ dashboard-header {
   font-family: var(--font-numbers);
   font-size: 16px;
   color: var(--text-muted);
-  direction: ltr;
+  unicode-bidi: isolate;
   margin-inline-start: 22px;
 }
 
@@ -1118,7 +1118,9 @@ dashboard-header {
   position: relative;
   will-change: width;
   transform: translateZ(0);
-  transition: width 0.1s linear;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 0 10px rgba(34, 211, 238, 0.35);
 }
 
@@ -2125,13 +2127,14 @@ dashboard-header {
   .card-slot-1 { grid-column: span 6; }
   .card-slot-2 { grid-column: span 3; }
   .card-network { grid-column: span 3; }
+  .card-appointments, .card-matches { grid-column: span 6; }
 }
 
 @media (max-width: 768px) {
   .bento-grid {
     grid-template-columns: 1fr;
   }
-  .card-cpu, .card-gpu, .card-ram, .card-vram, .card-storage, .card-thermals, .card-network, .card-slot-standby-1, .card-slot-1, .card-slot-2 {
+  .card-cpu, .card-gpu, .card-ram, .card-vram, .card-storage, .card-thermals, .card-network, .card-slot-standby-1, .card-slot-1, .card-slot-2, .card-appointments, .card-matches {
     grid-column: span 1;
   }
   .card-body-split {

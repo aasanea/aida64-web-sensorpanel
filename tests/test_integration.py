@@ -521,17 +521,16 @@ def test_playwright_e2e_browser_ui():
 
             # Open Theme Dropdown Menu
             btn_theme.click()
-            page.wait_for_timeout(600)
+            page.wait_for_timeout(500)
             dropdown_menu = page.locator("#theme-dropdown-menu")
             assert dropdown_menu.is_visible(), "Theme dropdown menu must open upon trigger click"
-            page.screenshot(path=os.path.join(screenshots_dir, "theme_dropdown_menu_open.png"), full_page=True)
+            page.screenshot(path=os.path.join(screenshots_dir, "theme_dropdown_menu_open.png"))
 
             # Direct Selection 1: Neo-Skeuomorphic Tactile System
             item_neo = page.locator(".theme-menu-item[data-theme-id='neo-tactile']")
             assert item_neo.is_visible(), "Neo-tactile theme item must be visible in dropdown"
             item_neo.click()
-            # Wait for circular ripple View Transition animation (0.65s) to fully finish and remove pseudo-elements
-            page.wait_for_timeout(1400)
+            page.wait_for_timeout(800)
             theme_attr = page.locator("html").get_attribute("data-theme")
             assert theme_attr == "neo-tactile", f"Expected theme 'neo-tactile', got: {theme_attr}"
             page.screenshot(path=os.path.join(screenshots_dir, "dashboard_theme_neo_tactile.png"), full_page=True)

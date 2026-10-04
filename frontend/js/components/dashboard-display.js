@@ -1451,6 +1451,8 @@ export class DashboardDisplay extends HTMLElement {
     this.onStateChange = this.onStateChange.bind(this);
     this.toggleFlip = this.toggleFlip.bind(this);
     this.tick = this.tick.bind(this);
+    this.handleFlipBtnClick = this.handleFlipBtnClick.bind(this);
+    this.handleCardClick = this.handleCardClick.bind(this);
     this.isRunning = false;
   }
 
@@ -1460,22 +1462,13 @@ export class DashboardDisplay extends HTMLElement {
 
     // Flip interaction
     if (this.dom.flipToBack) {
-      this.dom.flipToBack.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.toggleFlip();
-      });
+      this.dom.flipToBack.addEventListener('click', this.handleFlipBtnClick);
     }
     if (this.dom.flipToFront) {
-      this.dom.flipToFront.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.toggleFlip();
-      });
+      this.dom.flipToFront.addEventListener('click', this.handleFlipBtnClick);
     }
 
-    this.addEventListener('click', (e) => {
-      if (e.target && (e.target.closest('button') || e.target.closest('.flip-btn'))) return;
-      this.toggleFlip();
-    });
+    this.addEventListener('click', this.handleCardClick);
 
     this.isRunning = true;
     requestAnimationFrame(this.tick);
@@ -1483,8 +1476,32 @@ export class DashboardDisplay extends HTMLElement {
 
   disconnectedCallback() {
     this.isRunning = false;
-    if (this.unsubscribe) this.unsubscribe();
-    if (this.unsubscribeData) this.unsubscribeData();
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = null;
+    }
+    if (this.unsubscribeData) {
+      this.unsubscribeData();
+      this.unsubscribeData = null;
+    }
+
+    if (this.dom.flipToBack) {
+      this.dom.flipToBack.removeEventListener('click', this.handleFlipBtnClick);
+    }
+    if (this.dom.flipToFront) {
+      this.dom.flipToFront.removeEventListener('click', this.handleFlipBtnClick);
+    }
+    this.removeEventListener('click', this.handleCardClick);
+  }
+
+  handleFlipBtnClick(e) {
+    if (e) e.stopPropagation();
+    this.toggleFlip();
+  }
+
+  handleCardClick(e) {
+    if (e?.target && (e.target.closest('button') || e.target.closest('.flip-btn'))) return;
+    this.toggleFlip();
   }
 
   toggleFlip() {

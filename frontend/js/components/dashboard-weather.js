@@ -357,7 +357,8 @@ export class DashboardWeather extends HTMLElement {
     this.timerState = {
       nextSecsBase: null,
       prevSecsBase: null,
-      lastUpdateMs: null,
+      nextLastUpdateMs: null,
+      prevLastUpdateMs: null,
     };
 
     this.onStateChange = this.onStateChange.bind(this);
@@ -411,27 +412,27 @@ export class DashboardWeather extends HTMLElement {
 
     if (data.next_prayer_seconds !== undefined && data.next_prayer_seconds !== null) {
       this.timerState.nextSecsBase = data.next_prayer_seconds;
-      this.timerState.lastUpdateMs = Date.now();
+      this.timerState.nextLastUpdateMs = Date.now();
     }
     if (data.prev_prayer_seconds !== undefined && data.prev_prayer_seconds !== null) {
       this.timerState.prevSecsBase = data.prev_prayer_seconds;
-      this.timerState.lastUpdateMs = Date.now();
+      this.timerState.prevLastUpdateMs = Date.now();
     }
   }
 
   tick() {
     if (!this.isRunning) return;
 
-    if (this.timerState.lastUpdateMs) {
-      const elapsed = (Date.now() - this.timerState.lastUpdateMs) / 1000.0;
-      if (this.timerState.nextSecsBase !== null && this.dom.next_countdown) {
-        const curNext = Math.max(0, this.timerState.nextSecsBase - elapsed);
-        this.dom.next_countdown.textContent = formatSecondsToHMS(curNext);
-      }
-      if (this.timerState.prevSecsBase !== null && this.dom.prev_elapsed) {
-        const curPrev = this.timerState.prevSecsBase + elapsed;
-        this.dom.prev_elapsed.textContent = formatSecondsToHMS(curPrev);
-      }
+    const now = Date.now();
+    if (this.timerState.nextLastUpdateMs && this.timerState.nextSecsBase !== null && this.dom.next_countdown) {
+      const elapsed = (now - this.timerState.nextLastUpdateMs) / 1000.0;
+      const curNext = Math.max(0, this.timerState.nextSecsBase - elapsed);
+      this.dom.next_countdown.textContent = formatSecondsToHMS(curNext);
+    }
+    if (this.timerState.prevLastUpdateMs && this.timerState.prevSecsBase !== null && this.dom.prev_elapsed) {
+      const elapsed = (now - this.timerState.prevLastUpdateMs) / 1000.0;
+      const curPrev = this.timerState.prevSecsBase + elapsed;
+      this.dom.prev_elapsed.textContent = formatSecondsToHMS(curPrev);
     }
 
     requestAnimationFrame(this.tick);

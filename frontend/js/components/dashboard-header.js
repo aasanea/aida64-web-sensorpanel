@@ -545,7 +545,7 @@ template.innerHTML = `
 </div>
 
 <!-- 2. Center: 12-Hour Clock Display (Standalone, Unwrapped, Dead Center) -->
-<div class="clock-display" id="system-clock">--:--:-- <span class="clock-ampm">--</span></div>
+<div class="clock-display" id="system-clock"><span id="clock-time">--:--:--</span>&nbsp;<span class="clock-ampm" id="clock-ampm">--</span></div>
 
 <!-- 3. Left: Connection Status & Fullscreen -->
 <div class="header-telemetry-group">
@@ -661,6 +661,8 @@ export class DashboardHeader extends HTMLElement {
       weekdaysStrip: this.shadowRoot.getElementById('weekdays-strip'),
       weekdayPills: this.shadowRoot.querySelectorAll('.weekday-pill'),
       systemClock: this.shadowRoot.getElementById('system-clock'),
+      clockTime: this.shadowRoot.getElementById('clock-time'),
+      clockAmpm: this.shadowRoot.getElementById('clock-ampm'),
       statusBadge: this.shadowRoot.getElementById('status-badge'),
       statusDot: this.shadowRoot.getElementById('status-dot'),
       statusText: this.shadowRoot.getElementById('status-text'),
@@ -681,6 +683,9 @@ export class DashboardHeader extends HTMLElement {
     this._updateData = null;
     this.updateCheckTimer = null;
     this._isThemeMenuOpen = false;
+    this._copyTimeoutId = null;
+    this._cachedFormatter = null;
+    this._cachedTz = null;
 
     this.onConnectionStatus = this.onConnectionStatus.bind(this);
     this.onConnectionPing = this.onConnectionPing.bind(this);
@@ -696,6 +701,23 @@ export class DashboardHeader extends HTMLElement {
     this.closeUpdateModal = this.closeUpdateModal.bind(this);
     this._onKeyDown = this._onKeyDown.bind(this);
     this.copyUpdateCommand = this.copyUpdateCommand.bind(this);
+    this._onThemeMenuClick = this._onThemeMenuClick.bind(this);
+    this._onThemeMenuKeyDown = this._onThemeMenuKeyDown.bind(this);
+    this._onBackdropClick = this._onBackdropClick.bind(this);
+  }
+
+  static get observedAttributes() {
+    return ['timezone'];
+  }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (name === 'timezone' && oldValue !== newValue) {
+      this._cachedFormatter = null;
+      this._cachedTz = null;
+      this._lastActiveDay = null;
+      this.updateClock();
+      this.updateWeekdays();
+    }
   }
 
   connectedCallback() {
@@ -712,22 +734,9 @@ export class DashboardHeader extends HTMLElement {
       this.dom.themeToggleBtn.addEventListener('click', this.toggleThemeMenu);
     }
 
-    if (this.dom.themeMenuItems) {
-      this.dom.themeMenuItems.forEach(item => {
-        item.addEventListener('click', (e) => {
-          const themeId = item.getAttribute('data-theme-id');
-          this.setTheme(themeId, e);
-          this.closeThemeMenu();
-        });
-        item.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            const themeId = item.getAttribute('data-theme-id');
-            this.setTheme(themeId, e);
-            this.closeThemeMenu();
-          }
-        });
-      });
+    if (this.dom.themeDropdownMenu) {
+      this.dom.themeDropdownMenu.addEventListener('click', this._onThemeMenuClick);
+      this.dom.themeDropdownMenu.addEventListener('keydown', this._onThemeMenuKeyDown);
     }
 
     if (this.dom.updateBadge) {
@@ -762,13 +771,29 @@ export class DashboardHeader extends HTMLElement {
       clearTimeout(this.updateCheckTimer);
       this.updateCheckTimer = null;
     }
+    if (this._copyTimeoutId) {
+      clearTimeout(this._copyTimeoutId);
+      this._copyTimeoutId = null;
+    }
     window.removeEventListener('pointerdown', this._onOutsideClick);
     window.removeEventListener('click', this._onOutsideClick);
     window.removeEventListener('keydown', this._onKeyDown);
-    if (this.unsubStatus) this.unsubStatus();
-    if (this.unsubPing) this.unsubPing();
-    if (this.unsubData) this.unsubData();
-    if (this.unsubState) this.unsubState();
+    if (this.unsubStatus) {
+      this.unsubStatus();
+      this.unsubStatus = null;
+    }
+    if (this.unsubPing) {
+      this.unsubPing();
+      this.unsubPing = null;
+    }
+    if (this.unsubData) {
+      this.unsubData();
+      this.unsubData = null;
+    }
+    if (this.unsubState) {
+      this.unsubState();
+      this.unsubState = null;
+    }
 
     if (this.dom.fullscreenBtn) {
       this.dom.fullscreenBtn.removeEventListener('click', this.toggleFullscreen);
@@ -776,6 +801,11 @@ export class DashboardHeader extends HTMLElement {
 
     if (this.dom.themeToggleBtn) {
       this.dom.themeToggleBtn.removeEventListener('click', this.toggleThemeMenu);
+    }
+
+    if (this.dom.themeDropdownMenu) {
+      this.dom.themeDropdownMenu.removeEventListener('click', this._onThemeMenuClick);
+      this.dom.themeDropdownMenu.removeEventListener('keydown', this._onThemeMenuKeyDown);
     }
 
     if (this.dom.updateBadge) {
@@ -846,6 +876,28 @@ export class DashboardHeader extends HTMLElement {
       return;
     }
     this.closeThemeMenu();
+  }
+
+  _onThemeMenuClick(e) {
+    const item = e.target && e.target.closest ? e.target.closest('.theme-menu-item') : null;
+    if (!item) return;
+    const themeId = item.getAttribute('data-theme-id');
+    if (themeId) {
+      this.setTheme(themeId, e);
+      this.closeThemeMenu();
+    }
+  }
+
+  _onThemeMenuKeyDown(e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const item = e.target && e.target.closest ? e.target.closest('.theme-menu-item') : null;
+    if (!item) return;
+    e.preventDefault();
+    const themeId = item.getAttribute('data-theme-id');
+    if (themeId) {
+      this.setTheme(themeId, e);
+      this.closeThemeMenu();
+    }
   }
 
   setTheme(themeId, e) {
@@ -920,22 +972,100 @@ export class DashboardHeader extends HTMLElement {
     this.dom.themeDot.style.boxShadow = `0 0 8px ${theme.color}`;
   }
 
+  _getDateTimeFormatter() {
+    const tz = this.getAttribute('timezone') || undefined;
+    if (this._cachedFormatter && this._cachedTz === tz) {
+      return this._cachedFormatter;
+    }
+    const options = {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+    };
+    if (tz) {
+      try {
+        this._cachedFormatter = new Intl.DateTimeFormat('en-US', { ...options, timeZone: tz });
+        this._cachedTz = tz;
+        return this._cachedFormatter;
+      } catch {
+        // Fallback to local timezone if tz is invalid
+      }
+    }
+    this._cachedFormatter = new Intl.DateTimeFormat('en-US', options);
+    this._cachedTz = null;
+    return this._cachedFormatter;
+  }
+
   updateClock() {
     if (!this.dom.systemClock) return;
     const now = new Date();
-    let hours = now.getHours();
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12;
-    hours = hours ? hours : 12;
-    const hoursStr = String(hours).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-    this.dom.systemClock.innerHTML = `${hoursStr}:${minutes}:${seconds}&nbsp;<span class="clock-ampm">${ampm}</span>`;
+    if (Number.isNaN(now.getTime())) return;
+
+    let hoursStr = '';
+    let minutes = '';
+    let seconds = '';
+    let ampm = '';
+
+    try {
+      const formatter = this._getDateTimeFormatter();
+      const parts = formatter.formatToParts(now);
+      for (const part of parts) {
+        if (part.type === 'hour') hoursStr = part.value;
+        else if (part.type === 'minute') minutes = part.value;
+        else if (part.type === 'second') seconds = part.value;
+        else if (part.type === 'dayPeriod') ampm = part.value.toUpperCase();
+      }
+    } catch {
+      // Intl formatter error fallback
+    }
+
+    if (!hoursStr || !minutes || !seconds || !ampm) {
+      let hours = now.getHours();
+      ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12 || 12;
+      hoursStr = String(hours).padStart(2, '0');
+      minutes = String(now.getMinutes()).padStart(2, '0');
+      seconds = String(now.getSeconds()).padStart(2, '0');
+    }
+
+    if (this.dom.clockTime && this.dom.clockAmpm) {
+      this.dom.clockTime.textContent = `${hoursStr}:${minutes}:${seconds}`;
+      this.dom.clockAmpm.textContent = ampm;
+    } else {
+      this.dom.systemClock.replaceChildren();
+      const timeSpan = document.createElement('span');
+      timeSpan.id = 'clock-time';
+      timeSpan.textContent = `${hoursStr}:${minutes}:${seconds}`;
+      const nbsp = document.createTextNode('\u00A0');
+      const ampmSpan = document.createElement('span');
+      ampmSpan.className = 'clock-ampm';
+      ampmSpan.id = 'clock-ampm';
+      ampmSpan.textContent = ampm;
+      this.dom.systemClock.append(timeSpan, nbsp, ampmSpan);
+      this.dom.clockTime = timeSpan;
+      this.dom.clockAmpm = ampmSpan;
+    }
   }
 
   updateWeekdays() {
     if (!this.dom.weekdayPills || this.dom.weekdayPills.length === 0) return;
-    const currentDay = new Date().getDay(); // 0: Sunday, 1: Monday, ..., 6: Saturday
+    const now = new Date();
+    if (Number.isNaN(now.getTime())) return;
+
+    let currentDay = now.getDay(); // 0: Sunday, 1: Monday, ..., 6: Saturday
+    const tz = this.getAttribute('timezone') || undefined;
+    if (tz) {
+      try {
+        const dayFormatter = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: tz });
+        const dayStr = dayFormatter.format(now);
+        const dayMap = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+        if (dayMap[dayStr] !== undefined) {
+          currentDay = dayMap[dayStr];
+        }
+      } catch {}
+    }
+
     if (this._lastActiveDay === currentDay) return;
     this._lastActiveDay = currentDay;
 
@@ -949,28 +1079,30 @@ export class DashboardHeader extends HTMLElement {
     });
   }
 
-  onConnectionStatus({ mode, text }) {
+  onConnectionStatus({ mode, text } = {}) {
     if (!this.dom.statusBadge || !this.dom.statusText) return;
-    this.dom.statusBadge.className = `status-badge ${mode}`;
-    this.dom.statusText.textContent = text;
-    if (mode === 'offline' && this.dom.statusPing) {
+    const safeMode = typeof mode === 'string' && /^[a-zA-Z0-9_-]+$/.test(mode) ? mode : 'offline';
+    this.dom.statusBadge.className = `status-badge ${safeMode}`;
+    this.dom.statusText.textContent = typeof text === 'string' ? text : '';
+    if (safeMode === 'offline' && this.dom.statusPing) {
       this.dom.statusPing.textContent = '-- ms';
     }
   }
 
   onConnectionPing(ms) {
     if (this.dom.statusPing) {
-      this.dom.statusPing.textContent = `${ms} ms`;
+      const val = typeof ms === 'number' && Number.isFinite(ms) ? Math.round(ms) : (ms ?? '--');
+      this.dom.statusPing.textContent = `${val} ms`;
     }
   }
 
   onTelemetryData(data) {
     if (!data || typeof data !== 'object') return;
-    if (data.date_gregorian && this.dom.dateGregorian) {
-      this.dom.dateGregorian.textContent = data.date_gregorian;
+    if (data.date_gregorian != null && this.dom.dateGregorian) {
+      this.dom.dateGregorian.textContent = String(data.date_gregorian);
     }
-    if (data.date_hijri && this.dom.dateHijri) {
-      this.dom.dateHijri.textContent = data.date_hijri;
+    if (data.date_hijri != null && this.dom.dateHijri) {
+      this.dom.dateHijri.textContent = String(data.date_hijri);
     }
   }
 
@@ -1266,14 +1398,16 @@ export class DashboardHeader extends HTMLElement {
 
       if (closeBtn) closeBtn.addEventListener('click', this.closeUpdateModal);
       if (dismissBtn) dismissBtn.addEventListener('click', this.closeUpdateModal);
-      if (backdrop) {
-        backdrop.addEventListener('click', (e) => {
-          if (e.target === backdrop) this.closeUpdateModal();
-        });
-      }
+      if (backdrop) backdrop.addEventListener('click', this._onBackdropClick);
       if (copyBtn) copyBtn.addEventListener('click', this.copyUpdateCommand);
     }
     return portal;
+  }
+
+  _onBackdropClick(e) {
+    if (e.target && e.target.id === 'aida-update-backdrop') {
+      this.closeUpdateModal();
+    }
   }
 
   openUpdateModal() {
@@ -1302,7 +1436,18 @@ export class DashboardHeader extends HTMLElement {
       relNotes.textContent = data.release_notes || 'لا توجد ملاحظات إضافية لهذا الإصدار.';
     }
     if (dlLink) {
-      dlLink.href = data.download_url || data.html_url || 'https://github.com/aasanea/aida64-web-sensorpanel/releases';
+      const fallbackUrl = 'https://github.com/aasanea/aida64-web-sensorpanel/releases';
+      const rawUrl = data.download_url || data.html_url || fallbackUrl;
+      try {
+        const parsed = new URL(rawUrl, window.location.href);
+        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+          dlLink.href = parsed.href;
+        } else {
+          dlLink.href = fallbackUrl;
+        }
+      } catch {
+        dlLink.href = fallbackUrl;
+      }
     }
     if (backdrop) {
       backdrop.classList.add('open');
@@ -1326,7 +1471,11 @@ export class DashboardHeader extends HTMLElement {
       if (btn) {
         const orig = btn.textContent;
         btn.textContent = 'تم النسخ! ✓';
-        setTimeout(() => { btn.textContent = orig; }, 2000);
+        if (this._copyTimeoutId) clearTimeout(this._copyTimeoutId);
+        this._copyTimeoutId = setTimeout(() => {
+          btn.textContent = orig;
+          this._copyTimeoutId = null;
+        }, 2000);
       }
     }).catch(err => {
       console.warn('Failed to copy command:', err);
@@ -1335,8 +1484,20 @@ export class DashboardHeader extends HTMLElement {
 
   destroyModalPortal() {
     const portal = document.getElementById('aida-update-modal-portal');
-    if (portal && portal.parentNode) {
-      portal.parentNode.removeChild(portal);
+    if (portal) {
+      const closeBtn = portal.querySelector('#aida-modal-close');
+      const dismissBtn = portal.querySelector('#aida-modal-dismiss');
+      const backdrop = portal.querySelector('#aida-update-backdrop');
+      const copyBtn = portal.querySelector('#aida-btn-copy-cmd');
+
+      if (closeBtn) closeBtn.removeEventListener('click', this.closeUpdateModal);
+      if (dismissBtn) dismissBtn.removeEventListener('click', this.closeUpdateModal);
+      if (backdrop) backdrop.removeEventListener('click', this._onBackdropClick);
+      if (copyBtn) copyBtn.removeEventListener('click', this.copyUpdateCommand);
+
+      if (portal.parentNode) {
+        portal.parentNode.removeChild(portal);
+      }
     }
   }
 

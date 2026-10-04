@@ -648,7 +648,7 @@ template.innerHTML = `
     <div class="card-body-split">
       <!-- Dynamic Circular Temperature Gauge (Right-click to customize) -->
       <div class="gauge-circular-container" id="gpu-gauge-wrapper" data-gauge-id="gpu" title="انقر بزر الفأرة الأيمن لتغيير شكل العداد">
-        <div id="gpu-dynamic-gauge" class="gauge-dynamic-root" data-gauge-id="gpu"></div>
+        <div id="gpu-dynamic-gauge" class="gauge-dynamic-root" data-gauge-id="gpu"><!-- id="gpu_temp" dynamic mount --></div>
       </div>
 
       <!-- Performance Bars Stack -->
@@ -867,13 +867,23 @@ template.innerHTML = `
 
     <!-- Back Face Hardware Footer -->
     <div class="card-footer-strip">
-      <span>NVIDIA GEFORCE RTX 4080 • AD103 GPU • 16GB GDDR6X 256-BIT • TELEMETRY MATRIX</span>
+      <span id="gpu_hardware_desc">NVIDIA GEFORCE RTX 4080 • AD103 GPU • 16GB GDDR6X 256-BIT • TELEMETRY MATRIX</span>
     </div>
   </div>
 </div>
 `;
 
 export class DashboardGPU extends HTMLElement {
+  static get observedAttributes() {
+    return ['hardware-desc', 'gpu-name'];
+  }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (oldValue !== newValue) {
+      this.updateHardwareDesc(newValue);
+    }
+  }
+
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
@@ -914,9 +924,7 @@ export class DashboardGPU extends HTMLElement {
 
     // Front Face DOM Nodes
     this.dom = {
-      gpu_temp: this.shadowRoot.getElementById('gpu_temp'),
-      'gpu-temp-ring': this.shadowRoot.getElementById('gpu-temp-ring'),
-      'gpu-temp-desc': this.shadowRoot.getElementById('gpu-temp-desc'),
+      gpu_hardware_desc: this.shadowRoot.getElementById('gpu_hardware_desc'),
       
       gpu_load: this.shadowRoot.getElementById('gpu_load'),
       gpu_load_bar: this.shadowRoot.getElementById('gpu_load_bar'),
@@ -979,6 +987,12 @@ export class DashboardGPU extends HTMLElement {
   }
 
   connectedCallback() {
+    this.updateHardwareDesc(
+      window.stateManager?.currentState?.gpu_desc || 
+      window.stateManager?.currentState?.gpu_name || 
+      window.stateManager?.currentState?.hardware_desc
+    );
+
     this.unsubscribe = EventBus.on('state-changed', this.onStateChange);
     this.unsubscribeData = EventBus.on('telemetry:data', this.onStateChange);
 
@@ -1070,12 +1084,26 @@ export class DashboardGPU extends HTMLElement {
     this.classList.toggle('flipped', this.isFlipped);
   }
 
+  updateHardwareDesc(customDesc) {
+    if (!this.dom || !this.dom.gpu_hardware_desc) return;
+    const fallback = this.getAttribute('hardware-desc') || 
+                     this.getAttribute('gpu-name') || 
+                     'NVIDIA GEFORCE RTX 4080 • AD103 GPU • 16GB GDDR6X 256-BIT • TELEMETRY MATRIX';
+    const text = (typeof customDesc === 'string' && customDesc.trim().length > 0) ? customDesc.trim() : fallback;
+    if (this.dom.gpu_hardware_desc.textContent !== text) {
+      this.dom.gpu_hardware_desc.textContent = text;
+    }
+  }
+
   onStateChange(delta) {
     if (!delta) return;
     for (const key in this.targetValues) {
       if (delta[key] !== undefined) {
         this.targetValues[key] = delta[key];
       }
+    }
+    if (delta.gpu_desc !== undefined || delta.gpu_name !== undefined || delta.hardware_desc !== undefined) {
+      this.updateHardwareDesc(delta.gpu_desc || delta.gpu_name || delta.hardware_desc);
     }
   }
 
@@ -1122,14 +1150,14 @@ export class DashboardGPU extends HTMLElement {
   }
 
   getTemperatureColor(temp) {
-    if (temp === null || isNaN(temp)) return 'rgba(255, 255, 255, 0.15)';
+    if (temp === null || temp === undefined || isNaN(temp)) return 'rgba(255, 255, 255, 0.15)';
     if (temp < 60) return '#22D3EE'; // var(--neon-cyan) - مثالي
     if (temp < 80) return '#10B981'; // var(--neon-green) - جيدة
     return '#EF4444';                // var(--neon-red)   - حرجة
   }
 
   getTemperatureDesc(temp) {
-    if (temp === null || isNaN(temp)) return '--';
+    if (temp === null || temp === undefined || isNaN(temp)) return '--';
     if (temp < 60) return 'مثالي';
     if (temp < 80) return 'جيدة';
     return 'حرجة';
@@ -1213,8 +1241,8 @@ export class DashboardGPU extends HTMLElement {
 
   updateText(element, value, decimals) {
     if (!element) return;
-    const text = (value === null || value === undefined) ? '--' : 
-                 (decimals > 0 ? value.toFixed(decimals) : Math.round(value).toString());
+    const text = (value === null || value === undefined || isNaN(value)) ? '--' : 
+                 (decimals > 0 ? Number(value).toFixed(decimals) : Math.round(Number(value)).toString());
     if (element.textContent !== text) {
       element.textContent = text;
     }
@@ -1222,8 +1250,8 @@ export class DashboardGPU extends HTMLElement {
 
   updateTextWithSuffix(element, value, decimals, suffix = '') {
     if (!element) return;
-    const text = (value === null || value === undefined) ? '--' : 
-                 `${decimals > 0 ? value.toFixed(decimals) : Math.round(value).toString()}${suffix}`;
+    const text = (value === null || value === undefined || isNaN(value)) ? '--' : 
+                 `${decimals > 0 ? Number(value).toFixed(decimals) : Math.round(Number(value)).toString()}${suffix}`;
     if (element.textContent !== text) {
       element.textContent = text;
     }
@@ -1272,6 +1300,8 @@ export class DashboardGPU extends HTMLElement {
       if (barEl.style.width !== '0%') {
         barEl.style.width = '0%';
       }
+      barEl.style.background = '';
+      barEl.style.boxShadow = '';
       return;
     }
 
@@ -1286,7 +1316,7 @@ export class DashboardGPU extends HTMLElement {
     if (warnThreshold !== null && value >= warnThreshold) {
       barEl.style.background = '#EF4444';
       barEl.style.boxShadow = '0 0 8px rgba(239, 68, 68, 0.6)';
-    } else if (barEl.style.background && barEl.style.background.includes('rgb(239')) {
+    } else {
       barEl.style.background = '';
       barEl.style.boxShadow = '';
     }

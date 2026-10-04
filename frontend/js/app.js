@@ -30,6 +30,10 @@ if (typeof window !== 'undefined') {
 // 2. Sensor Configuration & State Definitions (45 Sensors)
 // ============================================================================
 const SENSOR_SPECS = {
+  // Gauge Specs (Circular Temperature Rings)
+  cpu_temp:           { decimals: 0, min: 0, max: 100, unit: '°C', type: 'ring', ringId: 'cpu-temp-ring', radius: 75, circumference: 471.24, descId: 'cpu-temp-desc' },
+  gpu_temp:           { decimals: 0, min: 0, max: 100, unit: '°C', type: 'ring', ringId: 'gpu-temp-ring', radius: 75, circumference: 471.24, descId: 'gpu-temp-desc' },
+
   // Network Telemetry
   network_download_mbps: { decimals: 1, min: 0, max: 500, unit: 'Mbps', type: 'bar', barId: 'network_download_bar', extraTextId: 'dl_bar_val' },
   network_upload_mbps:   { decimals: 1, min: 0, max: 100, unit: 'Mbps', type: 'bar', barId: 'network_upload_bar', extraTextId: 'ul_bar_val' },
@@ -41,6 +45,14 @@ const SENSOR_SPECS = {
   display_hz:         { decimals: 0, min: 0, max: 500, unit: 'Hz', type: 'number' },
   display_volume:     { decimals: 0, min: 0, max: 100, unit: '%', type: 'number' }
 };
+
+// Ensure circumference is calculated or populated for gauge/ring specs (2 * PI * r)
+Object.values(SENSOR_SPECS).forEach(spec => {
+  if (spec.type === 'ring' || spec.ringId || spec.radius) {
+    const r = typeof spec.radius === 'number' ? spec.radius : 75;
+    spec.circumference = typeof spec.circumference === 'number' ? spec.circumference : parseFloat((2 * Math.PI * r).toFixed(2));
+  }
+});
 
 // Global Animation State
 const telemetryState = {
@@ -112,6 +124,86 @@ function formatSecondsToHMS(totalSecs) {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
+// Helper: HTML escaping for safe interpolation (XSS prevention)
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// Helper: Dirty-checking text update to prevent layout thrashing
+function updateText(el, val) {
+  if (el && el._lastText !== val) {
+    el.textContent = val;
+    el._lastText = val;
+  }
+}
+
+// Helper: DOM lookup with component shadow DOM fallback
+function findDomElement(id) {
+  if (!id || typeof id !== 'string') return null;
+  try {
+    const el = document.getElementById(id);
+    if (el) return el;
+
+    // Gracefully handle encapsulated web component shadow roots
+    const queue = [document];
+    while (queue.length > 0) {
+      const root = queue.shift();
+      if (!root || typeof root.querySelectorAll !== 'function') continue;
+      const hosts = root.querySelectorAll('*');
+      for (let i = 0; i < hosts.length; i++) {
+        const sr = hosts[i].shadowRoot;
+        if (sr) {
+          if (typeof sr.getElementById === 'function') {
+            const found = sr.getElementById(id);
+            if (found) return found;
+          }
+          queue.push(sr);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn(`[domCache] Failed lookup for ID "${id}":`, err);
+  }
+  return null;
+}
+
+// Helper: Multi-element query with component shadow DOM fallback
+function findDomElements(selector) {
+  if (!selector || typeof selector !== 'string') return [];
+  try {
+    const directMatches = Array.from(document.querySelectorAll(selector));
+    if (directMatches.length > 0) return directMatches;
+
+    const results = [];
+    const queue = [document];
+    while (queue.length > 0) {
+      const root = queue.shift();
+      if (!root || typeof root.querySelectorAll !== 'function') continue;
+      const hosts = root.querySelectorAll('*');
+      for (let i = 0; i < hosts.length; i++) {
+        const sr = hosts[i].shadowRoot;
+        if (sr) {
+          if (typeof sr.querySelectorAll === 'function') {
+            const matches = sr.querySelectorAll(selector);
+            if (matches.length > 0) results.push(...matches);
+          }
+          queue.push(sr);
+        }
+      }
+    }
+    return results;
+  } catch (err) {
+    console.warn(`[domCache] Failed selector lookup "${selector}":`, err);
+    return [];
+  }
+}
+
 function renderAppointmentsList(items, container) {
   if (!container) return;
   if (!items || items.length === 0) {
@@ -120,17 +212,23 @@ function renderAppointmentsList(items, container) {
   }
   let html = '';
   items.forEach(item => {
-    const statusClass = `status-${item.status || 'upcoming'}`;
-    const categoryClass = `category-${item.category || 'work'}`;
+    const status = escapeHtml(item.status || 'upcoming');
+    const category = escapeHtml(item.category || 'work');
+    const statusClass = `status-${status}`;
+    const categoryClass = `category-${category}`;
+    const timeText = escapeHtml(item.time_12h || item.time || '');
+    const titleText = escapeHtml(item.title || '');
+    const catLabel = escapeHtml(item.category_label || item.category || '');
+    const statusLabel = escapeHtml(item.status_label || item.status || '');
     html += `
       <div class="apt-item ${statusClass}">
         <div class="apt-item-main">
-          <span class="apt-item-time" dir="rtl"><bdi>${item.time_12h || item.time}</bdi></span>
-          <span class="apt-item-title">${item.title}</span>
+          <span class="apt-item-time" dir="rtl"><bdi>${timeText}</bdi></span>
+          <span class="apt-item-title">${titleText}</span>
         </div>
         <div class="apt-item-badges">
-          <span class="apt-category-pill ${categoryClass}">${item.category_label || item.category}</span>
-          <span class="apt-item-status-pill ${statusClass}">${item.status_label || item.status}</span>
+          <span class="apt-category-pill ${categoryClass}">${catLabel}</span>
+          <span class="apt-item-status-pill ${statusClass}">${statusLabel}</span>
         </div>
       </div>
     `;
@@ -145,6 +243,10 @@ function renderAppointmentsList(items, container) {
 class TelemetryRenderer {
   constructor() {
     this.isRunning = false;
+    this.rafId = null;
+    this.timerId = null;
+    this.unsubscribers = [];
+    this._onFullscreenClick = null;
     this.cacheDomReferences();
     this.bindEvents();
   }
@@ -152,7 +254,7 @@ class TelemetryRenderer {
   cacheDomReferences() {
     // Cache text containers for 24 sensors
     Object.keys(SENSOR_SPECS).forEach(key => {
-      const el = document.getElementById(key);
+      const el = findDomElement(key);
       if (el) {
         domCache.elements[key] = el;
         el._lastText = null;
@@ -162,7 +264,7 @@ class TelemetryRenderer {
 
       // Progress bars
       if (spec.barId) {
-        const bar = document.getElementById(spec.barId);
+        const bar = findDomElement(spec.barId);
         if (bar) {
           domCache.bars[key] = bar;
           bar._lastPercent = null;
@@ -171,7 +273,7 @@ class TelemetryRenderer {
 
       // Circular rings
       if (spec.ringId) {
-        const ring = document.getElementById(spec.ringId);
+        const ring = findDomElement(spec.ringId);
         if (ring) {
           domCache.rings[key] = ring;
           ring._lastOffset = null;
@@ -181,7 +283,7 @@ class TelemetryRenderer {
 
       // Extra text elements (like duplicate metrics in headers or secondary fields)
       if (spec.extraTextId) {
-        const extra = document.getElementById(spec.extraTextId);
+        const extra = findDomElement(spec.extraTextId);
         if (extra) {
           domCache.extras[key] = extra;
           extra._lastText = null;
@@ -189,7 +291,7 @@ class TelemetryRenderer {
       }
 
       if (spec.metricId) {
-        const metricEl = document.getElementById(spec.metricId);
+        const metricEl = findDomElement(spec.metricId);
         if (metricEl) {
           domCache.extras[spec.metricId] = metricEl;
           metricEl._lastText = null;
@@ -198,7 +300,7 @@ class TelemetryRenderer {
 
       // Descriptor
       if (spec.descId) {
-        const descEl = document.getElementById(spec.descId);
+        const descEl = findDomElement(spec.descId);
         if (descEl) {
           domCache.extras[spec.descId] = descEl;
           descEl._lastText = null;
@@ -207,57 +309,57 @@ class TelemetryRenderer {
     });
 
     // Top bar & Status Elements
-    domCache.statusBadge = document.getElementById('status-badge');
-    domCache.statusDot = document.getElementById('status-dot');
-    domCache.statusText = document.getElementById('status-text');
-    domCache.statusPing = document.getElementById('status-ping');
-    domCache.systemClock = document.getElementById('system-clock');
-    domCache.fullscreenBtn = document.getElementById('btn-fullscreen');
-    domCache.dateGregorian = document.getElementById('date_gregorian');
-    domCache.dateHijri = document.getElementById('date_hijri');
-    domCache.displayRes = document.getElementById('display_res');
+    domCache.statusBadge = findDomElement('status-badge');
+    domCache.statusDot = findDomElement('status-dot');
+    domCache.statusText = findDomElement('status-text');
+    domCache.statusPing = findDomElement('status-ping');
+    domCache.systemClock = findDomElement('system-clock');
+    domCache.fullscreenBtn = findDomElement('btn-fullscreen');
+    domCache.dateGregorian = findDomElement('date_gregorian');
+    domCache.dateHijri = findDomElement('date_hijri');
+    domCache.displayRes = findDomElement('display_res');
 
     // Weekdays Strip DOM Elements
-    domCache.weekdaysStrip = document.getElementById('weekdays-strip');
-    domCache.weekdayPills = document.querySelectorAll('.weekday-pill');
+    domCache.weekdaysStrip = findDomElement('weekdays-strip');
+    domCache.weekdayPills = findDomElements('.weekday-pill');
 
     // Riyadh Weather & Prayer DOM Elements
-    domCache.riyadhTemp = document.getElementById('riyadh_temp');
-    domCache.riyadhWeatherDesc = document.getElementById('riyadh_weather_desc');
-    domCache.riyadhWeatherIcon = document.getElementById('riyadh_weather_icon');
-    domCache.nextPrayerName = document.getElementById('next_prayer_name');
-    domCache.nextPrayerCountdown = document.getElementById('next_prayer_countdown');
-    domCache.prevPrayerName = document.getElementById('prev_prayer_name');
-    domCache.prevPrayerElapsed = document.getElementById('prev_prayer_elapsed');
-    domCache.prayerFajr = document.getElementById('prayer_fajr');
-    domCache.prayerDhuhr = document.getElementById('prayer_dhuhr');
-    domCache.prayerAsr = document.getElementById('prayer_asr');
-    domCache.prayerMaghrib = document.getElementById('prayer_maghrib');
-    domCache.prayerIsha = document.getElementById('prayer_isha');
+    domCache.riyadhTemp = findDomElement('riyadh_temp');
+    domCache.riyadhWeatherDesc = findDomElement('riyadh_weather_desc');
+    domCache.riyadhWeatherIcon = findDomElement('riyadh_weather_icon');
+    domCache.nextPrayerName = findDomElement('next_prayer_name');
+    domCache.nextPrayerCountdown = findDomElement('next_prayer_countdown');
+    domCache.prevPrayerName = findDomElement('prev_prayer_name');
+    domCache.prevPrayerElapsed = findDomElement('prev_prayer_elapsed');
+    domCache.prayerFajr = findDomElement('prayer_fajr');
+    domCache.prayerDhuhr = findDomElement('prayer_dhuhr');
+    domCache.prayerAsr = findDomElement('prayer_asr');
+    domCache.prayerMaghrib = findDomElement('prayer_maghrib');
+    domCache.prayerIsha = findDomElement('prayer_isha');
     domCache.prayerPills = {
-      'الفجر': document.getElementById('pill-fajr'),
-      'الظهر': document.getElementById('pill-dhuhr'),
-      'العصر': document.getElementById('pill-asr'),
-      'المغرب': document.getElementById('pill-maghrib'),
-      'العشاء': document.getElementById('pill-isha')
+      'الفجر': findDomElement('pill-fajr'),
+      'الظهر': findDomElement('pill-dhuhr'),
+      'العصر': findDomElement('pill-asr'),
+      'المغرب': findDomElement('pill-maghrib'),
+      'العشاء': findDomElement('pill-isha')
     };
 
     // Appointments DOM Elements
-    domCache.aptRemainingCount = document.getElementById('apt_remaining_count');
-    domCache.aptHeroCategory = document.getElementById('apt_hero_category');
-    domCache.aptHeroStatusDot = document.getElementById('apt_hero_status_dot');
-    domCache.aptHeroStatusLabel = document.getElementById('apt_hero_status_label');
-    domCache.aptHeroTitle = document.getElementById('apt_hero_title');
-    domCache.aptHeroTime = document.getElementById('apt_hero_time');
-    domCache.aptHeroLocation = document.getElementById('apt_hero_location');
-    domCache.aptCountdownLabel = document.getElementById('apt_countdown_label');
-    domCache.aptHeroCountdown = document.getElementById('apt_hero_countdown');
-    domCache.aptTimelineList = document.getElementById('apt-timeline-list');
+    domCache.aptRemainingCount = findDomElement('apt_remaining_count');
+    domCache.aptHeroCategory = findDomElement('apt_hero_category');
+    domCache.aptHeroStatusDot = findDomElement('apt_hero_status_dot');
+    domCache.aptHeroStatusLabel = findDomElement('apt_hero_status_label');
+    domCache.aptHeroTitle = findDomElement('apt_hero_title');
+    domCache.aptHeroTime = findDomElement('apt_hero_time');
+    domCache.aptHeroLocation = findDomElement('apt_hero_location');
+    domCache.aptCountdownLabel = findDomElement('apt_countdown_label');
+    domCache.aptHeroCountdown = findDomElement('apt_hero_countdown');
+    domCache.aptTimelineList = findDomElement('apt-timeline-list');
   }
 
   bindEvents() {
     // Update incoming targets on event
-    EventBus.on('telemetry:data', (data) => {
+    const unsubTelemetry = EventBus.on('telemetry:data', (data) => {
       if (!data || typeof data !== 'object') return;
       Object.keys(SENSOR_SPECS).forEach(key => {
         if (key in data) {
@@ -268,28 +370,25 @@ class TelemetryRenderer {
       });
 
       // String Telemetry updates (Hijri/Gregorian dates, Display resolution)
-      if (data.date_gregorian && domCache.dateGregorian && domCache.dateGregorian._lastText !== data.date_gregorian) {
-        domCache.dateGregorian.textContent = data.date_gregorian;
-        domCache.dateGregorian._lastText = data.date_gregorian;
+      if (data.date_gregorian && domCache.dateGregorian) {
+        updateText(domCache.dateGregorian, data.date_gregorian);
       }
-      if (data.date_hijri && domCache.dateHijri && domCache.dateHijri._lastText !== data.date_hijri) {
-        domCache.dateHijri.textContent = data.date_hijri;
-        domCache.dateHijri._lastText = data.date_hijri;
+      if (data.date_hijri && domCache.dateHijri) {
+        updateText(domCache.dateHijri, data.date_hijri);
       }
-      if (data.display_res && domCache.displayRes && domCache.displayRes._lastText !== data.display_res) {
-        domCache.displayRes.textContent = data.display_res;
-        domCache.displayRes._lastText = data.display_res;
+      if (data.display_res && domCache.displayRes) {
+        updateText(domCache.displayRes, data.display_res);
       }
 
       // Riyadh Weather & Prayer Times Updates
       if (data.riyadh_temp !== undefined && domCache.riyadhTemp) {
-        domCache.riyadhTemp.textContent = (data.riyadh_temp !== null) ? data.riyadh_temp : '--';
+        updateText(domCache.riyadhTemp, (data.riyadh_temp !== null) ? String(data.riyadh_temp) : '--');
       }
       if (data.riyadh_weather_desc && domCache.riyadhWeatherDesc) {
-        domCache.riyadhWeatherDesc.textContent = data.riyadh_weather_desc;
+        updateText(domCache.riyadhWeatherDesc, data.riyadh_weather_desc);
       }
       if (data.riyadh_weather_icon && domCache.riyadhWeatherIcon) {
-        domCache.riyadhWeatherIcon.textContent = data.riyadh_weather_icon;
+        updateText(domCache.riyadhWeatherIcon, data.riyadh_weather_icon);
       }
       const format12h = (timeStr) => {
         if (!timeStr || typeof timeStr !== 'string' || !timeStr.includes(':')) return timeStr;
@@ -302,17 +401,17 @@ class TelemetryRenderer {
         return `${h}:${m}`;
       };
 
-      if (data.prayer_fajr && domCache.prayerFajr) domCache.prayerFajr.textContent = format12h(data.prayer_fajr);
-      if (data.prayer_dhuhr && domCache.prayerDhuhr) domCache.prayerDhuhr.textContent = format12h(data.prayer_dhuhr);
-      if (data.prayer_asr && domCache.prayerAsr) domCache.prayerAsr.textContent = format12h(data.prayer_asr);
-      if (data.prayer_maghrib && domCache.prayerMaghrib) domCache.prayerMaghrib.textContent = format12h(data.prayer_maghrib);
-      if (data.prayer_isha && domCache.prayerIsha) domCache.prayerIsha.textContent = format12h(data.prayer_isha);
+      if (data.prayer_fajr && domCache.prayerFajr) updateText(domCache.prayerFajr, format12h(data.prayer_fajr));
+      if (data.prayer_dhuhr && domCache.prayerDhuhr) updateText(domCache.prayerDhuhr, format12h(data.prayer_dhuhr));
+      if (data.prayer_asr && domCache.prayerAsr) updateText(domCache.prayerAsr, format12h(data.prayer_asr));
+      if (data.prayer_maghrib && domCache.prayerMaghrib) updateText(domCache.prayerMaghrib, format12h(data.prayer_maghrib));
+      if (data.prayer_isha && domCache.prayerIsha) updateText(domCache.prayerIsha, format12h(data.prayer_isha));
 
       if (data.next_prayer_name && domCache.nextPrayerName) {
-        domCache.nextPrayerName.textContent = data.next_prayer_name;
+        updateText(domCache.nextPrayerName, data.next_prayer_name);
         if (domCache.prayerPills) {
           Object.entries(domCache.prayerPills).forEach(([pName, pEl]) => {
-            if (pEl) {
+            if (pEl && pEl.classList) {
               if (pName === data.next_prayer_name) pEl.classList.add('active-next');
               else pEl.classList.remove('active-next');
             }
@@ -320,7 +419,7 @@ class TelemetryRenderer {
         }
       }
       if (data.prev_prayer_name && domCache.prevPrayerName) {
-        domCache.prevPrayerName.textContent = data.prev_prayer_name;
+        updateText(domCache.prevPrayerName, data.prev_prayer_name);
       }
 
       if (data.next_prayer_seconds !== undefined && data.next_prayer_seconds !== null) {
@@ -334,33 +433,42 @@ class TelemetryRenderer {
 
       // Daily Appointments Telemetry Updates
       if (data.appointments_remaining !== undefined && domCache.aptRemainingCount) {
-        domCache.aptRemainingCount.textContent = (data.appointments_remaining !== null) ? data.appointments_remaining : '--';
+        updateText(domCache.aptRemainingCount, (data.appointments_remaining !== null) ? String(data.appointments_remaining) : '--');
       }
 
       if (data.next_appointment_title) {
-        if (domCache.aptHeroTitle) domCache.aptHeroTitle.textContent = data.next_appointment_title;
-        if (domCache.aptHeroTime && data.next_appointment_time) domCache.aptHeroTime.textContent = data.next_appointment_time;
+        if (domCache.aptHeroTitle) updateText(domCache.aptHeroTitle, data.next_appointment_title);
+        if (domCache.aptHeroTime && data.next_appointment_time) updateText(domCache.aptHeroTime, data.next_appointment_time);
         if (domCache.aptHeroCategory && data.next_appointment_category_label) {
-          domCache.aptHeroCategory.textContent = data.next_appointment_category_label;
-          domCache.aptHeroCategory.className = `apt-category-pill category-${data.next_appointment_category || 'work'}`;
+          updateText(domCache.aptHeroCategory, data.next_appointment_category_label);
+          const catClass = `apt-category-pill category-${data.next_appointment_category || 'work'}`;
+          if (domCache.aptHeroCategory.className !== catClass) domCache.aptHeroCategory.className = catClass;
         }
         if (data.next_appointment_ongoing) {
-          if (domCache.aptHeroStatusLabel) domCache.aptHeroStatusLabel.textContent = 'جاري الآن';
-          if (domCache.aptHeroStatusDot) domCache.aptHeroStatusDot.className = 'apt-status-indicator pulse-green';
-          if (domCache.aptCountdownLabel) domCache.aptCountdownLabel.textContent = 'منذ البدء';
+          if (domCache.aptHeroStatusLabel) updateText(domCache.aptHeroStatusLabel, 'جاري الآن');
+          if (domCache.aptHeroStatusDot && domCache.aptHeroStatusDot.className !== 'apt-status-indicator pulse-green') {
+            domCache.aptHeroStatusDot.className = 'apt-status-indicator pulse-green';
+          }
+          if (domCache.aptCountdownLabel) updateText(domCache.aptCountdownLabel, 'منذ البدء');
           appointmentTimerState.isOngoing = true;
         } else {
-          if (domCache.aptHeroStatusLabel) domCache.aptHeroStatusLabel.textContent = 'الموعد القادم';
-          if (domCache.aptHeroStatusDot) domCache.aptHeroStatusDot.className = 'apt-status-indicator pulse-cyan';
-          if (domCache.aptCountdownLabel) domCache.aptCountdownLabel.textContent = 'متبقي';
+          if (domCache.aptHeroStatusLabel) updateText(domCache.aptHeroStatusLabel, 'الموعد القادم');
+          if (domCache.aptHeroStatusDot && domCache.aptHeroStatusDot.className !== 'apt-status-indicator pulse-cyan') {
+            domCache.aptHeroStatusDot.className = 'apt-status-indicator pulse-cyan';
+          }
+          if (domCache.aptCountdownLabel) updateText(domCache.aptCountdownLabel, 'متبقي');
           appointmentTimerState.isOngoing = false;
         }
         if (domCache.aptHeroLocation) {
           if (data.next_appointment_location) {
-            domCache.aptHeroLocation.textContent = data.next_appointment_location;
-            if (domCache.aptHeroLocation.parentElement) domCache.aptHeroLocation.parentElement.style.display = 'inline-flex';
+            updateText(domCache.aptHeroLocation, data.next_appointment_location);
+            if (domCache.aptHeroLocation.parentElement && domCache.aptHeroLocation.parentElement.style.display !== 'inline-flex') {
+              domCache.aptHeroLocation.parentElement.style.display = 'inline-flex';
+            }
           } else {
-            if (domCache.aptHeroLocation.parentElement) domCache.aptHeroLocation.parentElement.style.display = 'none';
+            if (domCache.aptHeroLocation.parentElement && domCache.aptHeroLocation.parentElement.style.display !== 'none') {
+              domCache.aptHeroLocation.parentElement.style.display = 'none';
+            }
           }
         }
         if (data.next_appointment_seconds !== undefined && data.next_appointment_seconds !== null) {
@@ -368,11 +476,13 @@ class TelemetryRenderer {
           appointmentTimerState.lastUpdateMs = Date.now();
         }
       } else if (data.appointments_count !== undefined) {
-        if (domCache.aptHeroTitle) domCache.aptHeroTitle.textContent = 'لا توجد مواعيد متبقية لليوم';
-        if (domCache.aptHeroTime) domCache.aptHeroTime.textContent = '--:--';
-        if (domCache.aptHeroCountdown) domCache.aptHeroCountdown.textContent = '00:00:00';
-        if (domCache.aptHeroStatusLabel) domCache.aptHeroStatusLabel.textContent = 'مكتمل';
-        if (domCache.aptHeroStatusDot) domCache.aptHeroStatusDot.className = 'apt-status-indicator';
+        if (domCache.aptHeroTitle) updateText(domCache.aptHeroTitle, 'لا توجد مواعيد متبقية لليوم');
+        if (domCache.aptHeroTime) updateText(domCache.aptHeroTime, '--:--');
+        if (domCache.aptHeroCountdown) updateText(domCache.aptHeroCountdown, '00:00:00');
+        if (domCache.aptHeroStatusLabel) updateText(domCache.aptHeroStatusLabel, 'مكتمل');
+        if (domCache.aptHeroStatusDot && domCache.aptHeroStatusDot.className !== 'apt-status-indicator') {
+          domCache.aptHeroStatusDot.className = 'apt-status-indicator';
+        }
       }
 
       if (Array.isArray(data.today_appointments) && domCache.aptTimelineList) {
@@ -381,27 +491,32 @@ class TelemetryRenderer {
     });
 
     // Connection Status Updates
-    EventBus.on('connection:status', ({ mode, text }) => {
+    const unsubStatus = EventBus.on('connection:status', ({ mode, text }) => {
       if (!domCache.statusBadge || !domCache.statusText) return;
       
-      domCache.statusBadge.className = `status-badge ${mode}`;
-      domCache.statusText.textContent = text;
+      const badgeClass = `status-badge ${mode}`;
+      if (domCache.statusBadge.className !== badgeClass) {
+        domCache.statusBadge.className = badgeClass;
+      }
+      updateText(domCache.statusText, text);
       
       if (mode === 'offline') {
-        if (domCache.statusPing) domCache.statusPing.textContent = '-- ms';
+        if (domCache.statusPing) updateText(domCache.statusPing, '-- ms');
       }
     });
 
     // Ping update
-    EventBus.on('connection:ping', (ms) => {
+    const unsubPing = EventBus.on('connection:ping', (ms) => {
       if (domCache.statusPing) {
-        domCache.statusPing.textContent = `${ms} ms`;
+        updateText(domCache.statusPing, `${ms} ms`);
       }
     });
 
+    this.unsubscribers.push(unsubTelemetry, unsubStatus, unsubPing);
+
     // Fullscreen Toggle
     if (domCache.fullscreenBtn) {
-      domCache.fullscreenBtn.addEventListener('click', () => {
+      this._onFullscreenClick = () => {
         if (!document.fullscreenElement) {
           document.documentElement.requestFullscreen().catch(err => {
             console.warn('Fullscreen request failed:', err);
@@ -411,7 +526,8 @@ class TelemetryRenderer {
             console.warn('Exit fullscreen failed:', err);
           });
         }
-      });
+      };
+      domCache.fullscreenBtn.addEventListener('click', this._onFullscreenClick);
     }
 
     // System Clock, Weekdays, Prayer & Appointments Countdowns Updater
@@ -419,7 +535,7 @@ class TelemetryRenderer {
     this.updateWeekdays();
     this.updatePrayerCountdowns();
     this.updateAppointmentCountdown();
-    setInterval(() => {
+    this.timerId = setInterval(() => {
       this.updateClock();
       this.updateWeekdays();
       this.updatePrayerCountdowns();
@@ -428,17 +544,21 @@ class TelemetryRenderer {
   }
 
   updateWeekdays() {
+    if (!domCache.weekdayPills || domCache.weekdayPills.length === 0) {
+      domCache.weekdayPills = findDomElements('.weekday-pill');
+    }
     if (!domCache.weekdayPills || domCache.weekdayPills.length === 0) return;
     const currentDay = new Date().getDay(); // 0: Sunday, 1: Monday, ..., 6: Saturday
     if (this._lastActiveDay === currentDay) return;
     this._lastActiveDay = currentDay;
 
     domCache.weekdayPills.forEach(pill => {
+      if (!pill || typeof pill.getAttribute !== 'function') return;
       const day = parseInt(pill.getAttribute('data-day'), 10);
       if (day === currentDay) {
-        pill.classList.add('active-day');
+        pill.classList?.add('active-day');
       } else {
-        pill.classList.remove('active-day');
+        pill.classList?.remove('active-day');
       }
     });
   }
@@ -453,7 +573,11 @@ class TelemetryRenderer {
       const hoursStr = String(hours).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
-      domCache.systemClock.innerHTML = `${hoursStr}:${minutes}:${seconds}&nbsp;<span class="clock-ampm">${ampm}</span>`;
+      const clockHtml = `${hoursStr}:${minutes}:${seconds}&nbsp;<span class="clock-ampm">${ampm}</span>`;
+      if (domCache.systemClock._lastHtml !== clockHtml) {
+        domCache.systemClock.innerHTML = clockHtml;
+        domCache.systemClock._lastHtml = clockHtml;
+      }
     }
   }
 
@@ -463,12 +587,12 @@ class TelemetryRenderer {
 
     if (prayerTimerState.nextSecsBase !== null && domCache.nextPrayerCountdown) {
       const curNext = Math.max(0, prayerTimerState.nextSecsBase - elapsedSinceUpdate);
-      domCache.nextPrayerCountdown.textContent = formatSecondsToHMS(curNext);
+      updateText(domCache.nextPrayerCountdown, formatSecondsToHMS(curNext));
     }
 
     if (prayerTimerState.prevSecsBase !== null && domCache.prevPrayerElapsed) {
       const curPrev = prayerTimerState.prevSecsBase + elapsedSinceUpdate;
-      domCache.prevPrayerElapsed.textContent = formatSecondsToHMS(curPrev);
+      updateText(domCache.prevPrayerElapsed, formatSecondsToHMS(curPrev));
     }
   }
 
@@ -478,10 +602,10 @@ class TelemetryRenderer {
     if (appointmentTimerState.nextSecsBase !== null) {
       if (appointmentTimerState.isOngoing) {
         const cur = appointmentTimerState.nextSecsBase + elapsedSinceUpdate;
-        domCache.aptHeroCountdown.textContent = formatSecondsToHMS(cur);
+        updateText(domCache.aptHeroCountdown, formatSecondsToHMS(cur));
       } else {
         const cur = Math.max(0, appointmentTimerState.nextSecsBase - elapsedSinceUpdate);
-        domCache.aptHeroCountdown.textContent = formatSecondsToHMS(cur);
+        updateText(domCache.aptHeroCountdown, formatSecondsToHMS(cur));
       }
     }
   }
@@ -493,10 +617,34 @@ class TelemetryRenderer {
     const tick = () => {
       this.renderFrame();
       if (this.isRunning) {
-        requestAnimationFrame(tick);
+        this.rafId = requestAnimationFrame(tick);
       }
     };
-    requestAnimationFrame(tick);
+    this.rafId = requestAnimationFrame(tick);
+  }
+
+  stop() {
+    this.isRunning = false;
+    if (this.rafId) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+    if (this.timerId) {
+      clearInterval(this.timerId);
+      this.timerId = null;
+    }
+  }
+
+  destroy() {
+    this.stop();
+    this.unsubscribers.forEach(unsub => {
+      if (typeof unsub === 'function') unsub();
+    });
+    this.unsubscribers = [];
+    if (this._onFullscreenClick && domCache.fullscreenBtn) {
+      domCache.fullscreenBtn.removeEventListener('click', this._onFullscreenClick);
+      this._onFullscreenClick = null;
+    }
   }
 
   renderFrame() {
@@ -534,31 +682,59 @@ class TelemetryRenderer {
   }
 
   renderNullState(key, spec) {
-    const el = domCache.elements[key];
+    let el = domCache.elements[key];
+    if (!el) {
+      el = findDomElement(key);
+      if (el) {
+        domCache.elements[key] = el;
+        el._lastText = null;
+      }
+    }
     if (el && el._lastText !== '--') {
       el.textContent = '--';
       el._lastText = '--';
     }
 
     // Secondary extra text
-    if (spec.extraTextId && domCache.extras[key]) {
-      const extra = domCache.extras[key];
-      if (extra._lastText !== '--') {
+    if (spec.extraTextId) {
+      let extra = domCache.extras[key];
+      if (!extra) {
+        extra = findDomElement(spec.extraTextId);
+        if (extra) {
+          domCache.extras[key] = extra;
+          extra._lastText = null;
+        }
+      }
+      if (extra && extra._lastText !== '--') {
         extra.textContent = '--';
         extra._lastText = '--';
       }
     }
 
-    if (spec.metricId && domCache.extras[spec.metricId]) {
-      const metricEl = domCache.extras[spec.metricId];
-      if (metricEl._lastText !== '--') {
+    if (spec.metricId) {
+      let metricEl = domCache.extras[spec.metricId];
+      if (!metricEl) {
+        metricEl = findDomElement(spec.metricId);
+        if (metricEl) {
+          domCache.extras[spec.metricId] = metricEl;
+          metricEl._lastText = null;
+        }
+      }
+      if (metricEl && metricEl._lastText !== '--') {
         metricEl.textContent = '--';
         metricEl._lastText = '--';
       }
     }
 
     // Reset Progress Bar
-    const bar = domCache.bars[key];
+    let bar = domCache.bars[key];
+    if (!bar && spec.barId) {
+      bar = findDomElement(spec.barId);
+      if (bar) {
+        domCache.bars[key] = bar;
+        bar._lastPercent = null;
+      }
+    }
     if (bar && bar._lastPercent !== 0) {
       bar.style.width = '0%';
       bar.classList.remove('active');
@@ -566,18 +742,36 @@ class TelemetryRenderer {
     }
 
     // Reset Circular Ring
-    const ring = domCache.rings[key];
-    if (ring && ring._lastOffset !== spec.circumference) {
-      ring.style.strokeDashoffset = spec.circumference;
+    let ring = domCache.rings[key];
+    if (!ring && spec.ringId) {
+      ring = findDomElement(spec.ringId);
+      if (ring) {
+        domCache.rings[key] = ring;
+        ring._lastOffset = null;
+        ring._lastStroke = null;
+      }
+    }
+    const circumference = (typeof spec.circumference === 'number' && !isNaN(spec.circumference))
+      ? spec.circumference
+      : (spec.radius ? parseFloat((2 * Math.PI * spec.radius).toFixed(2)) : 471.24);
+    if (ring && ring._lastOffset !== circumference) {
+      ring.style.strokeDashoffset = circumference;
       ring.style.stroke = 'rgba(255, 255, 255, 0.08)';
       ring.style.filter = 'none';
-      ring._lastOffset = spec.circumference;
+      ring._lastOffset = circumference;
     }
 
     // Descriptor
-    if (spec.descId && domCache.extras[spec.descId]) {
-      const descEl = domCache.extras[spec.descId];
-      if (descEl._lastText !== '--') {
+    if (spec.descId) {
+      let descEl = domCache.extras[spec.descId];
+      if (!descEl) {
+        descEl = findDomElement(spec.descId);
+        if (descEl) {
+          domCache.extras[spec.descId] = descEl;
+          descEl._lastText = null;
+        }
+      }
+      if (descEl && descEl._lastText !== '--') {
         descEl.textContent = '--';
         descEl._lastText = '--';
       }
@@ -589,31 +783,59 @@ class TelemetryRenderer {
     const formatted = spec.decimals > 0 ? current.toFixed(spec.decimals) : Math.round(current).toString();
 
     // 2. DOM text update only if changed (prevents DOM thrashing)
-    const el = domCache.elements[key];
+    let el = domCache.elements[key];
+    if (!el) {
+      el = findDomElement(key);
+      if (el) {
+        domCache.elements[key] = el;
+        el._lastText = null;
+      }
+    }
     if (el && el._lastText !== formatted) {
       el.textContent = formatted;
       el._lastText = formatted;
     }
 
     // Extra text nodes
-    if (spec.extraTextId && domCache.extras[key]) {
-      const extra = domCache.extras[key];
-      if (extra._lastText !== formatted) {
+    if (spec.extraTextId) {
+      let extra = domCache.extras[key];
+      if (!extra) {
+        extra = findDomElement(spec.extraTextId);
+        if (extra) {
+          domCache.extras[key] = extra;
+          extra._lastText = null;
+        }
+      }
+      if (extra && extra._lastText !== formatted) {
         extra.textContent = formatted;
         extra._lastText = formatted;
       }
     }
 
-    if (spec.metricId && domCache.extras[spec.metricId]) {
-      const metricEl = domCache.extras[spec.metricId];
-      if (metricEl._lastText !== formatted) {
+    if (spec.metricId) {
+      let metricEl = domCache.extras[spec.metricId];
+      if (!metricEl) {
+        metricEl = findDomElement(spec.metricId);
+        if (metricEl) {
+          domCache.extras[spec.metricId] = metricEl;
+          metricEl._lastText = null;
+        }
+      }
+      if (metricEl && metricEl._lastText !== formatted) {
         metricEl.textContent = formatted;
         metricEl._lastText = formatted;
       }
     }
 
     // 3. Progress Bar update (Ultra-thin 4px with glowing dot)
-    const bar = domCache.bars[key];
+    let bar = domCache.bars[key];
+    if (!bar && spec.barId) {
+      bar = findDomElement(spec.barId);
+      if (bar) {
+        domCache.bars[key] = bar;
+        bar._lastPercent = null;
+      }
+    }
     if (bar) {
       const ratio = Math.min(1, Math.max(0, (current - spec.min) / (spec.max - spec.min)));
       const percent = Math.round(ratio * 100);
@@ -630,10 +852,21 @@ class TelemetryRenderer {
     }
 
     // 4. Circular Temperature Ring update (Color Shift & Stroke Dashoffset)
-    const ring = domCache.rings[key];
+    let ring = domCache.rings[key];
+    if (!ring && spec.ringId) {
+      ring = findDomElement(spec.ringId);
+      if (ring) {
+        domCache.rings[key] = ring;
+        ring._lastOffset = null;
+        ring._lastStroke = null;
+      }
+    }
     if (ring) {
       const ratio = Math.min(1, Math.max(0, (current - spec.min) / (spec.max - spec.min)));
-      const offset = (spec.circumference * (1 - ratio)).toFixed(2);
+      const circumference = (typeof spec.circumference === 'number' && !isNaN(spec.circumference))
+        ? spec.circumference
+        : (spec.radius ? parseFloat((2 * Math.PI * spec.radius).toFixed(2)) : 471.24);
+      const offset = (circumference * (1 - ratio)).toFixed(2);
       const color = getTemperatureColor(current);
 
       if (ring._lastOffset !== offset) {
@@ -648,13 +881,22 @@ class TelemetryRenderer {
       }
 
       // Update temperature descriptor
-      if (spec.descId && domCache.extras[spec.descId]) {
-        const descEl = domCache.extras[spec.descId];
-        const desc = getTemperatureDesc(current);
-        if (descEl._lastText !== desc) {
-          descEl.textContent = desc;
-          descEl.style.color = color;
-          descEl._lastText = desc;
+      if (spec.descId) {
+        let descEl = domCache.extras[spec.descId];
+        if (!descEl) {
+          descEl = findDomElement(spec.descId);
+          if (descEl) {
+            domCache.extras[spec.descId] = descEl;
+            descEl._lastText = null;
+          }
+        }
+        if (descEl) {
+          const desc = getTemperatureDesc(current);
+          if (descEl._lastText !== desc) {
+            descEl.textContent = desc;
+            descEl.style.color = color;
+            descEl._lastText = desc;
+          }
         }
       }
     }
@@ -670,6 +912,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize 60 FPS Render Engine
   const renderer = new TelemetryRenderer();
   renderer.start();
+  window.telemetryRenderer = renderer;
 
   // Initialize State Manager
   const stateManager = new StateManager();

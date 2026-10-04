@@ -98,6 +98,7 @@
   background: rgba(15, 23, 42, 0.65);
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   color: var(--neon-cyan, #22D3EE);
   letter-spacing: 0.3px;
@@ -227,8 +228,7 @@
 .gauge-mercury .mercury-fluid,
 .gauge-liquid-mercury .mercury-fluid {
   fill: none;
-  stroke: var(--neon-yellow, #FACC15);
-  stroke: url(#mercury-grad);
+  stroke: url(#mercury-grad) var(--neon-yellow, #FACC15);
   stroke-width: 10px;
   stroke-linecap: round;
   transition: stroke-dashoffset 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), stroke 0.3s ease;
@@ -426,7 +426,7 @@
 .gauge-prism .prism-spectrum-arc,
 .gauge-prism-glass .prism-spectrum-arc {
   fill: none;
-  stroke: url(#prism-gradient);
+  stroke: url(#prism-gradient) var(--neon-cyan, #06B6D4);
   stroke-width: 12px;
   stroke-linecap: round;
   filter: drop-shadow(0 0 10px rgba(124, 92, 255, 0.5));
@@ -450,6 +450,7 @@
   width: 100vw;
   height: 100vh;
   background: rgba(4, 6, 15, 0.75);
+  -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
   z-index: 99999;
   display: flex;

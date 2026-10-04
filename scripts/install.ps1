@@ -233,6 +233,21 @@ try {
     $shortcut.Save()
 
     Write-Color "[OK] Created Desktop shortcut: 'AIDA64 Web SensorPanel'" Green
+
+    # Create Show on Primary shortcut
+    if (Test-Path $nativeExe) {
+        $primaryShortcutPath = Join-Path $desktopPath "AIDA64 Show on Primary.lnk"
+        $primaryShortcut = $wshShell.CreateShortcut($primaryShortcutPath)
+        $primaryShortcut.TargetPath = $nativeExe
+        $primaryShortcut.Arguments = "--primary"
+        $primaryShortcut.WorkingDirectory = (Join-Path $InstallDir "bin")
+        if (Test-Path $nativeIcon) {
+            $primaryShortcut.IconLocation = "$nativeIcon,0"
+        }
+        $primaryShortcut.Description = "Bring AIDA64 SensorPanel to Primary Screen"
+        $primaryShortcut.Save()
+        Write-Color "[OK] Created Desktop shortcut: 'AIDA64 Show on Primary'" Green
+    }
 } catch {
     Write-Color "[WARNING] Could not create desktop shortcut: $_" Gray
 }

@@ -523,8 +523,10 @@ template.innerHTML = `
     font-weight: 900;
     color: var(--neon-yellow, #FACC15);
     direction: ltr;
+    unicode-bidi: isolate;
     display: inline-flex;
-    align-items: baseline;
+    align-items: center;
+    gap: 3px;
     letter-spacing: 0.5px;
     text-shadow: 0 0 8px rgba(250, 204, 21, 0.55);
     font-variant-numeric: tabular-nums;
@@ -544,7 +546,10 @@ template.innerHTML = `
     background: rgba(239, 68, 68, 0.35);
     padding: 0 3px;
     border-radius: 3px;
-    margin-left: 2px;
+    margin-inline-start: 2px;
+    direction: ltr;
+    unicode-bidi: isolate;
+    display: inline-block;
   }
 
   .live-sep {
@@ -981,6 +986,45 @@ function getCompMeta(m) {
   return { flag: '', badgeClass: '' };
 }
 
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function sanitizeUrl(url) {
+  if (!url) return '';
+  const clean = String(url).trim();
+  if (/^(?:javascript|data|vbscript):/i.test(clean) && !clean.startsWith('data:image/')) {
+    return '';
+  }
+  return escapeHtml(clean);
+}
+
+function getRiyadhDateKey(date = new Date()) {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Riyadh',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(date);
+    const y = parts.find(p => p.type === 'year')?.value;
+    const m = parts.find(p => p.type === 'month')?.value;
+    const d = parts.find(p => p.type === 'day')?.value;
+    if (y && m && d) return `${y}-${m}-${d}`;
+  } catch (e) {
+    // fallback if Intl or Asia/Riyadh is unsupported
+  }
+  // Fallback: Asia/Riyadh is UTC+3 with no daylight saving time (UTC+03:00)
+  const d = new Date(date.getTime() + 3 * 3600 * 1000);
+  return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0');
+}
+
 export class DashboardMatches extends HTMLElement {
   constructor() {
     super();
@@ -1181,8 +1225,7 @@ export class DashboardMatches extends HTMLElement {
     }
 
     let lastDateKey = null;
-    const now = new Date();
-    const todayKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    const todayKey = getRiyadhDateKey();
 
     // 1. Determine Anchor Index (Today's matches, live matches, or the first upcoming match)
     let anchorIdx = displayList.findIndex(m => m.is_live || (m.date_key && m.date_key === todayKey));
@@ -1198,7 +1241,7 @@ export class DashboardMatches extends HTMLElement {
 
     for (let idx = 0; idx < displayList.length; idx++) {
       const m = displayList[idx];
-      const matchDateKey = m.date_key || (m.start_time ? m.start_time.slice(0, 10) : '');
+      const matchDateKey = m.date_key || (m.start_time ? (m.start_time.includes('T') ? getRiyadhDateKey(new Date(m.start_time)) : m.start_time.slice(0, 10)) : '');
 
       let separatorAnchorAttr = '';
       if (!anchorPlaced && idx === anchorIdx) {
@@ -1209,7 +1252,8 @@ export class DashboardMatches extends HTMLElement {
       if (this._currentFilter !== 'live' && matchDateKey && matchDateKey !== lastDateKey) {
         lastDateKey = matchDateKey;
         const isToday = matchDateKey === todayKey;
-        const dayText = m.day_label || matchDateKey;
+        const rawDayText = m.day_label || matchDateKey;
+        const dayText = escapeHtml(rawDayText);
         const badgeLabel = isToday ? `اليوم • ${dayText}` : dayText;
 
         htmlParts.push(`
@@ -1238,14 +1282,14 @@ export class DashboardMatches extends HTMLElement {
       let statusBadge = '';
 
       if (isLive) {
-        scoreHtml = `<div class="score-numbers live-score">${m.home_score ?? 0} - ${m.away_score ?? 0}</div>`;
+        scoreHtml = `<div class="score-numbers live-score">${escapeHtml(m.home_score ?? 0)} - ${escapeHtml(m.away_score ?? 0)}</div>`;
         const isHalftime = m.is_halftime || (m.status_text && (m.status_text.includes('استراحة') || m.status_text.includes('بين الشوطين')));
         const addedTime = m.added_time;
-        const periodText = m.status_text || (m.game_time && m.game_time > 45 ? 'الشوط الثاني' : 'الشوط الأول');
+        const periodText = m.status_text ? escapeHtml(m.status_text) : (m.game_time && m.game_time > 45 ? 'الشوط الثاني' : 'الشوط الأول');
 
-        const baseMin = m.game_time_minutes ?? m.game_time ?? (m.live_minute ? parseInt(m.live_minute, 10) : 0);
-        const baseSec = m.game_time_seconds ?? 0;
-        const baseEpoch = m.game_time_epoch ? Math.round(m.game_time_epoch * 1000) : Date.now();
+        const baseMin = Number(m.game_time_minutes ?? m.game_time ?? (m.live_minute ? parseInt(m.live_minute, 10) : 0)) || 0;
+        const baseSec = Number(m.game_time_seconds) || 0;
+        const baseEpoch = m.game_time_epoch ? Math.round(Number(m.game_time_epoch) * 1000) : Date.now();
         const autoProg = (m.auto_progress !== false && !isHalftime) ? 'true' : 'false';
 
         // Calculate initial ticking clock
@@ -1275,13 +1319,14 @@ export class DashboardMatches extends HTMLElement {
             <div class="match-status-badge status-live status-extra-time">
               <span class="live-dot-pulse"></span>
               <span class="live-minute-badge live-timer"
+                    dir="ltr"
                     data-base-min="${baseMin}"
                     data-base-sec="${baseSec}"
                     data-base-epoch="${baseEpoch}"
                     data-auto-progress="${autoProg}"
                     data-is-halftime="false">
                 <span class="timer-digits">${clockStr}</span>
-                <span class="live-added-badge">${addedDisplay}</span>
+                <span class="live-added-badge" dir="ltr">${escapeHtml(addedDisplay)}</span>
               </span>
               <span class="live-sep">•</span>
               <span class="live-period-text">وقت بدل ضائع</span>
@@ -1292,6 +1337,7 @@ export class DashboardMatches extends HTMLElement {
             <div class="match-status-badge status-live">
               <span class="live-dot-pulse"></span>
               <span class="live-minute-badge live-timer"
+                    dir="ltr"
                     data-base-min="${baseMin}"
                     data-base-sec="${baseSec}"
                     data-base-epoch="${baseEpoch}"
@@ -1305,12 +1351,12 @@ export class DashboardMatches extends HTMLElement {
           `;
         }
       } else if (isEnded) {
-        scoreHtml = `<div class="score-numbers">${m.home_score ?? 0} - ${m.away_score ?? 0}</div>`;
-        statusBadge = `<div class="match-status-badge status-ended">${m.status_text || 'انتهت'}</div>`;
+        scoreHtml = `<div class="score-numbers">${escapeHtml(m.home_score ?? 0)} - ${escapeHtml(m.away_score ?? 0)}</div>`;
+        statusBadge = `<div class="match-status-badge status-ended">${escapeHtml(m.status_text || 'انتهت')}</div>`;
       } else {
-        const timeStr = m.start_time_display || '--:--';
+        const timeStr = escapeHtml(m.start_time_display || '--:--');
         scoreHtml = `<div class="score-numbers upcoming-score">${timeStr}</div>`;
-        statusBadge = `<div class="match-status-badge status-upcoming">⏳ ${m.status_text || 'قادمة'}</div>`;
+        statusBadge = `<div class="match-status-badge status-upcoming">⏳ ${escapeHtml(m.status_text || 'قادمة')}</div>`;
       }
 
       const { flag: flagSvg, badgeClass: specificCompClass } = getCompMeta(m);
@@ -1323,14 +1369,19 @@ export class DashboardMatches extends HTMLElement {
       // Strip any duplicate emoji or country code prefix
       compLabel = compLabel.replace(/^[\u{1F1E6}-\u{1F1FF}\u{1F300}-\u{1F6FF}\u{2600}-\u{26FF}\s]+/u, '').trim();
 
-      const compBadge = compLabel ? `<span class="${compBadgeClass}">${flagSvg}<span>${compLabel}</span></span>` : '';
-      const channelBadge = m.channel ? `<span class="match-channel-badge">📺 ${m.channel}</span>` : '';
+      const compBadge = compLabel ? `<span class="${compBadgeClass}">${flagSvg}<span>${escapeHtml(compLabel)}</span></span>` : '';
+      const channelBadge = m.channel ? `<span class="match-channel-badge">📺 ${escapeHtml(m.channel)}</span>` : '';
+
+      const homeName = escapeHtml(m.home_name);
+      const awayName = escapeHtml(m.away_name);
+      const homeLogo = sanitizeUrl(m.home_logo);
+      const awayLogo = sanitizeUrl(m.away_logo);
 
       htmlParts.push(`
         <div class="match-item ${isLive ? 'is-live' : ''} ${isUpcoming ? 'is-upcoming-item' : ''}" ${matchAnchorAttr}>
           <div class="team-cell home">
-            <img class="team-logo" src="${m.home_logo}" alt="${m.home_name}" onerror="this.style.opacity=0.3">
-            <span class="team-name">${m.home_name}</span>
+            <img class="team-logo" src="${homeLogo}" alt="${homeName}" onerror="this.style.opacity=0.3">
+            <span class="team-name">${homeName}</span>
           </div>
 
           <div class="score-cell">
@@ -1343,8 +1394,8 @@ export class DashboardMatches extends HTMLElement {
           </div>
 
           <div class="team-cell away">
-            <span class="team-name">${m.away_name}</span>
-            <img class="team-logo" src="${m.away_logo}" alt="${m.away_name}" onerror="this.style.opacity=0.3">
+            <span class="team-name">${awayName}</span>
+            <img class="team-logo" src="${awayLogo}" alt="${awayName}" onerror="this.style.opacity=0.3">
           </div>
         </div>
       `);
@@ -1418,19 +1469,21 @@ export class DashboardMatches extends HTMLElement {
       else if (isRoshn && pos >= 16) rankClass += ' rank-relegation';
 
       const goalDiff = row.goal_diff > 0 ? `+${row.goal_diff}` : `${row.goal_diff}`;
+      const teamName = escapeHtml(row.team_name);
+      const teamLogo = sanitizeUrl(row.team_logo);
 
       return `
         <tr>
-          <td class="${rankClass}">${pos}</td>
+          <td class="${rankClass}">${escapeHtml(pos)}</td>
           <td>
             <div class="team-cell-table">
-              <img class="table-logo" src="${row.team_logo}" alt="${row.team_name}" onerror="this.style.opacity=0.3">
-              <span class="table-team-name">${row.team_name}</span>
+              <img class="table-logo" src="${teamLogo}" alt="${teamName}" onerror="this.style.opacity=0.3">
+              <span class="table-team-name">${teamName}</span>
             </div>
           </td>
-          <td class="col-num">${row.played}</td>
-          <td class="col-num" style="color: ${row.goal_diff > 0 ? 'var(--neon-green)' : (row.goal_diff < 0 ? 'var(--neon-red)' : '#E2E8F0')};">${goalDiff}</td>
-          <td class="col-pts">${row.points}</td>
+          <td class="col-num">${escapeHtml(row.played)}</td>
+          <td class="col-num" style="color: ${row.goal_diff > 0 ? 'var(--neon-green)' : (row.goal_diff < 0 ? 'var(--neon-red)' : '#E2E8F0')};">${escapeHtml(goalDiff)}</td>
+          <td class="col-pts">${escapeHtml(row.points)}</td>
         </tr>
       `;
     }).join('');
@@ -1448,17 +1501,21 @@ export class DashboardMatches extends HTMLElement {
     }
 
     this._kingsCupContainer.innerHTML = matches.map(m => {
-      const homeScore = m.home_score ?? '-';
-      const awayScore = m.away_score ?? '-';
-      const stageText = m.stage_name || 'كأس الملك';
+      const homeScore = escapeHtml(m.home_score ?? '-');
+      const awayScore = escapeHtml(m.away_score ?? '-');
+      const stageText = escapeHtml(m.stage_name || 'كأس الملك');
+      const homeName = escapeHtml(m.home_name);
+      const awayName = escapeHtml(m.away_name);
+      const homeLogo = sanitizeUrl(m.home_logo);
+      const awayLogo = sanitizeUrl(m.away_logo);
       const homeQualified = m.home_qualified ? '<span class="qualified-badge">✓ تأهل</span>' : '';
       const awayQualified = m.away_qualified ? '<span class="qualified-badge">✓ تأهل</span>' : '';
 
       return `
         <div class="cup-match-item">
           <div class="team-cell home">
-            <img class="team-logo" src="${m.home_logo}" alt="${m.home_name}" onerror="this.style.opacity=0.3">
-            <span class="team-name">${homeQualified}${m.home_name}</span>
+            <img class="team-logo" src="${homeLogo}" alt="${homeName}" onerror="this.style.opacity=0.3">
+            <span class="team-name">${homeQualified}${homeName}</span>
           </div>
 
           <div class="score-cell">
@@ -1467,8 +1524,8 @@ export class DashboardMatches extends HTMLElement {
           </div>
 
           <div class="team-cell away">
-            <span class="team-name">${m.away_name}${awayQualified}</span>
-            <img class="team-logo" src="${m.away_logo}" alt="${m.away_name}" onerror="this.style.opacity=0.3">
+            <span class="team-name">${awayName}${awayQualified}</span>
+            <img class="team-logo" src="${awayLogo}" alt="${awayName}" onerror="this.style.opacity=0.3">
           </div>
         </div>
       `;

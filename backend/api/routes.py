@@ -46,6 +46,7 @@ async def health_check():
     )
 
 @router.get("/api/sensors", response_model=SensorData)
+@router.get("/api/telemetry", response_model=SensorData)
 async def get_sensors():
     """Fetch current snapshot of 24 required dashboard metrics."""
     data = build_aggregated_sensor_data(fallback_registry=settings.fallback_registry)

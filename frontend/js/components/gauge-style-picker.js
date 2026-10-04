@@ -187,9 +187,28 @@ export class GaugePicker {
     });
   }
 
+  static _getAudioContext() {
+    if (typeof window === 'undefined') return null;
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return null;
+
+    if (!this._audioCtx || this._audioCtx.state === 'closed') {
+      try {
+        this._audioCtx = new AudioCtx();
+      } catch (e) {
+        return null;
+      }
+    }
+    if (this._audioCtx && this._audioCtx.state === 'suspended') {
+      this._audioCtx.resume().catch(() => {});
+    }
+    return this._audioCtx;
+  }
+
   static _playSoftBeep(freq = 600) {
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const ctx = this._getAudioContext();
+      if (!ctx) return;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
@@ -205,7 +224,8 @@ export class GaugePicker {
 
   static _playSuccessChime() {
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const ctx = this._getAudioContext();
+      if (!ctx) return;
       [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
