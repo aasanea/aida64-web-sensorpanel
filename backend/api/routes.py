@@ -10,6 +10,7 @@ from services.weather_service import WeatherService
 from services.sonar_service import SonarService
 from services.matches_service import MatchesService
 from services.updater_service import UpdaterService
+from services.network_service import NetworkService
 from api.websocket import manager
 from utils.time_utils import get_current_dates
 
@@ -21,12 +22,14 @@ def build_aggregated_sensor_data(fallback_registry: bool) -> SensorData:
     weather = WeatherService.get_instance().get_snapshot()
     appointments = AppointmentsService.get_instance().get_summary()
     sonar = SonarService.get_instance().get_snapshot()
+    network_snap = NetworkService.get_instance().get_snapshot()
     greg, hijri = get_current_dates()
     
     hw_dump = hardware.model_dump()
     hw_dump["date_gregorian"] = greg
     hw_dump["date_hijri"] = hijri
     hw_dump.update(sonar)
+    hw_dump.update(network_snap)
     
     return SensorData(
         **hw_dump,

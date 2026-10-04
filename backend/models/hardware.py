@@ -57,6 +57,14 @@ class HardwareMetrics(BaseModel):
     # Network Metrics
     network_download_mbps: Optional[float] = Field(default=None, description="Active NIC Download Rate in Mbps")
     network_upload_mbps: Optional[float] = Field(default=None, description="Active NIC Upload Rate in Mbps")
+    network_top_processes: Optional[list[dict]] = Field(default=None, description="Top 5 bandwidth-consuming processes")
+    network_active_conns: Optional[int] = Field(default=None, description="Total active internet connections")
+    network_local_ip: Optional[str] = Field(default=None, description="Primary Local IP")
+    network_ext_ip: Optional[str] = Field(default=None, description="External / Public IP")
+    network_link_speed_mbps: Optional[float] = Field(default=None, description="Active NIC Link Speed (e.g. 1000 Mbps)")
+    network_total_dl_gb: Optional[float] = Field(default=None, description="Session Total Download in GB")
+    network_total_ul_gb: Optional[float] = Field(default=None, description="Session Total Upload in GB")
+    network_ping_ms: Optional[float] = Field(default=None, description="Network Ping Latency in ms")
 
     # System & Header Telemetry
     fps: Optional[float] = Field(default=None, description="FPS / Refresh Counter")

@@ -696,6 +696,8 @@ html[data-theme="neo-tactile"] .progress-track {
 
 .card-network {
   grid-column: span 6;
+  perspective: 1200px;
+  padding: 0 !important;
 }
 
 /* Standby Expansion Slots & Custom Placeholders */

@@ -26,6 +26,7 @@ from core.config import settings
 from services.weather_service import WeatherService
 from services.sonar_service import SonarService
 from services.matches_service import MatchesService
+from services.network_service import NetworkService
 from api.routes import router, build_aggregated_sensor_data
 from api.websocket import manager
 
@@ -91,6 +92,8 @@ async def lifespan(app: FastAPI):
     await sonar_service.start()
     matches_service = MatchesService.get_instance()
     await matches_service.start()
+    network_service = NetworkService.get_instance()
+    await network_service.start()
     broadcast_task = asyncio.create_task(stream_sensors_worker())
     yield
     logger.info("Initiating graceful shutdown...")
@@ -103,6 +106,7 @@ async def lifespan(app: FastAPI):
     await weather_service.stop()
     await sonar_service.stop()
     await matches_service.stop()
+    await network_service.stop()
     logger.info("Shutdown complete.")
 
 
