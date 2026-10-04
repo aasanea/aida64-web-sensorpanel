@@ -195,6 +195,13 @@ template.innerHTML = `
     white-space: nowrap;
     flex-shrink: 0;
   }
+  @keyframes meta-dot-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.35; transform: scale(1.25); }
+  }
+  .dot-pulse {
+    animation: meta-dot-pulse 1.4s infinite ease-in-out;
+  }
   @media (min-width: 480px) {
     .round-meta-tag {
       display: flex;
@@ -811,7 +818,7 @@ template.innerHTML = `
       <div class="header-titles">
         <div class="card-title">
           <span>⚽</span>
-          <span>مباريات اليوم والكرة السعودية</span>
+          <span>مباريات اليوم والمواجهات القادمة</span>
         </div>
         <div class="card-subtitle">TODAY & UPCOMING MATCHES</div>
       </div>
@@ -835,8 +842,8 @@ template.innerHTML = `
         <button class="filter-btn live-filter" id="filter-live">مباشر 🔴</button>
       </div>
       <div class="round-meta-tag" id="round-meta-text">
-        <span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#10B981;box-shadow:0 0 8px #10B981;margin-left:4px;"></span>
-        <span id="round-title-label">الجولة القادمة</span>
+        <span id="round-meta-dot" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#F59E0B;box-shadow:0 0 8px #F59E0B;margin-left:4px;transition:all 0.3s ease;"></span>
+        <span id="round-title-label">أقوى المواجهات القادمة ⏳</span>
       </div>
     </div>
 
@@ -1048,6 +1055,7 @@ export class DashboardMatches extends HTMLElement {
     this._legendTextTop = this.shadowRoot.getElementById('legend-text-top');
     this._legendItemBottom = this.shadowRoot.getElementById('legend-item-bottom');
     this._roundTitleLabel = this.shadowRoot.getElementById('round-title-label');
+    this._roundMetaDot = this.shadowRoot.getElementById('round-meta-dot');
 
     // Front Face Filters
     this._filterUpcoming = this.shadowRoot.getElementById('filter-upcoming');
@@ -1199,19 +1207,46 @@ export class DashboardMatches extends HTMLElement {
     let displayList = [];
     if (this._currentFilter === 'upcoming') {
       displayList = upcomingMatches.length > 0 ? upcomingMatches : allMatches.filter(m => !m.is_ended && !m.is_live);
-      this._roundTitleLabel.textContent = 'المباريات القادمة - أقوى المواجهات';
+      if (this._roundTitleLabel) this._roundTitleLabel.textContent = 'أقوى المواجهات القادمة ⏳';
+      if (this._roundMetaDot) {
+        this._roundMetaDot.style.background = '#F59E0B';
+        this._roundMetaDot.style.boxShadow = '0 0 8px #F59E0B';
+        this._roundMetaDot.classList.remove('dot-pulse');
+      }
     } else if (this._currentFilter === 'saudi') {
       const roshnOnly = (saudiMatches || []).filter(m => (m.competition_id === 649 || m.is_roshn) && !m.is_saudi_nt);
       displayList = roshnOnly.length > 0 ? roshnOnly : allMatches.filter(m => (m.competition_id === 649 || m.is_roshn) && !m.is_saudi_nt);
-      const rName = saudiRound.round_name ? `دوري روشن - ${saudiRound.round_name}` : 'دوري روشن السعودي';
-      this._roundTitleLabel.textContent = rName;
+      const rName = saudiRound.round_name ? `دوري روشن - ${saudiRound.round_name}` : 'دوري روشن السعودي 🇸🇦';
+      if (this._roundTitleLabel) this._roundTitleLabel.textContent = rName;
+      if (this._roundMetaDot) {
+        this._roundMetaDot.style.background = '#10B981';
+        this._roundMetaDot.style.boxShadow = '0 0 8px #10B981';
+        this._roundMetaDot.classList.remove('dot-pulse');
+      }
     } else if (this._currentFilter === 'live') {
       displayList = allMatches.filter(m => m.is_live);
-      this._roundTitleLabel.textContent = 'مباريات جارية الآن مباشرة 🔴';
+      const count = displayList.length;
+      let liveText = 'لا توجد مباريات جارية الآن';
+      if (count === 1) liveText = 'مباراة واحدة جارية الآن';
+      else if (count === 2) liveText = 'مباراتان جاريتان الآن';
+      else if (count >= 3 && count <= 10) liveText = `${count} مباريات جارية الآن`;
+      else if (count > 10) liveText = `${count} مباراة جارية الآن`;
+
+      if (this._roundTitleLabel) this._roundTitleLabel.textContent = liveText;
+      if (this._roundMetaDot) {
+        this._roundMetaDot.style.background = '#EF4444';
+        this._roundMetaDot.style.boxShadow = '0 0 10px #EF4444';
+        this._roundMetaDot.classList.add('dot-pulse');
+      }
     } else {
       // 'all' (الكل)
       displayList = allMatches;
-      this._roundTitleLabel.textContent = 'أبرز المباريات والكرة السعودية والعالمية 🌍';
+      if (this._roundTitleLabel) this._roundTitleLabel.textContent = 'جميع البطولات والمواجهات العالمية 🌍';
+      if (this._roundMetaDot) {
+        this._roundMetaDot.style.background = '#22D3EE';
+        this._roundMetaDot.style.boxShadow = '0 0 8px #22D3EE';
+        this._roundMetaDot.classList.remove('dot-pulse');
+      }
     }
 
     if (displayList.length === 0) {
