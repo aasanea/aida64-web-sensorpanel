@@ -195,6 +195,59 @@ namespace AIDA64Panel
         private EventWaitHandle? _toggleSignalEvent;
         private RegisteredWaitHandle? _registeredToggleWait;
 
+        private ToolStripMenuItem? _taskbarItem;
+        private bool _showInTaskbarEnabled = false;
+
+        private const string SettingsRegistryKey = @"Software\AIDA64Panel";
+        private const string ShowInTaskbarValueName = "ShowInTaskbar";
+
+        private const int GWL_EXSTYLE = -20;
+        private const int WS_EX_TOOLWINDOW = 0x00000080;
+        private const int WS_EX_APPWINDOW = 0x00040000;
+        private const uint SWP_NOZORDER = 0x0004;
+        private const uint SWP_FRAMECHANGED = 0x0020;
+
+        [ComImport]
+        [Guid("56FDF344-FD6D-11d0-958A-006097C9A090")]
+        [ClassInterface(ClassInterfaceType.None)]
+        private class TaskbarInstance { }
+
+        [ComImport]
+        [Guid("56FDF342-43D4-11CF-9CD6-00AA00A70D86")]
+        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        private interface ITaskbarList
+        {
+            void HrInit();
+            void AddTab(IntPtr hWnd);
+            void DeleteTab(IntPtr hWnd);
+            void ActivateTab(IntPtr hWnd);
+            void SetActiveAlt(IntPtr hWnd);
+        }
+
+        private ITaskbarList? _taskbarList;
+
+        [DllImport("user32.dll", EntryPoint = "GetWindowLongPtr", SetLastError = true)]
+        private static extern IntPtr GetWindowLongPtr64(IntPtr hWnd, int nIndex);
+
+        [DllImport("user32.dll", EntryPoint = "GetWindowLong", SetLastError = true)]
+        private static extern IntPtr GetWindowLong32(IntPtr hWnd, int nIndex);
+
+        private static IntPtr GetWindowLongPtr(IntPtr hWnd, int nIndex)
+        {
+            return IntPtr.Size == 8 ? GetWindowLongPtr64(hWnd, nIndex) : GetWindowLong32(hWnd, nIndex);
+        }
+
+        [DllImport("user32.dll", EntryPoint = "SetWindowLongPtr", SetLastError = true)]
+        private static extern IntPtr SetWindowLongPtr64(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+
+        [DllImport("user32.dll", EntryPoint = "SetWindowLong", SetLastError = true)]
+        private static extern IntPtr SetWindowLong32(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+
+        private static IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong)
+        {
+            return IntPtr.Size == 8 ? SetWindowLongPtr64(hWnd, nIndex, dwNewLong) : SetWindowLong32(hWnd, nIndex, dwNewLong);
+        }
+
         private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
         private static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);
         private const uint SWP_NOSIZE = 0x0001;
@@ -213,6 +266,7 @@ namespace AIDA64Panel
         {
             Program.Log("DashboardHostForm constructor called.");
             _wmTaskbarCreated = RegisterWindowMessage("TaskbarCreated");
+            _showInTaskbarEnabled = LoadTaskbarPreference();
 
             bool dedicatedRequested = false;
             if (args != null && args.Length > 0)
@@ -235,6 +289,14 @@ namespace AIDA64Panel
                         dedicatedRequested = true;
                         Program.Log("Startup argument: --dedicated/--lcd detected.");
                     }
+                    else if (arg.Equals("--taskbar", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _showInTaskbarEnabled = true;
+                    }
+                    else if (arg.Equals("--no-taskbar", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _showInTaskbarEnabled = false;
+                    }
                 }
             }
 
@@ -251,8 +313,16 @@ namespace AIDA64Panel
             get
             {
                 CreateParams cp = base.CreateParams;
-                cp.ExStyle |= 0x00040000; // WS_EX_APPWINDOW (Forces taskbar button presence)
-                cp.ExStyle &= ~0x00000080; // Strip WS_EX_TOOLWINDOW
+                if (_showInTaskbarEnabled)
+                {
+                    cp.ExStyle |= WS_EX_APPWINDOW;
+                    cp.ExStyle &= ~WS_EX_TOOLWINDOW;
+                }
+                else
+                {
+                    cp.ExStyle |= WS_EX_TOOLWINDOW;
+                    cp.ExStyle &= ~WS_EX_APPWINDOW;
+                }
                 return cp;
             }
         }
@@ -261,7 +331,7 @@ namespace AIDA64Panel
         {
             this.Text = "AIDA64 Dashboard";
             this.FormBorderStyle = FormBorderStyle.None;
-            this.ShowInTaskbar = true;
+            this.ShowInTaskbar = _showInTaskbarEnabled;
             this.StartPosition = FormStartPosition.Manual;
             this.TopMost = true;
             this.BackColor = Color.FromArgb(10, 15, 30);
@@ -326,6 +396,13 @@ namespace AIDA64Panel
                 CheckOnClick = true,
                 Checked = this.TopMost
             };
+
+            _taskbarItem = new ToolStripMenuItem("📌 إظهار في شريط المهام (Show in Taskbar)", null, OnToggleTaskbar)
+            {
+                CheckOnClick = true,
+                Checked = _showInTaskbarEnabled
+            };
+
             var refreshItem = new ToolStripMenuItem("🔄 تحديث اللوحة (Reload)", null, OnRefreshDashboard);
             var toggleItem = new ToolStripMenuItem("👁️ إخفاء / إظهار (Toggle Visibility)", null, OnToggleVisibility);
 
@@ -342,6 +419,7 @@ namespace AIDA64Panel
             _trayMenu.Items.Add(cycleItem);
             _trayMenu.Items.Add(new ToolStripSeparator());
             _trayMenu.Items.Add(_topmostItem);
+            _trayMenu.Items.Add(_taskbarItem);
             _trayMenu.Items.Add(refreshItem);
             _trayMenu.Items.Add(toggleItem);
             _trayMenu.Items.Add(new ToolStripSeparator());
@@ -359,6 +437,87 @@ namespace AIDA64Panel
 
             _trayIcon.DoubleClick += (s, e) => OnToggleVisibility(s, e);
             Program.Log("Tray icon initialized successfully.");
+        }
+
+        private bool LoadTaskbarPreference()
+        {
+            try
+            {
+                using var key = Registry.CurrentUser.OpenSubKey(SettingsRegistryKey, false);
+                var val = key?.GetValue(ShowInTaskbarValueName);
+                if (val is int intVal) return intVal != 0;
+            }
+            catch { }
+            return false; // Default: Clean Zero-Taskbar Mode
+        }
+
+        private void SaveTaskbarPreference(bool enabled)
+        {
+            try
+            {
+                using var key = Registry.CurrentUser.CreateSubKey(SettingsRegistryKey, true);
+                key?.SetValue(ShowInTaskbarValueName, enabled ? 1 : 0, RegistryValueKind.DWord);
+            }
+            catch { }
+        }
+
+        private void EnsureTaskbarList()
+        {
+            if (_taskbarList == null)
+            {
+                try
+                {
+                    var taskbarObj = new TaskbarInstance();
+                    _taskbarList = (ITaskbarList)taskbarObj;
+                    _taskbarList.HrInit();
+                }
+                catch (Exception ex)
+                {
+                    Program.Log($"Failed to initialize ITaskbarList: {ex.Message}");
+                }
+            }
+        }
+
+        public void SetTaskbarVisibility(bool visible)
+        {
+            try
+            {
+                EnsureTaskbarList();
+                if (visible)
+                {
+                    _taskbarList?.AddTab(this.Handle);
+                    IntPtr style = GetWindowLongPtr(this.Handle, GWL_EXSTYLE);
+                    long styleVal = style.ToInt64();
+                    styleVal &= ~WS_EX_TOOLWINDOW;
+                    styleVal |= WS_EX_APPWINDOW;
+                    SetWindowLongPtr(this.Handle, GWL_EXSTYLE, new IntPtr(styleVal));
+                }
+                else
+                {
+                    _taskbarList?.DeleteTab(this.Handle);
+                    IntPtr style = GetWindowLongPtr(this.Handle, GWL_EXSTYLE);
+                    long styleVal = style.ToInt64();
+                    styleVal |= WS_EX_TOOLWINDOW;
+                    styleVal &= ~WS_EX_APPWINDOW;
+                    SetWindowLongPtr(this.Handle, GWL_EXSTYLE, new IntPtr(styleVal));
+                }
+                SetWindowPos(this.Handle, IntPtr.Zero, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+                Program.Log($"Taskbar visibility set to: {visible}");
+            }
+            catch (Exception ex)
+            {
+                Program.Log($"Error setting taskbar visibility: {ex.Message}");
+            }
+        }
+
+        private void OnToggleTaskbar(object? sender, EventArgs e)
+        {
+            bool enabled = _taskbarItem?.Checked ?? false;
+            _showInTaskbarEnabled = enabled;
+            SetTaskbarVisibility(enabled);
+            SaveTaskbarPreference(enabled);
+            string msg = enabled ? "تم إظهار أيقونة اللوحة في شريط المهام" : "تم إخفاء أيقونة اللوحة من شريط المهام (Zero-Taskbar Mode)";
+            _trayIcon?.ShowBalloonTip(3000, "شريط المهام", $"{msg} ⚡", ToolTipIcon.Info);
         }
 
         private void SetupIpcSignal()
@@ -456,6 +615,7 @@ namespace AIDA64Panel
             IntPtr insertAfter = this.TopMost ? HWND_TOPMOST : HWND_NOTOPMOST;
             SetWindowPos(this.Handle, insertAfter, this.Bounds.X, this.Bounds.Y, this.Bounds.Width, this.Bounds.Height, SWP_SHOWWINDOW);
             this.BringToFront();
+            SetTaskbarVisibility(_showInTaskbarEnabled);
         }
 
         protected override void WndProc(ref Message m)
