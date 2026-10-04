@@ -9,7 +9,24 @@ __pycache__/
 # Environments & Secrets
 .env
 .env.*
+.env.local
 !.env.example
+*.key
+*.pem
+*.pfx
+*.p12
+*.cert
+*.crt
+secrets/
+*secret*
+!*secret*.md
+!SECURITY.md
+tokens/
+*token*
+!*design-tokens*
+credentials/
+*credential*
+*.credentials
 
 # Logs
 logs/
