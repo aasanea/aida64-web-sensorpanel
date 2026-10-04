@@ -214,6 +214,7 @@ namespace AIDA64Panel
             Program.Log("DashboardHostForm constructor called.");
             _wmTaskbarCreated = RegisterWindowMessage("TaskbarCreated");
 
+            bool dedicatedRequested = false;
             if (args != null && args.Length > 0)
             {
                 foreach (var arg in args)
@@ -226,8 +227,19 @@ namespace AIDA64Panel
                         _startOnPrimary = true;
                         Program.Log("Startup argument: --primary/--main detected.");
                     }
+                    else if (arg.Equals("--dedicated", StringComparison.OrdinalIgnoreCase) ||
+                             arg.Equals("-d", StringComparison.OrdinalIgnoreCase) ||
+                             arg.Equals("/dedicated", StringComparison.OrdinalIgnoreCase) ||
+                             arg.Equals("--lcd", StringComparison.OrdinalIgnoreCase))
+                    {
+                        dedicatedRequested = true;
+                        Program.Log("Startup argument: --dedicated/--lcd detected.");
+                    }
                 }
             }
+
+            // Default to primary display unless dedicated was explicitly requested
+            _startOnPrimary = !dedicatedRequested;
 
             InitializeWindow();
             InitializeTray();
@@ -239,17 +251,17 @@ namespace AIDA64Panel
             get
             {
                 CreateParams cp = base.CreateParams;
-                cp.ExStyle |= 0x00000080; // WS_EX_TOOLWINDOW (Eliminates taskbar button)
-                cp.ExStyle &= ~0x00040000; // Strip WS_EX_APPWINDOW
+                cp.ExStyle |= 0x00040000; // WS_EX_APPWINDOW (Forces taskbar button presence)
+                cp.ExStyle &= ~0x00000080; // Strip WS_EX_TOOLWINDOW
                 return cp;
             }
         }
 
         private void InitializeWindow()
         {
-            this.Text = "AIDA64 SensorPanel Host";
+            this.Text = "AIDA64 Dashboard";
             this.FormBorderStyle = FormBorderStyle.None;
-            this.ShowInTaskbar = false;
+            this.ShowInTaskbar = true;
             this.StartPosition = FormStartPosition.Manual;
             this.TopMost = true;
             this.BackColor = Color.FromArgb(10, 15, 30);
@@ -359,6 +371,7 @@ namespace AIDA64Panel
                 IntPtr insertAfter = this.TopMost ? HWND_TOPMOST : HWND_NOTOPMOST;
                 SetWindowPos(this.Handle, insertAfter, this.Bounds.X, this.Bounds.Y, this.Bounds.Width, this.Bounds.Height, SWP_SHOWWINDOW);
                 this.BringToFront();
+                this.Activate();
                 try { _webView?.CoreWebView2?.Reload(); } catch { }
                 _trayIcon?.ShowBalloonTip(3000, "لوحة AIDA64 SensorPanel", $"تم تنشيط اللوحة وإظهارها ⚡ ({this.Bounds.Width}x{this.Bounds.Height})", ToolTipIcon.Info);
             });
