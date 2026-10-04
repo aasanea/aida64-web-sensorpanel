@@ -81,12 +81,24 @@ COMPETITION_NAMES = {
     25: "الدوري الألماني",
     35: "الدوري الفرنسي",
     572: "دوري أبطال أوروبا",
+    573: "الدوري الأوروبي",
+    6934: "دوري المؤتمر الأوروبي",
     623: "نخبة آسيا",
     5501: "كأس الملك",
     5502: "كأس السوبر السعودي",
+    6164: "دوري يلو السعودي",
     5452: "كأس الخليج العربي",
     5930: "كأس العالم",
     6196: "كأس آسيا",
+    7016: "دوري الأمم الأوروبية",
+    570: "مباريات دولية ودية",
+    13: "كأس ملك إسبانيا",
+    552: "كأس الاتحاد الإنجليزي",
+    553: "كأس الرابطة الإنجليزية",
+    571: "كأس إيطاليا",
+    575: "كأس ألمانيا",
+    574: "كأس فرنسا",
+    5453: "تصفيات كأس العالم",
 }
 
 OFFICIAL_BROADCASTERS = {
@@ -103,7 +115,17 @@ OFFICIAL_BROADCASTERS = {
     25: "beIN Sports 5 HD",
     35: "beIN Sports 4 HD",
     572: "beIN Sports 1 HD",
+    573: "beIN Sports 1 HD",
+    6934: "beIN Sports 2 HD",
     623: "beIN AFC // SSC HD",
+    7016: "beIN Sports 1 HD",
+    570: "beIN Sports HD",
+    13: "SSC 1 HD",
+    552: "beIN Sports 1 HD",
+    553: "beIN Sports 1 HD",
+    571: "AD Sports Premium 1",
+    575: "Dubai Sports",
+    574: "beIN Sports 4 HD",
 }
 
 ARABIC_MONTHS = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"]
@@ -358,6 +380,7 @@ class MatchesService:
                     "ucl": f"{API_BASE}/games/current/?{COMMON_PARAMS}&competitions={CHAMPIONS_LEAGUE_ID}",
                     "afc": f"{API_BASE}/games/current/?{COMMON_PARAMS}&competitions={AFC_ELITE_ID}",
                     "king": f"{API_BASE}/games/current/?{COMMON_PARAMS}&competitions={KINGS_CUP_ID}",
+                    "nations_league": f"{API_BASE}/games/current/?{COMMON_PARAMS}&competitions=7016",
                     "all": f"{API_BASE}/games/allscores/?{COMMON_PARAMS}",
                 }
 
@@ -390,6 +413,7 @@ class MatchesService:
                 ucl_raw = parse_comp_games(resp_map.get("ucl"), CHAMPIONS_LEAGUE_ID, "دوري أبطال أوروبا")
                 afc_raw = parse_comp_games(resp_map.get("afc"), AFC_ELITE_ID, "نخبة آسيا")
                 king_raw = parse_comp_games(resp_map.get("king"), KINGS_CUP_ID, "كأس الملك", is_saudi=True)
+                nations_league_raw = parse_comp_games(resp_map.get("nations_league"), 7016, "دوري الأمم الأوروبية")
 
                 # Round name for Saudi League
                 round_name = "الجولة الحالية"
@@ -408,7 +432,7 @@ class MatchesService:
                         for g in all_data.get("games", []):
                             c_id = g.get("competitionId")
                             is_s = c_id in [SAUDI_LEAGUE_ID, KINGS_CUP_ID, SAUDI_SUPER_CUP_ID, GULF_CUP_ID, 6164]
-                            # Strictly soccer / football from top 5 leagues + Saudi + UCL + AFC
+                            # Strictly soccer / football from top 5 leagues + Saudi + UCL + AFC + Nations League + Cups + Friendlies
                             if c_id not in COMPETITION_NAMES and not is_s:
                                 continue
                             c_name = COMPETITION_NAMES.get(c_id, competitions_map.get(c_id, g.get("competitionDisplayName", "")))
@@ -431,6 +455,7 @@ class MatchesService:
                     bundes_raw,
                     ligue1_raw,
                     ucl_raw,
+                    nations_league_raw,
                     today_allscores,
                 ]
                 full_pool: List[Dict[str, Any]] = []
@@ -444,6 +469,12 @@ class MatchesService:
                     if m["id"] not in seen_all:
                         deduped_all.append(m)
                         seen_all.add(m["id"])
+
+                # Guard against transient network failures wiping healthy cache
+                if not deduped_all:
+                    if self._matches:
+                        logger.warning("Matches API returned 0 games; preserving previous valid cache and memory feed.")
+                        return
 
                 # Sort chronologically by start_time
                 # 1. Gather all upcoming matches

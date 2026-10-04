@@ -1211,7 +1211,7 @@ export class DashboardMatches extends HTMLElement {
     } else {
       // 'all' (الكل)
       displayList = allMatches;
-      this._roundTitleLabel.textContent = 'أشهر 5 دوريات بالعالم والكرة السعودية 🌍';
+      this._roundTitleLabel.textContent = 'أبرز المباريات والكرة السعودية والعالمية 🌍';
     }
 
     if (displayList.length === 0) {
