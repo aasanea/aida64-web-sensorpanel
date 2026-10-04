@@ -213,15 +213,20 @@ namespace AIDA64Panel
         private class TaskbarInstance { }
 
         [ComImport]
-        [Guid("56FDF342-43D4-11CF-9CD6-00AA00A70D86")]
+        [Guid("56FDF342-FD6D-11d0-958A-006097C9A090")]
         [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
         private interface ITaskbarList
         {
-            void HrInit();
-            void AddTab(IntPtr hWnd);
-            void DeleteTab(IntPtr hWnd);
-            void ActivateTab(IntPtr hWnd);
-            void SetActiveAlt(IntPtr hWnd);
+            [PreserveSig]
+            int HrInit();
+            [PreserveSig]
+            int AddTab(IntPtr hWnd);
+            [PreserveSig]
+            int DeleteTab(IntPtr hWnd);
+            [PreserveSig]
+            int ActivateTab(IntPtr hWnd);
+            [PreserveSig]
+            int SetActiveAlt(IntPtr hWnd);
         }
 
         private ITaskbarList? _taskbarList;
