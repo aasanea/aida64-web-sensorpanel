@@ -1,4 +1,5 @@
-import { EventBus } from '../store/event_bus.js';
+import { animationAlpha, updateTelemetryStatus } from './component-utils.js?v=20261006.2';
+import { EventBus } from '../store/event_bus.js?v=20261006.2';
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -368,19 +369,30 @@ export class DashboardStorage extends HTMLElement {
   }
 
   connectedCallback() {
+    if (this.isRunning) return;
+    this.previousTimestamp = null;
+    this.events?.abort();
+    this.events = new AbortController();
     this.unsubscribe = EventBus.on('state-changed', this.onStateChange);
-    this.unsubscribeData = EventBus.on('telemetry:data', this.onStateChange);
+    this.onStateChange(window.stateManager?.currentState || {});
+
     this.isRunning = true;
-    requestAnimationFrame(this.tick);
+    this.rafId = requestAnimationFrame(this.tick);
   }
 
   disconnectedCallback() {
+    cancelAnimationFrame(this.rafId);
+    this.rafId = null;
+    this.previousTimestamp = null;
+    this.events?.abort();
+    this.flipObserver?.disconnect();
     this.isRunning = false;
     if (this.unsubscribe) this.unsubscribe();
-    if (this.unsubscribeData) this.unsubscribeData();
   }
 
   onStateChange(delta) {
+    if (!delta || typeof delta !== 'object') return;
+    updateTelemetryStatus(this, delta, Object.keys(this.targetValues));
     for (const key in this.targetValues) {
       if (delta[key] !== undefined) {
         this.targetValues[key] = delta[key];
@@ -388,8 +400,9 @@ export class DashboardStorage extends HTMLElement {
     }
   }
 
-  tick() {
+  tick(timestamp) {
     if (!this.isRunning) return;
+    const alpha = animationAlpha(this, timestamp);
     
     let needsRender = false;
 
@@ -416,7 +429,7 @@ export class DashboardStorage extends HTMLElement {
             needsRender = true;
           }
         } else {
-          current += diff * 0.15;
+          current += diff * alpha;
           needsRender = true;
         }
       }
@@ -427,7 +440,7 @@ export class DashboardStorage extends HTMLElement {
       this.render();
     }
 
-    requestAnimationFrame(this.tick);
+    this.rafId = requestAnimationFrame(this.tick);
   }
 
   render() {

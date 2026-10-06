@@ -2177,3 +2177,19 @@ html[data-theme="neo-tactile"] .progress-track {
     animation: none;
   }
 }
+
+/* A missing stream is explicit; never present a frozen reading as live. */
+.glass-card[data-telemetry-status="stale"]::before,
+.glass-card[data-telemetry-status="unavailable"]::before {
+  content: attr(data-telemetry-label);
+  position: absolute;
+  inset-inline-end: 12px;
+  bottom: 8px;
+  z-index: 6;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--status-surface);
+  color: var(--status-warning);
+  font: 700 12px var(--font-arabic);
+  pointer-events: none;
+}

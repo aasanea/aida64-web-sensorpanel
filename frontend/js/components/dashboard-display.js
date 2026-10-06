@@ -1,4 +1,5 @@
-import { EventBus } from '../store/event_bus.js';
+import { animationAlpha, connectFlipFaces, updateTelemetryStatus, updateText } from './component-utils.js?v=20261006.2';
+import { EventBus } from '../store/event_bus.js?v=20261006.2';
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -1000,11 +1001,15 @@ template.innerHTML = `
     margin-top: 2px;
     flex-shrink: 0;
   }
+
+  .mic-live, .sonar-status-pill.connected, .status-badge-green { color: var(--status-normal); background: var(--status-surface); border-color: currentColor; }
+  .mic-muted { color: var(--status-critical); background: var(--status-surface); border-color: currentColor; }
+  .mic-live .mic-dot, .mic-muted .mic-dot { background: currentColor; }
 </style>
 
 <div class="card-flipper" id="flipper">
   <!-- FRONT FACE -->
-  <div class="card-face card-front">
+  <div class="card-face card-front" aria-hidden="false">
     <div class="card-header">
       <div class="card-title-group">
         <div class="card-icon display-icon">
@@ -1062,13 +1067,13 @@ template.innerHTML = `
             </div>
 
             <!-- Frametime / Latency -->
-            <div class="telemetry-pill frametime-pill" title="زمن الإطار الفعلي">
+            <div class="telemetry-pill frametime-pill" title="زمن الإطار: قراءة مقاسة أو متوسط مشتق من FPS">
               <div class="pill-info">
                 <span class="pill-icon">⏱️</span>
-                <span class="pill-label">زمن الإطار</span>
+                <span class="pill-label" id="frametime-source">زمن الإطار • غير متاح</span>
               </div>
               <div class="pill-val-group" dir="ltr">
-                <span class="pill-val" id="frametime_ms">4.1</span>
+                <span class="pill-val" id="frametime_ms">--</span>
                 <span class="pill-unit">ms</span>
               </div>
             </div>
@@ -1080,7 +1085,7 @@ template.innerHTML = `
                 <span class="pill-label">دقة الشاشة</span>
               </div>
               <div class="pill-val-group" dir="ltr">
-                <span class="pill-val res-val" id="display_res">3840x2160 4K HDR</span>
+                <span class="pill-val res-val" id="display_res">--</span>
               </div>
             </div>
           </div>
@@ -1092,10 +1097,10 @@ template.innerHTML = `
         <div class="wing-header">
           <span class="wing-tag">🎛️ مكسر قنوات Sonar</span>
           <!-- Live Mic Status capsule -->
-          <div class="mic-badge mic-live" id="mic-status-badge" title="حالة كتم الميكروفون المباشرة">
+          <div class="mic-badge" id="mic-status-badge" title="حالة كتم الميكروفون المباشرة">
             <span class="mic-dot"></span>
             <span class="mic-title">🎙️ المايك:</span>
-            <span id="mic-status-text">مباشر 🟢</span>
+            <span id="mic-status-text">غير متاح</span>
           </div>
         </div>
 
@@ -1194,17 +1199,17 @@ template.innerHTML = `
         </div>
         <div class="strip-media-meta">
           <span class="strip-media-title">SteelSeries Sonar AI Engine</span>
-          <span class="strip-media-desc">Spatial Audio 7.1 Virtual Surround & ClearCast AI Active</span>
+          <span class="strip-media-desc">Spatial Audio 7.1 Virtual Surround & ClearCast AI Profile</span>
         </div>
       </div>
       <div class="strip-right">
-        <span class="sonar-status-pill connected" id="sonar-pill">Sonar ⚡</span>
+        <span class="sonar-status-pill" id="sonar-pill">Sonar ⚪</span>
       </div>
     </div>
   </div>
 
   <!-- BACK FACE (3D Flip Studio Card) -->
-  <div class="card-face card-back">
+  <div class="card-face card-back" inert aria-hidden="true">
     <div class="card-header">
       <div class="card-title-group">
         <div class="card-icon display-icon">
@@ -1212,7 +1217,7 @@ template.innerHTML = `
         </div>
         <div>
           <h2 class="card-title">استوديو الصوت ومحرك العرض المتقدم</h2>
-          <span class="card-sub">A/V STUDIO LAB // DEEP TELEMETRY & HARDWARE CONTROLS</span>
+          <span class="card-sub">CONFIGURED PROFILES // LIVE VALUES LABELED SEPARATELY</span>
         </div>
       </div>
       <button class="flip-btn btn-back" id="flip-to-front" title="العودة لشاشة القيادة">
@@ -1227,7 +1232,7 @@ template.innerHTML = `
         <div class="section-title-bar">
           <div class="sec-title-left">
             <span class="sec-icon">🎙️</span>
-            <span class="sec-heading">استوديو الصوت ومعالجة الذكاء الاصطناعي</span>
+            <span class="sec-heading">بروفايلات الصوت المُعرّفة (غير مقاسة)</span>
           </div>
           <span class="sec-badge">SONAR AI</span>
         </div>
@@ -1239,13 +1244,13 @@ template.innerHTML = `
               <span class="card-emoji">🛡️</span>
               <span class="card-primary-label">عزل الضوضاء الذكي ClearCast AI</span>
             </div>
-            <span class="status-badge-green" id="clearcast-badge">نشط ⚡ 98% خفض التشويش</span>
+            <span class="status-badge-green" id="clearcast-badge">بروفايل مُعرّف • غير مقاس</span>
           </div>
           <div class="ai-meter-track">
-            <div class="ai-meter-fill" style="width: 98%;"></div>
+            <div class="ai-meter-fill" style="width: 0%;"></div>
           </div>
           <div class="studio-card-caption">
-            معالجة عصبية بالذكاء الاصطناعي لعزل التشويش والضوضاء بنسبة 98%
+            إعداد ClearCast مُعرّف؛ لا تتوفر قراءة مباشرة لفعالية خفض الضوضاء
           </div>
         </div>
 
@@ -1301,7 +1306,7 @@ template.innerHTML = `
         <div class="section-title-bar">
           <div class="sec-title-left">
             <span class="sec-icon">🖥️</span>
-            <span class="sec-heading">مختبر محرك العرض وإشارة الفيديو</span>
+            <span class="sec-heading">مواصفات العرض المُعرّفة (غير مقاسة)</span>
           </div>
           <span class="sec-badge">VIDEO LAB</span>
         </div>
@@ -1338,23 +1343,23 @@ template.innerHTML = `
               <span class="card-emoji">⚡</span>
               <span class="card-primary-label">ديناميكية الإطارات ومزامنة الشاشة (VRR)</span>
             </div>
-            <span class="status-badge-green">VRR ACTIVE</span>
+            <span class="status-badge-green">VRR PROFILE</span>
           </div>
           <div class="dynamics-grid">
             <div class="dynamic-cell">
               <span class="dyn-label">مزامنة الشاشة</span>
-              <span class="dyn-val dyn-highlight">NVIDIA G-Sync Active</span>
+              <span class="dyn-val dyn-highlight">NVIDIA G-Sync Profile</span>
               <span class="dyn-sub">VRR 48 - 240 Hz</span>
             </div>
             <div class="dynamic-cell">
               <span class="dyn-label">زمن تأخير الإطار</span>
-              <span class="dyn-val dyn-cyan" id="back-frametime-val">4.1 ms</span>
-              <span class="dyn-sub">Ultra-Low Latency</span>
+              <span class="dyn-val dyn-cyan" id="back-frametime-val">-- ms</span>
+              <span class="dyn-sub" id="back-frametime-source">غير متاح</span>
             </div>
             <div class="dynamic-cell">
               <span class="dyn-label">أدنى إطارات 1% Low</span>
-              <span class="dyn-val dyn-green">165 FPS</span>
-              <span class="dyn-sub">Solid Pacing</span>
+              <span class="dyn-val dyn-green">غير متاح</span>
+              <span class="dyn-sub">لا يوجد مستشعر 1% Low</span>
             </div>
           </div>
         </div>
@@ -1404,6 +1409,8 @@ export class DashboardDisplay extends HTMLElement {
       res: this.shadowRoot.getElementById('display_res'),
       frametime: this.shadowRoot.getElementById('frametime_ms'),
       backFrametime: this.shadowRoot.getElementById('back-frametime-val'),
+      frametimeSource: this.shadowRoot.getElementById('frametime-source'),
+      backFrametimeSource: this.shadowRoot.getElementById('back-frametime-source'),
       sonarPill: this.shadowRoot.getElementById('sonar-pill'),
       micBadge: this.shadowRoot.getElementById('mic-status-badge'),
       micText: this.shadowRoot.getElementById('mic-status-text'),
@@ -1424,10 +1431,11 @@ export class DashboardDisplay extends HTMLElement {
       fps: null,
       display_hz: null,
       display_volume: null,
-      frametime_ms: 4.1,
-      display_res: '3840x2160 4K HDR',
+      frametime_ms: null,
+      system_volume: null,
+      display_res: null,
       sonar_connected: false,
-      audio_mic_muted: false,
+      audio_mic_muted: null,
       audio_mic_volume: null,
       audio_master_volume: null,
       audio_master_muted: false,
@@ -1445,7 +1453,7 @@ export class DashboardDisplay extends HTMLElement {
       fps: null,
       display_hz: null,
       display_volume: null,
-      frametime_ms: 4.1,
+      frametime_ms: null,
     };
 
     this.onStateChange = this.onStateChange.bind(this);
@@ -1457,32 +1465,41 @@ export class DashboardDisplay extends HTMLElement {
   }
 
   connectedCallback() {
+    if (this.isRunning) return;
+    this.previousTimestamp = null;
+    this.events?.abort();
+    this.events = new AbortController();
+    connectFlipFaces(this);
     this.unsubscribe = EventBus.on('state-changed', this.onStateChange);
-    this.unsubscribeData = EventBus.on('telemetry:data', this.onStateChange);
+    this.onStateChange(window.stateManager?.currentState || {});
+    this.updateMicBadge(this.targetValues.audio_mic_muted);
+    this.updateSonarPill(this.targetValues.sonar_connected);
+
 
     // Flip interaction
     if (this.dom.flipToBack) {
-      this.dom.flipToBack.addEventListener('click', this.handleFlipBtnClick);
+      this.dom.flipToBack.addEventListener('click', this.handleFlipBtnClick, { signal: this.events.signal });
     }
     if (this.dom.flipToFront) {
-      this.dom.flipToFront.addEventListener('click', this.handleFlipBtnClick);
+      this.dom.flipToFront.addEventListener('click', this.handleFlipBtnClick, { signal: this.events.signal });
     }
 
-    this.addEventListener('click', this.handleCardClick);
+    this.addEventListener('click', this.handleCardClick, { signal: this.events.signal });
 
     this.isRunning = true;
-    requestAnimationFrame(this.tick);
+    this.rafId = requestAnimationFrame(this.tick);
   }
 
   disconnectedCallback() {
+    cancelAnimationFrame(this.rafId);
+    this.rafId = null;
+    this.previousTimestamp = null;
+    this.events?.abort();
+    this.flipObserver?.disconnect();
     this.isRunning = false;
     if (this.unsubscribe) {
       this.unsubscribe();
       this.unsubscribe = null;
-    }
-    if (this.unsubscribeData) {
-      this.unsubscribeData();
-      this.unsubscribeData = null;
     }
 
     if (this.dom.flipToBack) {
@@ -1509,32 +1526,31 @@ export class DashboardDisplay extends HTMLElement {
   }
 
   onStateChange(delta) {
-    if (delta.fps !== undefined) {
-      this.targetValues.fps = delta.fps;
-      if (this.targetValues.fps > 0) {
-        this.targetValues.frametime_ms = parseFloat((1000 / this.targetValues.fps).toFixed(1));
-      }
+    if (!delta || typeof delta !== 'object') return;
+    updateTelemetryStatus(this, delta, ['fps', 'display_hz', 'display_volume']);
+    const state = this.telemetrySnapshot;
+    if ('fps' in delta) this.targetValues.fps = delta.fps;
+    const measured = state.frametime_ms ?? state.frametime ?? state.gpu_frametime;
+    const measuredValid = Number.isFinite(measured) && measured >= 0;
+    const fpsValid = Number.isFinite(state.fps) && state.fps > 0;
+    this.frameTimeSource = measuredValid ? 'measured' : fpsValid ? 'derived' : 'unavailable';
+    this.targetValues.frametime_ms = measuredValid ? measured : fpsValid ? 1000 / state.fps : null;
+    this.dataset.frameTimeSource = this.frameTimeSource;
+    const sourceLabel = measuredValid ? 'مقاس' : fpsValid ? 'مشتق من FPS' : 'غير متاح';
+    if (this.dom.frametimeSource && this.dom.frametimeSource.textContent !== `زمن الإطار • ${sourceLabel}`) {
+      this.dom.frametimeSource.textContent = `زمن الإطار • ${sourceLabel}`;
     }
-    if (delta.frametime_ms !== undefined) {
-      this.targetValues.frametime_ms = delta.frametime_ms;
-    } else if (delta.frametime !== undefined) {
-      this.targetValues.frametime_ms = delta.frametime;
-    } else if (delta.gpu_frametime !== undefined) {
-      this.targetValues.frametime_ms = delta.gpu_frametime;
-    }
+    updateText(this.dom.backFrametimeSource, sourceLabel);
+    // A frame-time reading is never fabricated by interpolating independently of FPS.
+    this.currentValues.frametime_ms = this.targetValues.frametime_ms;
 
-    if (delta.display_hz !== undefined) this.targetValues.display_hz = delta.display_hz;
-
-    // Master volume preference: Sonar master volume if active, else display_volume
-    if (delta.audio_master_volume !== undefined && delta.audio_master_volume !== null && delta.audio_master_volume > 0) {
-      this.targetValues.display_volume = delta.audio_master_volume;
-    } else if (delta.display_volume !== undefined && delta.display_volume !== null) {
-      this.targetValues.display_volume = delta.display_volume;
-    }
-
-    if (delta.display_res !== undefined && delta.display_res) {
+    if ('display_hz' in delta) this.targetValues.display_hz = delta.display_hz;
+    if ('display_volume' in delta) this.targetValues.system_volume = delta.display_volume;
+    const master = state.audio_master_volume;
+    this.targetValues.display_volume = master ?? this.targetValues.system_volume;
+    if ('display_res' in delta && this.dom.res) {
       this.targetValues.display_res = delta.display_res;
-      if (this.dom.res) this.dom.res.textContent = delta.display_res;
+      this.dom.res.textContent = delta.display_res ?? '--';
     }
 
     // Sonar connection status
@@ -1545,7 +1561,7 @@ export class DashboardDisplay extends HTMLElement {
 
     // Microphone status
     if (delta.audio_mic_muted !== undefined) {
-      this.targetValues.audio_mic_muted = Boolean(delta.audio_mic_muted);
+      this.targetValues.audio_mic_muted = delta.audio_mic_muted;
       this.updateMicBadge(this.targetValues.audio_mic_muted);
     }
     if (delta.audio_mic_volume !== undefined) {
@@ -1565,6 +1581,7 @@ export class DashboardDisplay extends HTMLElement {
     if (delta.audio_aux_muted !== undefined) this.targetValues.audio_aux_muted = delta.audio_aux_muted;
 
     this.renderMixerChannels();
+    this.render();
   }
 
   updateSonarPill(connected) {
@@ -1580,7 +1597,10 @@ export class DashboardDisplay extends HTMLElement {
 
   updateMicBadge(isMuted) {
     if (!this.dom.micBadge || !this.dom.micText) return;
-    if (isMuted) {
+    if (isMuted == null) {
+      this.dom.micBadge.className = 'mic-badge';
+      this.dom.micText.textContent = 'غير متاح';
+    } else if (isMuted) {
       this.dom.micBadge.className = 'mic-badge mic-muted';
       this.dom.micText.textContent = 'مكتوم 🔇';
     } else {
@@ -1646,12 +1666,13 @@ export class DashboardDisplay extends HTMLElement {
     );
   }
 
-  tick() {
+  tick(timestamp) {
     if (!this.isRunning) return;
+    const alpha = animationAlpha(this, timestamp);
 
     let needsRender = false;
 
-    for (const key of ['fps', 'display_hz', 'display_volume', 'frametime_ms']) {
+    for (const key of ['fps', 'display_hz', 'display_volume']) {
       const target = this.targetValues[key];
       let current = this.currentValues[key];
 
@@ -1674,7 +1695,7 @@ export class DashboardDisplay extends HTMLElement {
             needsRender = true;
           }
         } else {
-          current += diff * 0.2;
+          current += diff * alpha;
           needsRender = true;
         }
       }
@@ -1685,7 +1706,7 @@ export class DashboardDisplay extends HTMLElement {
       this.render();
     }
 
-    requestAnimationFrame(this.tick);
+    this.rafId = requestAnimationFrame(this.tick);
   }
 
   render() {
@@ -1695,19 +1716,19 @@ export class DashboardDisplay extends HTMLElement {
     this.updateText(this.dom.frametime, this.currentValues.frametime_ms, 1);
 
     if (this.dom.backFrametime) {
-      const ft = this.currentValues.frametime_ms !== null ? this.currentValues.frametime_ms.toFixed(1) : '4.1';
-      this.dom.backFrametime.textContent = `${ft} ms`;
+      const ft = this.currentValues.frametime_ms !== null ? this.currentValues.frametime_ms.toFixed(1) : '--';
+      updateText(this.dom.backFrametime, `${ft} ms`);
     }
 
     // Master volume icon logic
     if (this.dom.masterVolIcon) {
       const isMuted = this.targetValues.audio_master_muted || this.currentValues.display_volume === 0;
       if (isMuted) {
-        this.dom.masterVolIcon.textContent = '🔇';
+        updateText(this.dom.masterVolIcon, '🔇');
       } else if (this.currentValues.display_volume && this.currentValues.display_volume < 40) {
-        this.dom.masterVolIcon.textContent = '🔉';
+        updateText(this.dom.masterVolIcon, '🔉');
       } else {
-        this.dom.masterVolIcon.textContent = '🔊';
+        updateText(this.dom.masterVolIcon, '🔊');
       }
     }
   }

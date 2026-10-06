@@ -1,4 +1,5 @@
-import { EventBus } from '../store/event_bus.js';
+import { connectFlipFaces } from './component-utils.js?v=20261006.2';
+import { EventBus } from '../store/event_bus.js?v=20261006.2';
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -813,7 +814,7 @@ template.innerHTML = `
 
 <div class="card-flipper">
   <!-- FRONT FACE: Today, Live & Upcoming Matches -->
-  <div class="card-face card-front">
+  <div class="card-face card-front" aria-hidden="false">
     <div class="card-header">
       <div class="header-titles">
         <div class="card-title">
@@ -856,7 +857,7 @@ template.innerHTML = `
   </div>
 
   <!-- BACK FACE: Tournament Standings (Roshn League, AFC Elite, King's Cup) -->
-  <div class="card-face card-back">
+  <div class="card-face card-back" inert aria-hidden="true">
     <div class="card-header">
       <div class="header-titles">
         <div class="card-title">
@@ -1045,6 +1046,9 @@ export class DashboardMatches extends HTMLElement {
   }
 
   connectedCallback() {
+    this.events?.abort();
+    this.events = new AbortController();
+    connectFlipFaces(this);
     this._btnFlipStandings = this.shadowRoot.getElementById('btn-flip-standings');
     this._btnFlipMatches = this.shadowRoot.getElementById('btn-flip-matches');
     this._matchesContainer = this.shadowRoot.getElementById('matches-container');
@@ -1072,14 +1076,14 @@ export class DashboardMatches extends HTMLElement {
       this._btnFlipStandings.addEventListener('click', (e) => {
         e.stopPropagation();
         this.classList.add('flipped');
-      });
+      }, { signal: this.events.signal });
     }
 
     if (this._btnFlipMatches) {
       this._btnFlipMatches.addEventListener('click', (e) => {
         e.stopPropagation();
         this.classList.remove('flipped');
-      });
+      }, { signal: this.events.signal });
     }
 
     // Front Face Filter Listeners
@@ -1099,7 +1103,7 @@ export class DashboardMatches extends HTMLElement {
           if (this._cachedMatchesData) {
             this.renderMatches(this._cachedMatchesData);
           }
-        });
+        }, { signal: this.events.signal });
       }
     });
 
@@ -1119,7 +1123,7 @@ export class DashboardMatches extends HTMLElement {
           if (this._cachedStandingsData) {
             this.renderTournaments(this._cachedStandingsData);
           }
-        });
+        }, { signal: this.events.signal });
       }
     });
 
@@ -1134,6 +1138,8 @@ export class DashboardMatches extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this.events?.abort();
+    this.flipObserver?.disconnect();
     if (this._pollTimer) {
       clearInterval(this._pollTimer);
       this._pollTimer = null;

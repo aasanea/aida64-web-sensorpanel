@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Dashboard runtime verification</title>
+<style>
+body { margin:0; background:#0b1020; color:#e2e8f0; font:13px monospace; }
+iframe { width:1920px; height:1080px; border:0; display:block; }
+pre { position:fixed; top:0; left:0; max-width:720px; max-height:94vh; overflow:auto; margin:0;
+  padding:12px; background:#101827f5; z-index:100; white-space:pre-wrap; }
+</style>
+<pre id="report">Loading the live dashboard. No API writes; synthetic snapshots affect this iframe only.</pre>
+<iframe id="dashboard" src="/index.html?runtime-verification=20261006.2" title="1920 by 1080 dashboard under test"></iframe>
+<script type="module">
+const frame = document.querySelector('iframe'), output = document.querySelector('#report');
+const report = { status:'running', viewport:'1920x1080', checks:[], timings:[], errors:[] };
+const functionalOnly = new URLSearchParams(location.search).has('functional-only');
+const show = () => output.textContent = JSON.stringify(report, null, 2);
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+function check(name, condition) {
+  report.checks.push({ name, passed: Boolean(condition) }); show();
+  if (!condition) throw new Error(name);
+}
+function luminance(color) {
+  const channels = color.match(/[\d.]+/g).slice(0, 3).map(Number).map(n => {
+    n /= 255; return n <= .04045 ? n / 12.92 : ((n + .055) / 1.055) ** 2.4;
+  });
+  return .2126 * channels[0] + .7152 * channels[1] + .0722 * channels[2];
+}
+async function measure(win, name, duration) {
+  report.phase = name; show();
+  const deltas = []; let previous = null, start = null;
+  const longTasks = [], longFrames = [];
+  let frameObserver;
+  if (win.PerformanceObserver.supportedEntryTypes.includes('long-animation-frame')) {
+    frameObserver = new win.PerformanceObserver(list => longFrames.push(...list.getEntries().map(e => ({duration:+e.duration.toFixed(2), blocking_ms:+e.blockingDuration.toFixed(2), scripts:e.scripts.map(s => ({source:s.sourceURL, duration:+s.duration.toFixed(2)}))}))));
+    frameObserver.observe({type:'long-animation-frame', buffered:false});
+  }
+  const observer = new win.PerformanceObserver(list => longTasks.push(...list.getEntries().map(e => e.duration)));
+  observer.observe({ type:'longtask', buffered:false });
+  await new Promise(resolve => {
+    function tick(timestamp) {
+      start ??= timestamp;
+      if (previous !== null) deltas.push(timestamp - previous);
+      previous = timestamp;
+      if (timestamp - start >= duration) resolve(); else win.requestAnimationFrame(tick);
+    }
+    win.requestAnimationFrame(tick);
+  });
+  observer.disconnect(); frameObserver?.disconnect();
+  const sorted = [...deltas].sort((a,b) => a-b), total = deltas.reduce((a,b) => a+b,0);
+  report.timings.push({ name, seconds: +(total/1000).toFixed(2), frames:deltas.length,
+    fps: +(1000*deltas.length/total).toFixed(2), p95_ms: +sorted[Math.floor(sorted.length*.95)].toFixed(2),
+    max_ms: +sorted.at(-1).toFixed(2), intervals_over_25ms:deltas.filter(n => n>25).length,
+    long_tasks:longTasks.length, long_animation_frames:longFrames }); show();
+}
+async function run() {
+  const win = frame.contentWindow, doc = frame.contentDocument;
+  win.addEventListener('error', e => { report.errors.push(e.message); show(); });
+  win.addEventListener('unhandledrejection', e => { report.errors.push(String(e.reason)); show(); });
+  for (let i=0; i<100 && (!win.stateManager || !doc.querySelector('dashboard-display').shadowRoot); i++) await sleep(100);
+  await sleep(2000);
+  const manager = win.stateManager, bus = win.EventBus;
+  check('Native bootstrap initialized', !!manager && !!bus);
+  const original = { ...manager.currentState }, theme = doc.documentElement.getAttribute('data-theme');
+  if (!functionalOnly) await measure(win, 'Live hardware stream', 30000);
+  manager.stop();
+  const send = delta => manager.processNewState({ ...original, ...delta });
+  const display = doc.querySelector('dashboard-display');
+  send({ fps:100, display_volume:75, audio_master_volume:0, frametime_ms:null }); await sleep(1100);
+  check('Zero master volume is displayed', display.shadowRoot.querySelector('#display_volume').textContent === '0');
+  check('Frame time is derived and labelled', display.dataset.frameTimeSource === 'derived' && display.shadowRoot.querySelector('#frametime_ms').textContent === '10.0');
+  send({ fps:0 }); await sleep(30);
+  check('Zero FPS clears derived frame time', display.shadowRoot.querySelector('#frametime_ms').textContent === '--');
+  send({ fps:null, frametime_ms:7.5 }); await sleep(30);
+  check('Measured frame time has explicit provenance', display.dataset.frameTimeSource === 'measured' && display.shadowRoot.querySelector('#frametime_ms').textContent === '7.5');
+  manager.processNewState({ fps:null }); await sleep(50);
+  check('Missing CPU sensor clears the gauge', doc.querySelector('dashboard-cpu').shadowRoot.querySelector('.gauge-huge-number').textContent === '--');
+  manager.invalidateTelemetry(); await sleep(50);
+  check('Stale streams are labelled', display.dataset.telemetryStatus === 'stale');
+  send({ fps:120 }); await sleep(50);
+  const cpu = doc.querySelector('dashboard-cpu'), gpu = doc.querySelector('dashboard-gpu');
+  const savedCPU = cpu._currentGaugeStyle, savedGPU = gpu._currentGaugeStyle;
+  for (const style of win.GaugeEngine.getAvailableStyles()) {
+    bus.emit('gauge:style-changed', {applyAll:true, styleId:style.id}); await sleep(30);
+    check(`${style.id} renders CPU and GPU gauges`, cpu.shadowRoot.querySelector('.gauge-huge-number').textContent !== '--' && gpu.shadowRoot.querySelector('.gauge-huge-number').textContent !== '--');
+  }
+  bus.emit('gauge:style-changed', {gaugeId:'cpu', styleId:savedCPU});
+  bus.emit('gauge:style-changed', {gaugeId:'gpu', styleId:savedGPU});
+  for (const tag of ['dashboard-cpu','dashboard-gpu']) {
+    const card = doc.querySelector(tag), parent = card.parentNode, next = card.nextSibling;
+    const count = bus.events['state-changed'].length, styles = bus.events['gauge:style-changed'].length;
+    for (let i=0; i<20; i++) {
+      const signal = card.events.signal; card.remove();
+      check(`${tag} disconnect ${i+1} cancels resources`, card.rafId === null && signal.aborted);
+      parent.insertBefore(card,next);
+    }
+    check(`${tag} remount preserves subscription count`, bus.events['state-changed'].length === count && bus.events['gauge:style-changed'].length === styles);
+  }
+  for (const card of doc.querySelectorAll('dashboard-cpu,dashboard-gpu,dashboard-display,dashboard-network,dashboard-matches')) {
+    const front = card.shadowRoot.querySelector('.card-front'), back = card.shadowRoot.querySelector('.card-back');
+    check(`${card.tagName} starts with inaccessible back`, back.inert && back.getAttribute('aria-hidden') === 'true');
+    front.querySelector('button').focus(); card.classList.add('flipped'); await sleep(20);
+    check(`${card.tagName} flip hides front and moves focus`, front.inert && !back.inert && back.contains(card.shadowRoot.activeElement));
+    card.classList.remove('flipped'); await sleep(20);
+  }
+  const weather = doc.querySelector('dashboard-weather'), appointment = doc.querySelector('dashboard-appointments');
+  let prayerWrites=0, appointmentWrites=0;
+  const prayerObserver = new win.MutationObserver(records => prayerWrites += records.length);
+  const appointmentObserver = new win.MutationObserver(records => appointmentWrites += records.length);
+  prayerObserver.observe(weather.shadowRoot.querySelector('#next_prayer_countdown'),{childList:true,characterData:true,subtree:true});
+  appointmentObserver.observe(appointment.dom.countdown,{childList:true,characterData:true,subtree:true});
+  await sleep(3200); prayerObserver.disconnect(); appointmentObserver.disconnect();
+  check('Countdown text mutates at most once per second', prayerWrites <= 4 && appointmentWrites <= 4);
+  const themes = ['default','oled','cyberpunk','emerald','aurora','f1-pitwall','neo-tactile'];
+  let step=0;
+  const stress = setInterval(() => send({ fps:120+step++%40, cpu_temp:55+step%35, gpu_temp:50+step%40,
+    cpu_load:step%100, gpu_load:(step*3)%100, audio_master_volume:step%100 }),500);
+  try {
+    for (const themeName of themes) {
+      doc.documentElement.setAttribute('data-theme',themeName); await sleep(100);
+      const probe = doc.createElement('span'); doc.body.append(probe);
+      probe.style.background='var(--status-surface)';
+      const contrast = {};
+      for (const status of ['normal','warning','critical']) {
+        probe.style.color=`var(--status-${status})`;
+        const style = win.getComputedStyle(probe), a=luminance(style.color), b=luminance(style.backgroundColor);
+        contrast[status] = +((Math.max(a,b)+.05)/(Math.min(a,b)+.05)).toFixed(2);
+      }
+      probe.remove(); check(`${themeName} semantic contrast >=4.5:1`, Object.values(contrast).every(n => n>=4.5));
+      report.contrast ??= {}; report.contrast[themeName]=contrast;
+      if (!functionalOnly) await measure(win, `${themeName} animated telemetry`,5000);
+    }
+  } finally {
+    clearInterval(stress); theme === null ? doc.documentElement.removeAttribute('data-theme') : doc.documentElement.setAttribute('data-theme',theme);
+    manager.start();
+  }
+  check('No runtime exceptions', report.errors.length === 0);
+  report.status='complete'; delete report.phase; show(); output.dataset.complete='true';
+}
+frame.addEventListener('load', () => run().catch(error => {
+  report.status='failed'; report.errors.push(String(error)); show(); output.dataset.complete='true';
+}), { once:true });
+</script></html>

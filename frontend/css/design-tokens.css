@@ -11,10 +11,17 @@
   --text-pure-white: #F8FAFF;
   --text-muted: rgba(248, 250, 255, 0.5);
 
+  /* Semantic status colors use an opaque surface for stable text contrast.
+     Decorative neon/theme accents remain independent. */
+  --status-normal: #67E8F9;
+  --status-warning: #FDE68A;
+  --status-critical: #FCA5A5;
+  --status-surface: #101827;
+
   /* Fonts */
-  --font-numbers: 'Roboto Mono', 'Orbitron', monospace;
-  --font-display: 'Barlow', 'Rajdhani', sans-serif;
-  --font-arabic: 'Almarai', 'Cairo', 'Tajawal', sans-serif;
+  --font-numbers: 'Roboto Mono', monospace;
+  --font-display: 'Barlow', sans-serif;
+  --font-arabic: 'Almarai', sans-serif;
 
   /* Glassmorphism Specs */
   --glass-bg: rgba(255, 255, 255, 0.03);
@@ -183,7 +190,11 @@ html[data-theme="neo-tactile"] {
 
   /* High Contrast Typography (100cm kiosk legibility) */
   --text-pure-white: #241A15;
-  --text-muted: #7E6F65;
+  --text-muted: #66584E;
+  --status-normal: #246742;
+  --status-warning: #7A4B00;
+  --status-critical: #9B241D;
+  --status-surface: #FAF5F0;
 
   /* Mesh Opacity */
   --mesh-opacity: 0.15;

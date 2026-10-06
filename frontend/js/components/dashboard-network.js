@@ -1,4 +1,5 @@
-import { EventBus } from '../store/event_bus.js';
+import { animationAlpha, connectFlipFaces, updateTelemetryStatus } from './component-utils.js?v=20261006.2';
+import { EventBus } from '../store/event_bus.js?v=20261006.2';
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -488,7 +489,7 @@ template.innerHTML = `
 
 <div class="card-flipper" id="card-flipper">
   <!-- FRONT FACE: Real-time Speeds & Live Graphs -->
-  <div class="card-face card-front">
+  <div class="card-face card-front" aria-hidden="false">
     <div class="card-header">
       <div class="card-title-group">
         <div class="card-icon net-icon">
@@ -577,7 +578,7 @@ template.innerHTML = `
   </div>
 
   <!-- BACK FACE: Top Bandwidth Consuming Applications -->
-  <div class="card-face card-back">
+  <div class="card-face card-back" inert aria-hidden="true">
     <div class="card-header">
       <div class="card-title-group">
         <div class="card-icon" style="color: var(--neon-purple, #A855F7);">
@@ -675,34 +676,46 @@ export class DashboardNetwork extends HTMLElement {
   }
 
   connectedCallback() {
+    if (this.isRunning) return;
+    this.previousTimestamp = null;
+    this.events?.abort();
+    this.events = new AbortController();
+    connectFlipFaces(this);
     // 3D Flip button handlers
     if (this.dom.btnFlipApps) {
       this.dom.btnFlipApps.addEventListener('click', (e) => {
         e.stopPropagation();
         this.classList.add('flipped');
-      });
+      }, { signal: this.events.signal });
     }
 
     if (this.dom.btnFlipBack) {
       this.dom.btnFlipBack.addEventListener('click', (e) => {
         e.stopPropagation();
         this.classList.remove('flipped');
-      });
+      }, { signal: this.events.signal });
     }
 
     this.unsubscribe = EventBus.on('state-changed', this.onStateChange);
-    this.unsubscribeData = EventBus.on('telemetry:data', this.onStateChange);
+    this.onStateChange(window.stateManager?.currentState || {});
+
     this.isRunning = true;
-    requestAnimationFrame(this.tick);
+    this.rafId = requestAnimationFrame(this.tick);
   }
 
   disconnectedCallback() {
+    cancelAnimationFrame(this.rafId);
+    this.rafId = null;
+    this.previousTimestamp = null;
+    this.events?.abort();
+    this.flipObserver?.disconnect();
     this.isRunning = false;
     if (this.unsubscribe) this.unsubscribe();
-    if (this.unsubscribeData) this.unsubscribeData();
   }
 
   onStateChange(delta) {
+    if (!delta || typeof delta !== 'object') return;
+    updateTelemetryStatus(this, delta, ['network_download_mbps', 'network_upload_mbps']);
     if (delta.network_download_mbps !== undefined) this.targetValues.network_download_mbps = delta.network_download_mbps;
     if (delta.network_upload_mbps !== undefined) this.targetValues.network_upload_mbps = delta.network_upload_mbps;
 
@@ -733,9 +746,9 @@ export class DashboardNetwork extends HTMLElement {
     }
 
     if ((delta.network_total_dl_gb !== undefined || delta.network_total_ul_gb !== undefined) && this.dom.meta_session_data) {
-      const dl = delta.network_total_dl_gb || 0;
-      const ul = delta.network_total_ul_gb || 0;
-      this.dom.meta_session_data.textContent = `${dl.toFixed(1)}G↓ / ${ul.toFixed(1)}G↑`;
+      const dl = this.telemetrySnapshot.network_total_dl_gb;
+      const ul = this.telemetrySnapshot.network_total_ul_gb;
+      this.dom.meta_session_data.textContent = `${dl == null ? '--' : dl.toFixed(1)}G↓ / ${ul == null ? '--' : ul.toFixed(1)}G↑`;
     }
   }
 
@@ -750,13 +763,13 @@ export class DashboardNetwork extends HTMLElement {
 
     this.dom.ping_val.textContent = `${Math.round(ping)} ms`;
     if (ping < 70) {
-      this.dom.ping_dot.style.background = '#10B981';
+      this.dom.ping_dot.style.background = 'var(--status-normal)';
       this.dom.ping_dot.style.boxShadow = '0 0 6px #10B981';
     } else if (ping < 160) {
-      this.dom.ping_dot.style.background = '#F59E0B';
+      this.dom.ping_dot.style.background = 'var(--status-warning)';
       this.dom.ping_dot.style.boxShadow = '0 0 6px #F59E0B';
     } else {
-      this.dom.ping_dot.style.background = '#EF4444';
+      this.dom.ping_dot.style.background = 'var(--status-critical)';
       this.dom.ping_dot.style.boxShadow = '0 0 6px #EF4444';
     }
   }
@@ -767,7 +780,7 @@ export class DashboardNetwork extends HTMLElement {
       this.dom.apps_container.innerHTML = `
         <div class="empty-apps-state">
           <span>📡</span>
-          <span>لا توجد اتصالات نشطة للبرامج حالياً</span>
+          <span>${apps == null ? 'بيانات البرامج غير متاحة' : 'لا توجد اتصالات نشطة للبرامج حالياً'}</span>
         </div>
       `;
       this._lastAppsSignature = '';
@@ -819,6 +832,7 @@ export class DashboardNetwork extends HTMLElement {
 
   tick(timestamp) {
     if (!this.isRunning) return;
+    const alpha = animationAlpha(this, timestamp);
 
     let needsRender = false;
 
@@ -845,7 +859,7 @@ export class DashboardNetwork extends HTMLElement {
             needsRender = true;
           }
         } else {
-          current += diff * 0.2;
+          current += diff * alpha;
           needsRender = true;
         }
       }
@@ -862,7 +876,7 @@ export class DashboardNetwork extends HTMLElement {
       this._updateSparklines();
     }
 
-    requestAnimationFrame(this.tick);
+    this.rafId = requestAnimationFrame(this.tick);
   }
 
   _updateSparklines() {

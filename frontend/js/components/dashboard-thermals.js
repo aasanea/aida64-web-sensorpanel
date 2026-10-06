@@ -1,4 +1,5 @@
-import { EventBus } from '../store/event_bus.js';
+import { animationAlpha, updateTelemetryStatus } from './component-utils.js?v=20261006.2';
+import { EventBus } from '../store/event_bus.js?v=20261006.2';
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -284,7 +285,6 @@ export class DashboardThermals extends HTMLElement {
     this.isRunning = false;
     this.rafId = null;
     this.unsubscribe = null;
-    this.unsubscribeData = null;
 
     this.dom = {
       max_temp: this.shadowRoot.getElementById('max_temp'),
@@ -301,17 +301,17 @@ export class DashboardThermals extends HTMLElement {
   }
 
   connectedCallback() {
+    if (this.isRunning) return;
+    this.previousTimestamp = null;
+    this.events?.abort();
+    this.events = new AbortController();
     if (this.unsubscribe) {
       this.unsubscribe();
       this.unsubscribe = null;
     }
-    if (this.unsubscribeData) {
-      this.unsubscribeData();
-      this.unsubscribeData = null;
-    }
 
     this.unsubscribe = EventBus.on('state-changed', this.onStateChange);
-    this.unsubscribeData = EventBus.on('telemetry:data', this.onStateChange);
+
 
     if (typeof window !== 'undefined' && window.stateManager && window.stateManager.currentState) {
       this.onStateChange(window.stateManager.currentState);
@@ -324,6 +324,11 @@ export class DashboardThermals extends HTMLElement {
   }
 
   disconnectedCallback() {
+    cancelAnimationFrame(this.rafId);
+    this.rafId = null;
+    this.previousTimestamp = null;
+    this.events?.abort();
+    this.flipObserver?.disconnect();
     this.isRunning = false;
     if (this.rafId) {
       cancelAnimationFrame(this.rafId);
@@ -332,10 +337,6 @@ export class DashboardThermals extends HTMLElement {
     if (this.unsubscribe) {
       this.unsubscribe();
       this.unsubscribe = null;
-    }
-    if (this.unsubscribeData) {
-      this.unsubscribeData();
-      this.unsubscribeData = null;
     }
   }
 
@@ -353,6 +354,8 @@ export class DashboardThermals extends HTMLElement {
 
   onStateChange(delta) {
     if (!delta || typeof delta !== 'object') return;
+    updateTelemetryStatus(this, delta, Object.keys(this.targetValues));
+    if (!delta || typeof delta !== 'object') return;
     for (const key in this.targetValues) {
       if (delta[key] !== undefined) {
         this.targetValues[key] = this._sanitizeNumber(delta[key]);
@@ -360,8 +363,9 @@ export class DashboardThermals extends HTMLElement {
     }
   }
 
-  tick() {
+  tick(timestamp) {
     if (!this.isRunning) return;
+    const alpha = animationAlpha(this, timestamp);
     
     let needsRender = false;
 
@@ -388,7 +392,7 @@ export class DashboardThermals extends HTMLElement {
             needsRender = true;
           }
         } else {
-          current += diff * 0.15;
+          current += diff * alpha;
           needsRender = true;
         }
       }

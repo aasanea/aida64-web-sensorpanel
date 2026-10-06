@@ -32,6 +32,7 @@ export class GaugeEngine {
 
     // Clear container
     containerEl.innerHTML = '';
+    containerEl._gaugeCache = null;
     const shortStyle = styleId.replace(/-/g, '');
     const prefixStyle = styleId.split('-')[0];
     const suffixStyle = styleId.split('-')[1];
@@ -93,7 +94,7 @@ export class GaugeEngine {
       </div>
       <div class="gauge-status-pill" id="${gaugeId}-temp-desc-pill">
         <span class="pill-dot"></span>
-        <span class="pill-text" id="${gaugeId}-temp-desc">طبيعي</span>
+        <span class="pill-text" id="${gaugeId}-temp-desc">غير متاح</span>
       </div>
     `;
     containerEl.appendChild(centerStack);
@@ -103,28 +104,50 @@ export class GaugeEngine {
    * Updates gauge parameters in 60 FPS animation loop without recreating DOM.
    */
   static updateGaugeSvg(styleId, containerEl, value, min = 20, max = 100, statusText = 'طبيعي') {
-    if (!containerEl || isNaN(value)) return;
+    if (!containerEl) return;
+    const valid = typeof value === 'number' && Number.isFinite(value);
+    const displayed = valid ? String(Math.round(value)) : '--';
+    if (!valid) { value = min; statusText = 'غير متاح'; }
+    const cache = containerEl._gaugeCache ??= { nodes: new Map(), lengths: new WeakMap() };
+    if (cache.value === value && cache.status === statusText && cache.valid === valid && cache.min === min && cache.max === max) return;
+    cache.value = value; cache.status = statusText; cache.valid = valid; cache.min = min; cache.max = max;
+    const query = selector => {
+      if (!cache.nodes.has(selector)) cache.nodes.set(selector, containerEl.querySelector(selector));
+      return cache.nodes.get(selector);
+    };
+    const queryAll = selector => {
+      if (!cache.nodes.has(selector)) cache.nodes.set(selector, containerEl.querySelectorAll(selector));
+      return cache.nodes.get(selector);
+    };
+    const lengthOf = (element, fallback) => {
+      if (!cache.lengths.has(element)) cache.lengths.set(element, element.getTotalLength ? element.getTotalLength() : fallback);
+      return cache.lengths.get(element);
+    };
+    containerEl.dataset.telemetryStatus = valid ? 'live' : 'unavailable';
     const clampedVal = Math.max(min, Math.min(max, value));
     const ratio = (clampedVal - min) / (max - min);
 
     // 1. Update text elements
-    const numEl = containerEl.querySelector('.gauge-huge-number');
-    if (numEl) numEl.textContent = Math.round(value);
+    const numEl = query('.gauge-huge-number');
+    if (numEl && numEl.textContent !== displayed) numEl.textContent = displayed;
 
-    const descEl = containerEl.querySelector('.pill-text');
-    if (descEl && statusText) descEl.textContent = statusText;
+    const descEl = query('.pill-text');
+    if (descEl && descEl.textContent !== statusText) descEl.textContent = statusText;
 
-    const pillEl = containerEl.querySelector('.gauge-status-pill');
+    const pillEl = query('.gauge-status-pill');
     if (pillEl) {
-      if (value >= 80) {
-        pillEl.style.color = 'var(--neon-red, #EF4444)';
-        pillEl.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+      if (!valid) {
+        pillEl.style.color = 'var(--text-muted)';
+        pillEl.style.borderColor = 'currentColor';
+      } else if (value >= 85) {
+        pillEl.style.color = 'var(--status-critical)';
+        pillEl.style.borderColor = 'currentColor';
       } else if (value >= 70) {
-        pillEl.style.color = 'var(--neon-yellow, #FACC15)';
-        pillEl.style.borderColor = 'rgba(250, 204, 21, 0.4)';
+        pillEl.style.color = 'var(--status-warning)';
+        pillEl.style.borderColor = 'currentColor';
       } else {
-        pillEl.style.color = 'var(--theme-accent, var(--neon-cyan, #22D3EE))';
-        pillEl.style.borderColor = 'rgba(34, 211, 238, 0.3)';
+        pillEl.style.color = 'var(--status-normal)';
+        pillEl.style.borderColor = 'currentColor';
       }
     }
 
@@ -133,8 +156,8 @@ export class GaugeEngine {
 
     switch (styleId) {
       case 'tachometer': {
-        const prog = containerEl.querySelector('.tacho-progress');
-        const bead = containerEl.querySelector('.laser-bead');
+        const prog = query('.tacho-progress');
+        const bead = query('.laser-bead');
         if (prog) {
           const totalArc = defaultCircumference * 0.75; // 270 deg
           const offset = totalArc - (ratio * totalArc);
@@ -154,12 +177,12 @@ export class GaugeEngine {
       }
 
       case 'turbine': {
-        const blades = containerEl.querySelectorAll('.turbine-blade');
+        const blades = queryAll('.turbine-blade');
         const activeCount = Math.round(ratio * blades.length);
         blades.forEach((b, i) => {
           if (i < activeCount) {
             b.classList.add('blade-active');
-            if (value >= 80) {
+            if (value >= 85) {
               b.classList.add('blade-critical');
               b.classList.remove('blade-warning');
             } else if (value >= 70) {
@@ -176,12 +199,12 @@ export class GaugeEngine {
       }
 
       case 'hexa-matrix': {
-        const arc = containerEl.querySelector('.hexa-arc');
+        const arc = query('.hexa-arc');
         if (arc) {
-          const totalLen = arc.getTotalLength ? arc.getTotalLength() : (2 * Math.PI * 65);
+          const totalLen = lengthOf(arc, (2 * Math.PI * 65));
           arc.style.strokeDashoffset = `${totalLen * (1 - ratio)}px`;
         }
-        const cells = containerEl.querySelectorAll('.hexa-cell');
+        const cells = queryAll('.hexa-cell');
         const activeCells = Math.round(ratio * cells.length);
         cells.forEach((c, idx) => {
           c.classList.toggle('cell-active', idx < activeCells);
@@ -190,10 +213,10 @@ export class GaugeEngine {
       }
 
       case 'liquid-mercury': {
-        const fluid = containerEl.querySelector('.mercury-fluid');
-        const bubble = containerEl.querySelector('.mercury-bubble');
+        const fluid = query('.mercury-fluid');
+        const bubble = query('.mercury-bubble');
         if (fluid) {
-          const totalLen = fluid.getTotalLength ? fluid.getTotalLength() : (2 * Math.PI * 70);
+          const totalLen = lengthOf(fluid, (2 * Math.PI * 70));
           fluid.style.strokeDashoffset = `${totalLen * (1 - ratio)}px`;
           if (bubble) {
             const angleDeg = -90 + (ratio * 360);
@@ -208,19 +231,19 @@ export class GaugeEngine {
       }
 
       case 'tactical-radar': {
-        const arc = containerEl.querySelector('.radar-arc');
+        const arc = query('.radar-arc');
         if (arc) {
-          const totalLen = arc.getTotalLength ? arc.getTotalLength() : defaultCircumference;
+          const totalLen = lengthOf(arc, defaultCircumference);
           arc.style.strokeDashoffset = `${totalLen * (1 - ratio)}px`;
         }
         break;
       }
 
       case 'holo-minimal': {
-        const hair = containerEl.querySelector('.holo-hairline-progress');
-        const glow = containerEl.querySelector('.holo-core-glow');
+        const hair = query('.holo-hairline-progress');
+        const glow = query('.holo-core-glow');
         if (hair) {
-          const totalLen = hair.getTotalLength ? hair.getTotalLength() : (2 * Math.PI * 75);
+          const totalLen = lengthOf(hair, (2 * Math.PI * 75));
           hair.style.strokeDashoffset = `${totalLen * (1 - ratio)}px`;
         }
         if (glow) {
@@ -230,12 +253,12 @@ export class GaugeEngine {
       }
 
       case 'arc-reactor': {
-        const arc = containerEl.querySelector('.reactor-active-arc');
+        const arc = query('.reactor-active-arc');
         if (arc) {
-          const totalLen = arc.getTotalLength ? arc.getTotalLength() : (2 * Math.PI * 74);
+          const totalLen = lengthOf(arc, (2 * Math.PI * 74));
           arc.style.strokeDashoffset = `${totalLen * (1 - ratio)}px`;
         }
-        const nodes = containerEl.querySelectorAll('.reactor-node');
+        const nodes = queryAll('.reactor-node');
         nodes.forEach((n, idx) => {
           const thresh = 0.25 + (idx * 0.3);
           if (ratio >= thresh) {
@@ -250,24 +273,24 @@ export class GaugeEngine {
       }
 
       case 'retro-nixie': {
-        const fil = containerEl.querySelector('.nixie-filament');
+        const fil = query('.nixie-filament');
         if (fil) {
-          const totalLen = fil.getTotalLength ? fil.getTotalLength() : (2 * Math.PI * 73);
+          const totalLen = lengthOf(fil, (2 * Math.PI * 73));
           fil.style.strokeDashoffset = `${totalLen * (1 - ratio)}px`;
         }
         break;
       }
 
       case 'dual-split': {
-        const coolArc = containerEl.querySelector('.split-cool-arc');
-        const hotArc = containerEl.querySelector('.split-hot-arc');
+        const coolArc = query('.split-cool-arc');
+        const hotArc = query('.split-hot-arc');
         if (coolArc) {
-          const coolLen = coolArc.getTotalLength ? coolArc.getTotalLength() : (Math.PI * 73);
+          const coolLen = lengthOf(coolArc, (Math.PI * 73));
           const coolRatio = Math.min(1, ratio * 2);
           coolArc.style.strokeDashoffset = `${coolLen * (1 - coolRatio)}px`;
         }
         if (hotArc) {
-          const hotLen = hotArc.getTotalLength ? hotArc.getTotalLength() : (Math.PI * 73);
+          const hotLen = lengthOf(hotArc, (Math.PI * 73));
           const hotRatio = Math.max(0, Math.min(1, (ratio - 0.5) * 2));
           hotArc.style.strokeDashoffset = `${hotLen * (1 - hotRatio)}px`;
         }
@@ -275,9 +298,9 @@ export class GaugeEngine {
       }
 
       case 'prism-glass': {
-        const prism = containerEl.querySelector('.prism-spectrum-arc');
+        const prism = query('.prism-spectrum-arc');
         if (prism) {
-          const totalLen = prism.getTotalLength ? prism.getTotalLength() : (2 * Math.PI * 71);
+          const totalLen = lengthOf(prism, (2 * Math.PI * 71));
           prism.style.strokeDashoffset = `${totalLen * (1 - ratio)}px`;
         }
         break;

@@ -1,12 +1,21 @@
 export const EventBus = {
   events: {},
 
-  on(event, handler) {
+  on(event, handler, { signal } = {}) {
+    if (signal?.aborted) return () => {};
     if (!this.events[event]) {
       this.events[event] = [];
     }
     this.events[event].push(handler);
-    return () => this.off(event, handler);
+    let subscribed = true;
+    const unsubscribe = () => {
+      if (!subscribed) return;
+      subscribed = false;
+      this.off(event, handler);
+      signal?.removeEventListener('abort', unsubscribe);
+    };
+    signal?.addEventListener('abort', unsubscribe, { once: true });
+    return unsubscribe;
   },
 
   off(event, handler) {

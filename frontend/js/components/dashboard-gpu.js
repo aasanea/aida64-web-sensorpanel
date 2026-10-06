@@ -1,11 +1,12 @@
-import { EventBus } from '../store/event_bus.js';
-import { GaugeEngine } from './gauge-styles-engine.js';
-import { GaugePicker } from './gauge-style-picker.js';
+import { animationAlpha, connectFlipFaces, updateTelemetryStatus } from './component-utils.js?v=20261006.2';
+import { EventBus } from '../store/event_bus.js?v=20261006.2';
+import { GaugeEngine } from './gauge-styles-engine.js?v=20261006.2';
+import { GaugePicker } from './gauge-style-picker.js?v=20261006.2';
 
 const template = document.createElement('template');
 template.innerHTML = `
 <style>
-  @import url('css/gauge-styles.css');
+  @import url('/css/gauge-styles.css?v=20261006.2');
   /* Local Component Styles */
   :host {
     display: block;
@@ -585,11 +586,11 @@ template.innerHTML = `
 
   /* Critical Thermal Alert Internal Styling (ISA-18.2 Compliance) */
   :host(.critical-thermal) .huge-number {
-    color: #FF4D4D !important;
+    color: var(--status-critical) !important;
     text-shadow: 0 0 24px rgba(239, 68, 68, 0.7) !important;
   }
   :host(.critical-thermal) .card-icon {
-    color: #EF4444 !important;
+    color: var(--status-critical) !important;
     border-color: rgba(239, 68, 68, 0.4) !important;
     background: rgba(239, 68, 68, 0.12) !important;
     box-shadow: 0 0 12px rgba(239, 68, 68, 0.3) !important;
@@ -599,9 +600,9 @@ template.innerHTML = `
     filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.8)) !important;
   }
   :host(.critical-thermal) .status-descriptor {
-    background: rgba(239, 68, 68, 0.2) !important;
+    background: var(--status-surface) !important;
     border-color: rgba(239, 68, 68, 0.4) !important;
-    color: #FF4D4D !important;
+    color: var(--status-critical) !important;
     animation: blink-soft 1.5s infinite ease-in-out;
   }
   @keyframes blink-soft {
@@ -612,7 +613,7 @@ template.innerHTML = `
 
 <div class="card-flipper" id="card-flipper">
   <!-- FRONT FACE (Mission-Critical Metrics for 100cm Readability) -->
-  <div class="card-face card-front">
+  <div class="card-face card-front" aria-hidden="false">
     <div class="card-header">
       <div class="card-title-group">
         <div class="card-icon gpu-icon">
@@ -751,7 +752,7 @@ template.innerHTML = `
   </div>
 
   <!-- BACK FACE (Deep Telemetry on Flip) -->
-  <div class="card-face card-back">
+  <div class="card-face card-back" inert aria-hidden="true">
     <div class="card-header">
       <div class="card-title-group">
         <div class="card-icon gpu-icon">
@@ -987,18 +988,21 @@ export class DashboardGPU extends HTMLElement {
   }
 
   connectedCallback() {
+    if (this.isRunning) return;
+    this.previousTimestamp = null;
+    this.events?.abort();
+    this.events = new AbortController();
+    connectFlipFaces(this);
     this.updateHardwareDesc(
       window.stateManager?.currentState?.gpu_desc || 
       window.stateManager?.currentState?.gpu_name || 
       window.stateManager?.currentState?.hardware_desc
     );
 
-    this.unsubscribe = EventBus.on('state-changed', this.onStateChange);
-    this.unsubscribeData = EventBus.on('telemetry:data', this.onStateChange);
+    this.unsubscribe = EventBus.on('state-changed', this.onStateChange, { signal: this.events.signal });
 
-    if (window.stateManager && window.stateManager.currentState) {
-      this.onStateChange(window.stateManager.currentState);
-    }
+
+    this.onStateChange(window.stateManager?.currentState || {});
 
     // Dynamic Gauge Setup
     this._currentGaugeStyle = GaugePicker.getSavedStyle('gpu');
@@ -1017,7 +1021,7 @@ export class DashboardGPU extends HTMLElement {
         e.preventDefault();
         e.stopPropagation();
         window.GaugePicker?.open('gpu');
-      });
+      }, { signal: this.events.signal });
     }
 
     this._onStyleChanged = (detail) => {
@@ -1030,34 +1034,34 @@ export class DashboardGPU extends HTMLElement {
             unit: '°C'
           });
           const temp = this.currentValues.gpu_temp;
-          if (temp !== null && !isNaN(temp)) {
+          if (this._gaugeMount) {
             const desc = this.getTemperatureDesc(temp);
             GaugeEngine.updateGaugeSvg(this._currentGaugeStyle, this._gaugeMount, temp, 20, 100, desc);
           }
         }
       }
     };
-    this.unsubscribeStyle = EventBus.on('gauge:style-changed', this._onStyleChanged);
+    this.unsubscribeStyle = EventBus.on('gauge:style-changed', this._onStyleChanged, { signal: this.events.signal });
 
     if (this.dom.btnFlipDetails) {
       this.dom.btnFlipDetails.addEventListener('click', (e) => {
         e.stopPropagation();
         this.toggleFlip(true);
-      });
+      }, { signal: this.events.signal });
     }
 
     if (this.dom.microTelemetryStrip) {
       this.dom.microTelemetryStrip.addEventListener('click', (e) => {
         e.stopPropagation();
         this.toggleFlip(true);
-      });
+      }, { signal: this.events.signal });
     }
 
     if (this.dom.btnFlipBack) {
       this.dom.btnFlipBack.addEventListener('click', (e) => {
         e.stopPropagation();
         this.toggleFlip(false);
-      });
+      }, { signal: this.events.signal });
     }
 
     // Flip on clicking the card itself (excluding buttons/interactive elements)
@@ -1066,16 +1070,21 @@ export class DashboardGPU extends HTMLElement {
         return;
       }
       this.toggleFlip();
-    });
+    }, { signal: this.events.signal });
 
+    this.render();
     this.isRunning = true;
-    requestAnimationFrame(this.tick);
+    this.rafId = requestAnimationFrame(this.tick);
   }
 
   disconnectedCallback() {
+    cancelAnimationFrame(this.rafId);
+    this.rafId = null;
+    this.previousTimestamp = null;
+    this.events?.abort();
+    this.flipObserver?.disconnect();
     this.isRunning = false;
     if (this.unsubscribe) this.unsubscribe();
-    if (this.unsubscribeData) this.unsubscribeData();
     if (this.unsubscribeStyle) this.unsubscribeStyle();
   }
 
@@ -1096,6 +1105,8 @@ export class DashboardGPU extends HTMLElement {
   }
 
   onStateChange(delta) {
+    if (!delta || typeof delta !== 'object') return;
+    updateTelemetryStatus(this, delta, Object.keys(this.targetValues));
     if (!delta) return;
     for (const key in this.targetValues) {
       if (delta[key] !== undefined) {
@@ -1107,8 +1118,9 @@ export class DashboardGPU extends HTMLElement {
     }
   }
 
-  tick() {
+  tick(timestamp) {
     if (!this.isRunning) return;
+    const alpha = animationAlpha(this, timestamp);
     
     let needsRender = false;
 
@@ -1135,7 +1147,7 @@ export class DashboardGPU extends HTMLElement {
             needsRender = true;
           }
         } else {
-          current += diff * 0.15;
+          current += diff * alpha;
           needsRender = true;
         }
       }
@@ -1146,20 +1158,22 @@ export class DashboardGPU extends HTMLElement {
       this.render();
     }
 
-    requestAnimationFrame(this.tick);
+    this.updateThermalAlarm(this.targetValues.gpu_temp, this.targetValues.gpu_hotspot_temp);
+
+    this.rafId = requestAnimationFrame(this.tick);
   }
 
   getTemperatureColor(temp) {
     if (temp === null || temp === undefined || isNaN(temp)) return 'rgba(255, 255, 255, 0.15)';
     if (temp < 60) return '#22D3EE'; // var(--neon-cyan) - مثالي
-    if (temp < 80) return '#10B981'; // var(--neon-green) - جيدة
+    if (temp < 85) return '#10B981'; // var(--neon-green) - جيدة
     return '#EF4444';                // var(--neon-red)   - حرجة
   }
 
   getTemperatureDesc(temp) {
     if (temp === null || temp === undefined || isNaN(temp)) return '--';
     if (temp < 60) return 'مثالي';
-    if (temp < 80) return 'جيدة';
+    if (temp < 85) return 'جيدة';
     return 'حرجة';
   }
 
@@ -1171,7 +1185,7 @@ export class DashboardGPU extends HTMLElement {
     this.updateText(this.dom.gpu_hotspot_temp, hotspot, 0);
 
     // GPU Dynamic Gauge
-    if (this._gaugeMount && temp !== null && !isNaN(temp)) {
+    if (this._gaugeMount) {
       const desc = this.getTemperatureDesc(temp);
       GaugeEngine.updateGaugeSvg(this._currentGaugeStyle, this._gaugeMount, temp, 20, 100, desc);
     }
@@ -1211,7 +1225,9 @@ export class DashboardGPU extends HTMLElement {
     const timeSinceTransition = now - this.lastCriticalTransitionTime;
 
     let nextState = this.isCritical;
-    if (!this.isCritical) {
+    if (temp == null && hotspot == null) {
+      nextState = false;
+    } else if (!this.isCritical) {
       if ((temp !== null && !isNaN(temp) && temp >= this.HYSTERESIS_ON) || 
           (hotspot !== null && !isNaN(hotspot) && hotspot >= this.HOTSPOT_ON)) {
         nextState = true;

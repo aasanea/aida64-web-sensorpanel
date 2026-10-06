@@ -1,4 +1,5 @@
-import { EventBus } from '../store/event_bus.js';
+import { updateText, updateTelemetryStatus } from './component-utils.js?v=20261006.2';
+import { EventBus } from '../store/event_bus.js?v=20261006.2';
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -367,76 +368,64 @@ export class DashboardWeather extends HTMLElement {
   }
 
   connectedCallback() {
+    this.events?.abort();
+    this.events = new AbortController();
     this.unsubscribe = EventBus.on('state-changed', this.onStateChange);
-    this.unsubscribeData = EventBus.on('telemetry:data', this.onStateChange);
+    this.onStateChange(window.stateManager?.currentState || {});
+
     this.isRunning = true;
-    requestAnimationFrame(this.tick);
+    this.tick();
+    this.timerId = setInterval(this.tick, 1000);
   }
 
   disconnectedCallback() {
+    clearInterval(this.timerId);
+    this.events?.abort();
+    this.flipObserver?.disconnect();
     this.isRunning = false;
     if (this.unsubscribe) this.unsubscribe();
-    if (this.unsubscribeData) this.unsubscribeData();
   }
 
   onStateChange(data) {
-    if (data.riyadh_temp !== undefined && this.dom.weather_temp) {
-      this.dom.weather_temp.textContent = (data.riyadh_temp !== null) ? data.riyadh_temp : '--';
+    if (!data || typeof data !== 'object') return;
+    updateTelemetryStatus(this, data, ['riyadh_temp', 'next_prayer_seconds']);
+    const fields = {
+      riyadh_temp: 'weather_temp', riyadh_weather_desc: 'weather_desc',
+      riyadh_weather_icon: 'weather_icon', next_prayer_name: 'next_name', prev_prayer_name: 'prev_name'
+    };
+    for (const [key, name] of Object.entries(fields)) {
+      if (key in data) updateText(this.dom[name], data[key] ?? '--');
     }
-    if (data.riyadh_weather_desc && this.dom.weather_desc) {
-      this.dom.weather_desc.textContent = data.riyadh_weather_desc;
+    for (const name of ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha']) {
+      const key = `prayer_${name}`;
+      if (key in data) updateText(this.dom[name], data[key] == null ? '--:--' : format12h(data[key]));
     }
-    if (data.riyadh_weather_icon && this.dom.weather_icon) {
-      this.dom.weather_icon.textContent = data.riyadh_weather_icon;
+    if ('next_prayer_name' in data) {
+      Object.entries(this.dom.pills).forEach(([name, el]) => el?.classList.toggle('active-next', name === data.next_prayer_name));
     }
-
-    if (data.prayer_fajr && this.dom.fajr) this.dom.fajr.textContent = format12h(data.prayer_fajr);
-    if (data.prayer_dhuhr && this.dom.dhuhr) this.dom.dhuhr.textContent = format12h(data.prayer_dhuhr);
-    if (data.prayer_asr && this.dom.asr) this.dom.asr.textContent = format12h(data.prayer_asr);
-    if (data.prayer_maghrib && this.dom.maghrib) this.dom.maghrib.textContent = format12h(data.prayer_maghrib);
-    if (data.prayer_isha && this.dom.isha) this.dom.isha.textContent = format12h(data.prayer_isha);
-
-    if (data.next_prayer_name && this.dom.next_name) {
-      this.dom.next_name.textContent = data.next_prayer_name;
-      Object.entries(this.dom.pills).forEach(([pName, pEl]) => {
-        if (pEl) {
-          if (pName === data.next_prayer_name) pEl.classList.add('active-next');
-          else pEl.classList.remove('active-next');
-        }
-      });
-    }
-
-    if (data.prev_prayer_name && this.dom.prev_name) {
-      this.dom.prev_name.textContent = data.prev_prayer_name;
-    }
-
-    if (data.next_prayer_seconds !== undefined && data.next_prayer_seconds !== null) {
-      this.timerState.nextSecsBase = data.next_prayer_seconds;
-      this.timerState.nextLastUpdateMs = Date.now();
-    }
-    if (data.prev_prayer_seconds !== undefined && data.prev_prayer_seconds !== null) {
-      this.timerState.prevSecsBase = data.prev_prayer_seconds;
-      this.timerState.prevLastUpdateMs = Date.now();
+    for (const [key, base, anchor, node] of [
+      ['next_prayer_seconds', 'nextSecsBase', 'nextLastUpdateMs', 'next_countdown'],
+      ['prev_prayer_seconds', 'prevSecsBase', 'prevLastUpdateMs', 'prev_elapsed']
+    ]) {
+      if (!(key in data)) continue;
+      this.timerState[base] = data[key];
+      this.timerState[anchor] = data[key] == null ? null : performance.now();
+      if (data[key] == null) updateText(this.dom[node], '--:--:--');
     }
   }
 
   tick() {
     if (!this.isRunning) return;
-
-    const now = Date.now();
-    if (this.timerState.nextLastUpdateMs && this.timerState.nextSecsBase !== null && this.dom.next_countdown) {
-      const elapsed = (now - this.timerState.nextLastUpdateMs) / 1000.0;
-      const curNext = Math.max(0, this.timerState.nextSecsBase - elapsed);
-      this.dom.next_countdown.textContent = formatSecondsToHMS(curNext);
+    const now = performance.now();
+    const state = this.timerState;
+    if (state.nextLastUpdateMs != null && state.nextSecsBase != null) {
+      updateText(this.dom.next_countdown, formatSecondsToHMS(Math.max(0, state.nextSecsBase - (now - state.nextLastUpdateMs) / 1000)));
     }
-    if (this.timerState.prevLastUpdateMs && this.timerState.prevSecsBase !== null && this.dom.prev_elapsed) {
-      const elapsed = (now - this.timerState.prevLastUpdateMs) / 1000.0;
-      const curPrev = this.timerState.prevSecsBase + elapsed;
-      this.dom.prev_elapsed.textContent = formatSecondsToHMS(curPrev);
+    if (state.prevLastUpdateMs != null && state.prevSecsBase != null) {
+      updateText(this.dom.prev_elapsed, formatSecondsToHMS(state.prevSecsBase + (now - state.prevLastUpdateMs) / 1000));
     }
-
-    requestAnimationFrame(this.tick);
   }
+
 }
 
 customElements.define('dashboard-weather', DashboardWeather);

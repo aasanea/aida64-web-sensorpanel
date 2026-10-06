@@ -3,7 +3,7 @@ Frontend verification tests for AIDA64 Glassmorphism 2.0 Dashboard.
 Audits the modular Web Components architecture against strict specifications:
 - 24 mandatory sensors contract (across index.html + Web Component JS files)
 - Strict CSS specification for Glassmorphism 2.0 (design-tokens.css + style.css)
-- Google Fonts: Orbitron, Rajdhani, Tajawal, Cairo
+- Google Fonts: Almarai, Roboto Mono, Barlow
 - Progress bar Arabic labels & 100cm typography
 - EventBus, StateManager, and WebSocket architecture
 """
@@ -105,8 +105,9 @@ def test_google_fonts_present():
     with open(INDEX_HTML, "r", encoding="utf-8") as f:
         html = f.read()
 
-    for font in ["Orbitron", "Rajdhani", "Tajawal", "Cairo"]:
+    for font in ["Almarai", "Roboto+Mono", "Barlow"]:
         assert font in html, f"Missing Google Font {font} in index.html"
+    assert html.count('family=') == 3, "Load only the three essential font families"
 
 
 def test_strict_glassmorphism_css():
@@ -142,7 +143,7 @@ def test_arabic_labels_on_progress_bars():
     """Arabic labels may be in index.html or inside Web Component JS templates."""
     all_sources = _read_all_frontend_sources()
 
-    arabic_labels = ["نسبة الاستهلاك", "التردد MHz", "الطاقة W", "المروحة RPM", "نشاط التنزيل", "نشاط الرفع"]
+    arabic_labels = ["نسبة الاستهلاك", "التردد MHz", "الطاقة W", "المروحة RPM", "سرعة التنزيل DL", "سرعة الرفع UL"]
     for label in arabic_labels:
         assert label in all_sources, f"Missing Arabic label: {label}"
 

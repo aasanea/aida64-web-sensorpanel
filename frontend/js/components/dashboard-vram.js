@@ -1,4 +1,5 @@
-import { EventBus } from '../store/event_bus.js';
+import { animationAlpha, updateTelemetryStatus } from './component-utils.js?v=20261006.2';
+import { EventBus } from '../store/event_bus.js?v=20261006.2';
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -253,7 +254,7 @@ template.innerHTML = `
 
 <div class="card-body-medium">
   <div class="hero-metric-display">
-    <span class="arabic-label">نسبة الاستهلاك</span>
+    <span class="arabic-label" id="percent-source-label">نسبة الاستهلاك</span>
     <div class="hero-val-unit">
       <span class="huge-number" id="vram_used_percent">--</span>
       <span class="huge-unit">%</span>
@@ -325,7 +326,6 @@ export class DashboardVRAM extends HTMLElement {
     this.isRunning = false;
     this.rafId = null;
     this.unsubscribe = null;
-    this.unsubscribeData = null;
 
     this.dom = {
       vram_used_percent: this.shadowRoot.getElementById('vram_used_percent'),
@@ -341,17 +341,17 @@ export class DashboardVRAM extends HTMLElement {
   }
 
   connectedCallback() {
+    if (this.isRunning) return;
+    this.previousTimestamp = null;
+    this.events?.abort();
+    this.events = new AbortController();
     if (this.unsubscribe) {
       this.unsubscribe();
       this.unsubscribe = null;
     }
-    if (this.unsubscribeData) {
-      this.unsubscribeData();
-      this.unsubscribeData = null;
-    }
 
     this.unsubscribe = EventBus.on('state-changed', this.onStateChange);
-    this.unsubscribeData = EventBus.on('telemetry:data', this.onStateChange);
+
 
     if (typeof window !== 'undefined' && window.stateManager && window.stateManager.currentState) {
       this.onStateChange(window.stateManager.currentState);
@@ -364,18 +364,15 @@ export class DashboardVRAM extends HTMLElement {
   }
 
   disconnectedCallback() {
+    cancelAnimationFrame(this.rafId);
+    this.rafId = null;
+    this.previousTimestamp = null;
+    this.events?.abort();
+    this.flipObserver?.disconnect();
     this.isRunning = false;
-    if (this.rafId) {
-      cancelAnimationFrame(this.rafId);
-      this.rafId = null;
-    }
     if (this.unsubscribe) {
       this.unsubscribe();
       this.unsubscribe = null;
-    }
-    if (this.unsubscribeData) {
-      this.unsubscribeData();
-      this.unsubscribeData = null;
     }
   }
 
@@ -393,23 +390,27 @@ export class DashboardVRAM extends HTMLElement {
 
   onStateChange(delta) {
     if (!delta || typeof delta !== 'object') return;
+    updateTelemetryStatus(this, delta, Object.keys(this.targetValues));
     for (const key in this.targetValues) {
       if (delta[key] !== undefined) {
         this.targetValues[key] = this._sanitizeNumber(delta[key]);
       }
     }
 
-    // Defensive fallback: derive vram_used_percent if missing from telemetry
-    if (this.targetValues.vram_used_percent === null &&
-        this.targetValues.vram_used_gb !== null &&
-        this.targetValues.vram_total_gb !== null &&
-        this.targetValues.vram_total_gb > 0) {
-      this.targetValues.vram_used_percent = Math.min(100, Math.max(0, (this.targetValues.vram_used_gb / this.targetValues.vram_total_gb) * 100));
-    }
+    // Recompute a derived percentage from the raw snapshot on every delta.
+    const measured = this._sanitizeNumber(this.telemetrySnapshot.vram_used_percent);
+    const used = this.targetValues.vram_used_gb, total = this.targetValues.vram_total_gb;
+    const derived = measured === null && used !== null && total !== null && total > 0;
+    this.targetValues.vram_used_percent = measured ?? (derived ? Math.min(100, Math.max(0, used / total * 100)) : null);
+    this.dataset.percentSource = measured !== null ? 'measured' : derived ? 'derived' : 'unavailable';
+    const label = this.shadowRoot.getElementById('percent-source-label');
+    const text = derived ? 'نسبة الاستهلاك • مشتقة' : 'نسبة الاستهلاك';
+    if (label && label.textContent !== text) label.textContent = text;
   }
 
-  tick() {
+  tick(timestamp) {
     if (!this.isRunning) return;
+    const alpha = animationAlpha(this, timestamp);
     
     let needsRender = false;
 
@@ -436,7 +437,7 @@ export class DashboardVRAM extends HTMLElement {
             needsRender = true;
           }
         } else {
-          current += diff * 0.15;
+          current += diff * alpha;
           needsRender = true;
         }
       }

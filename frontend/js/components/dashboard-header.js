@@ -1,4 +1,4 @@
-import { EventBus } from '../store/event_bus.js';
+import { EventBus } from '../store/event_bus.js?v=20261006.2';
 
 const THEMES = [
   { id: 'default', name: 'Cyan Glass', nameAr: 'زجاج سيان', icon: '🌊', color: '#22D3EE' },
@@ -520,6 +520,13 @@ template.innerHTML = `
     0% { opacity: 0.85; transform: scale(0.95); }
     100% { opacity: 1; transform: scale(1.15); }
   }
+
+  /* Status is semantic and readable in every theme, including light ceramic. */
+  .status-badge { background: var(--status-surface); color: var(--status-warning); border-color: currentColor; }
+  .status-badge.live, .status-badge.polling { color: var(--status-normal); }
+  .status-badge.offline { color: var(--status-critical); }
+  .status-badge:is(.live, .polling, .reconnecting, .offline) .status-dot { background-color: currentColor; box-shadow: 0 0 8px currentColor; }
+  .status-ping { color: inherit; }
 </style>
 
 <!-- 1. Right: Prominent Enlarged Date Badge & Display Info -->
@@ -721,31 +728,34 @@ export class DashboardHeader extends HTMLElement {
   }
 
   connectedCallback() {
+    this.events?.abort();
+    this.events = new AbortController();
     this.unsubStatus = EventBus.on('connection:status', this.onConnectionStatus);
     this.unsubPing = EventBus.on('connection:ping', this.onConnectionPing);
-    this.unsubData = EventBus.on('telemetry:data', this.onTelemetryData);
+
     this.unsubState = EventBus.on('state-changed', this.onTelemetryData);
+    this.onTelemetryData(window.stateManager?.currentState || {});
 
     if (this.dom.fullscreenBtn) {
-      this.dom.fullscreenBtn.addEventListener('click', this.toggleFullscreen);
+      this.dom.fullscreenBtn.addEventListener('click', this.toggleFullscreen, { signal: this.events.signal });
     }
 
     if (this.dom.themeToggleBtn) {
-      this.dom.themeToggleBtn.addEventListener('click', this.toggleThemeMenu);
+      this.dom.themeToggleBtn.addEventListener('click', this.toggleThemeMenu, { signal: this.events.signal });
     }
 
     if (this.dom.themeDropdownMenu) {
-      this.dom.themeDropdownMenu.addEventListener('click', this._onThemeMenuClick);
-      this.dom.themeDropdownMenu.addEventListener('keydown', this._onThemeMenuKeyDown);
+      this.dom.themeDropdownMenu.addEventListener('click', this._onThemeMenuClick, { signal: this.events.signal });
+      this.dom.themeDropdownMenu.addEventListener('keydown', this._onThemeMenuKeyDown, { signal: this.events.signal });
     }
 
     if (this.dom.updateBadge) {
-      this.dom.updateBadge.addEventListener('click', this.openUpdateModal);
+      this.dom.updateBadge.addEventListener('click', this.openUpdateModal, { signal: this.events.signal });
     }
 
-    window.addEventListener('pointerdown', this._onOutsideClick);
-    window.addEventListener('click', this._onOutsideClick);
-    window.addEventListener('keydown', this._onKeyDown);
+    window.addEventListener('pointerdown', this._onOutsideClick, { signal: this.events.signal });
+    window.addEventListener('click', this._onOutsideClick, { signal: this.events.signal });
+    window.addEventListener('keydown', this._onKeyDown, { signal: this.events.signal });
 
     this.initTheme();
     this.updateClock();
@@ -763,6 +773,8 @@ export class DashboardHeader extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this.events?.abort();
+    this.flipObserver?.disconnect();
     if (this.timerId) {
       clearInterval(this.timerId);
       this.timerId = null;
@@ -785,10 +797,6 @@ export class DashboardHeader extends HTMLElement {
     if (this.unsubPing) {
       this.unsubPing();
       this.unsubPing = null;
-    }
-    if (this.unsubData) {
-      this.unsubData();
-      this.unsubData = null;
     }
     if (this.unsubState) {
       this.unsubState();
@@ -1098,11 +1106,11 @@ export class DashboardHeader extends HTMLElement {
 
   onTelemetryData(data) {
     if (!data || typeof data !== 'object') return;
-    if (data.date_gregorian != null && this.dom.dateGregorian) {
-      this.dom.dateGregorian.textContent = String(data.date_gregorian);
+    if (data.date_gregorian !== undefined && this.dom.dateGregorian) {
+      this.dom.dateGregorian.textContent = String(data.date_gregorian ?? '--/--/--');
     }
-    if (data.date_hijri != null && this.dom.dateHijri) {
-      this.dom.dateHijri.textContent = String(data.date_hijri);
+    if (data.date_hijri !== undefined && this.dom.dateHijri) {
+      this.dom.dateHijri.textContent = String(data.date_hijri ?? '--/--/--');
     }
   }
 

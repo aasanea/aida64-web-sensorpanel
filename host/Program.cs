@@ -737,7 +737,7 @@ namespace AIDA64Panel
                 string backendDir = Path.GetFullPath(Path.Combine(baseDir, "..", "backend"));
                 if (!Directory.Exists(backendDir))
                 {
-                    backendDir = @"D:\Services\aida64_dashboard\backend";
+                    backendDir = @"D:\Services\aida64_suite\dashboard\backend";
                 }
 
                 string pythonExe = @"C:\Python314\pythonw.exe";

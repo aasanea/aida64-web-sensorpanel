@@ -95,6 +95,8 @@ def test_frontend_dom_anti_thrashing():
     for prop in forbidden_layout_reads:
         assert prop not in js, f"Potential layout thrashing property '{prop}' detected in app.js"
 
-    # Verify requestAnimationFrame and domCache are implemented
-    assert "requestAnimationFrame" in js
-    assert "domCache" in js
+    # Bootstrap must not own component rendering or pierce shadow roots.
+    assert "shadowRoot" not in js
+    assert "requestAnimationFrame" not in js
+    assert "cpu-temp-ring" not in js
+    assert "gpu-temp-ring" not in js

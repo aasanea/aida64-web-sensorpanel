@@ -1,4 +1,5 @@
-import { EventBus } from '../store/event_bus.js';
+import { updateText, updateTelemetryStatus } from './component-utils.js?v=20261006.2';
+import { EventBus } from '../store/event_bus.js?v=20261006.2';
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -839,17 +840,21 @@ export class DashboardAppointments extends HTMLElement {
   }
 
   connectedCallback() {
+    this.events?.abort();
+    this.events = new AbortController();
     this.unsubscribe = EventBus.on('state-changed', this.onStateChange);
-    this.unsubscribeData = EventBus.on('telemetry:data', this.onStateChange);
+    this.onStateChange(window.stateManager?.currentState || {});
+
     this.isRunning = true;
-    requestAnimationFrame(this.tick);
+    this.tick();
+    this.timerId = setInterval(this.tick, 1000);
 
     // Modal Events
     if (this.dom.btn_open) {
-      this.dom.btn_open.addEventListener('click', this.openModal);
+      this.dom.btn_open.addEventListener('click', this.openModal, { signal: this.events.signal });
     }
     if (this.dom.btn_close) {
-      this.dom.btn_close.addEventListener('click', this.closeModal);
+      this.dom.btn_close.addEventListener('click', this.closeModal, { signal: this.events.signal });
     }
     if (this.dom.dialog) {
       this.dom.dialog.addEventListener('click', (e) => {
@@ -859,17 +864,19 @@ export class DashboardAppointments extends HTMLElement {
         if (!isInDialog) {
           this.closeModal();
         }
-      });
+      }, { signal: this.events.signal });
     }
     if (this.dom.form) {
-      this.dom.form.addEventListener('submit', this.handleSubmit);
+      this.dom.form.addEventListener('submit', this.handleSubmit, { signal: this.events.signal });
     }
   }
 
   disconnectedCallback() {
+    clearInterval(this.timerId);
+    this.events?.abort();
+    this.flipObserver?.disconnect();
     this.isRunning = false;
     if (this.unsubscribe) this.unsubscribe();
-    if (this.unsubscribeData) this.unsubscribeData();
   }
 
   openModal() {
@@ -1009,63 +1016,39 @@ export class DashboardAppointments extends HTMLElement {
   }
 
   onStateChange(data) {
-    if (!data) return;
-    if (data.appointments_remaining !== undefined && this.dom.remaining) {
-      this.dom.remaining.textContent = (data.appointments_remaining !== null) ? data.appointments_remaining : '--';
+    if (!data || typeof data !== 'object') return;
+    updateTelemetryStatus(this, data, ['appointments_count']);
+    const state = this.telemetrySnapshot;
+    updateText(this.dom.remaining, state.appointments_remaining ?? '--');
+    updateText(this.dom.hero_title, state.next_appointment_title ??
+      (state.appointments_count == null ? 'المواعيد غير متاحة' : 'لا توجد مواعيد متبقية لليوم'));
+    updateText(this.dom.hero_time, state.next_appointment_time ?? '--:--');
+    updateText(this.dom.hero_category, state.next_appointment_category_label ?? '--');
+    if (this.dom.hero_category) this.dom.hero_category.className = `apt-category-pill category-${state.next_appointment_category || 'work'}`;
+    const ongoing = Boolean(state.next_appointment_ongoing);
+    updateText(this.dom.hero_status_label, state.next_appointment_title ? (ongoing ? 'جاري الآن' : 'الموعد القادم') :
+      (state.appointments_count == null ? 'غير متاح' : 'مكتمل'));
+    if (this.dom.hero_status_dot) this.dom.hero_status_dot.className = state.next_appointment_title ?
+      `apt-status-indicator ${ongoing ? 'pulse-green' : 'pulse-cyan'}` : 'apt-status-indicator';
+    updateText(this.dom.countdown_label, ongoing ? 'منذ البدء' : 'متبقي');
+    this.timerState.isOngoing = ongoing;
+    updateText(this.dom.hero_location, state.next_appointment_location ?? '');
+    if (this.dom.hero_location_wrapper) this.dom.hero_location_wrapper.style.display = state.next_appointment_location ? 'inline-flex' : 'none';
+    if ('next_appointment_seconds' in data || !state.next_appointment_title) {
+      this.timerState.nextSecsBase = state.next_appointment_title ? state.next_appointment_seconds : null;
+      this.timerState.lastUpdateMs = this.timerState.nextSecsBase == null ? null : performance.now();
+      if (this.timerState.nextSecsBase == null) updateText(this.dom.countdown, state.appointments_count == null || state.next_appointment_title ? '--:--:--' : '00:00:00');
     }
-
-    if (data.next_appointment_title) {
-      if (this.dom.hero_title) this.dom.hero_title.textContent = data.next_appointment_title;
-      if (this.dom.hero_time && data.next_appointment_time) this.dom.hero_time.textContent = data.next_appointment_time;
-      if (this.dom.hero_category && data.next_appointment_category_label) {
-        this.dom.hero_category.textContent = data.next_appointment_category_label;
-        this.dom.hero_category.className = `apt-category-pill category-${data.next_appointment_category || 'work'}`;
-      }
-      if (data.next_appointment_ongoing) {
-        if (this.dom.hero_status_label) this.dom.hero_status_label.textContent = 'جاري الآن';
-        if (this.dom.hero_status_dot) this.dom.hero_status_dot.className = 'apt-status-indicator pulse-green';
-        if (this.dom.countdown_label) this.dom.countdown_label.textContent = 'منذ البدء';
-        this.timerState.isOngoing = true;
-      } else {
-        if (this.dom.hero_status_label) this.dom.hero_status_label.textContent = 'الموعد القادم';
-        if (this.dom.hero_status_dot) this.dom.hero_status_dot.className = 'apt-status-indicator pulse-cyan';
-        if (this.dom.countdown_label) this.dom.countdown_label.textContent = 'متبقي';
-        this.timerState.isOngoing = false;
-      }
-
-      if (this.dom.hero_location && this.dom.hero_location_wrapper) {
-        if (data.next_appointment_location) {
-          this.dom.hero_location.textContent = data.next_appointment_location;
-          this.dom.hero_location_wrapper.style.display = 'inline-flex';
-        } else {
-          this.dom.hero_location_wrapper.style.display = 'none';
-        }
-      }
-
-      if (data.next_appointment_seconds !== undefined && data.next_appointment_seconds !== null) {
-        this.timerState.nextSecsBase = data.next_appointment_seconds;
-        this.timerState.lastUpdateMs = Date.now();
-      }
-    } else if (data.appointments_count !== undefined) {
-      if (this.dom.hero_title) this.dom.hero_title.textContent = 'لا توجد مواعيد متبقية لليوم';
-      if (this.dom.hero_time) this.dom.hero_time.textContent = '--:--';
-      if (this.dom.countdown) this.dom.countdown.textContent = '00:00:00';
-      if (this.dom.hero_status_label) this.dom.hero_status_label.textContent = 'مكتمل';
-      if (this.dom.hero_status_dot) this.dom.hero_status_dot.className = 'apt-status-indicator';
-    }
-
-    if (Array.isArray(data.today_appointments)) {
-      this.currentItems = data.today_appointments;
-      if (this.dom.timeline_list) {
-        this.renderTimeline(this.currentItems);
-      }
+    if ('today_appointments' in data) {
+      this.currentItems = data.today_appointments ?? [];
+      this.renderTimeline(this.currentItems);
     }
   }
 
   renderTimeline(items) {
     if (!this.dom.timeline_list) return;
     if (!items || items.length === 0) {
-      this.dom.timeline_list.innerHTML = '<div class="apt-empty-state">✨ لا توجد مواعيد مسجلة لليوم</div>';
+      this.dom.timeline_list.innerHTML = this.telemetrySnapshot?.appointments_count == null ? '<div class="apt-empty-state">المواعيد غير متاحة</div>' : '<div class="apt-empty-state">✨ لا توجد مواعيد مسجلة لليوم</div>';
       return;
     }
     let html = '';
@@ -1095,18 +1078,18 @@ export class DashboardAppointments extends HTMLElement {
   tick() {
     if (!this.isRunning) return;
 
-    if (this.timerState.lastUpdateMs && this.dom.countdown && this.timerState.nextSecsBase !== null) {
-      const elapsed = (Date.now() - this.timerState.lastUpdateMs) / 1000.0;
+    if (this.timerState.lastUpdateMs != null && this.dom.countdown && this.timerState.nextSecsBase !== null) {
+      const elapsed = (performance.now() - this.timerState.lastUpdateMs) / 1000.0;
       if (this.timerState.isOngoing) {
         const cur = this.timerState.nextSecsBase + elapsed;
-        this.dom.countdown.textContent = formatSecondsToHMS(cur);
+        updateText(this.dom.countdown, formatSecondsToHMS(cur));
       } else {
         const cur = Math.max(0, this.timerState.nextSecsBase - elapsed);
-        this.dom.countdown.textContent = formatSecondsToHMS(cur);
+        updateText(this.dom.countdown, formatSecondsToHMS(cur));
       }
     }
 
-    requestAnimationFrame(this.tick);
+
   }
 }
 

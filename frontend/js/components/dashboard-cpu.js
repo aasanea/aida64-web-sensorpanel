@@ -1,11 +1,12 @@
-import { EventBus } from '../store/event_bus.js';
-import { GaugeEngine } from './gauge-styles-engine.js';
-import { GaugePicker } from './gauge-style-picker.js';
+import { animationAlpha, connectFlipFaces, updateTelemetryStatus } from './component-utils.js?v=20261006.2';
+import { EventBus } from '../store/event_bus.js?v=20261006.2';
+import { GaugeEngine } from './gauge-styles-engine.js?v=20261006.2';
+import { GaugePicker } from './gauge-style-picker.js?v=20261006.2';
 
 const template = document.createElement('template');
 template.innerHTML = `
 <style>
-  @import url('css/gauge-styles.css');
+  @import url('/css/gauge-styles.css?v=20261006.2');
   /* Local Component Styles */
   :host {
     display: block;
@@ -508,9 +509,9 @@ template.innerHTML = `
     border: 1px solid var(--neon-violet);
   }
   .core-group-badge.plat-badge {
-    color: var(--neon-orange, #FB923C);
+    color: var(--status-warning);
     background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--neon-orange, #FB923C);
+    border: 1px solid var(--status-warning);
   }
   .core-group-avg {
     font-family: var(--font-arabic);
@@ -631,7 +632,7 @@ template.innerHTML = `
     min-width: 0;
   }
   .platform-cell:hover {
-    border-color: var(--neon-orange, #FB923C);
+    border-color: var(--status-warning);
     background: rgba(255, 255, 255, 0.06);
   }
   .platform-cell-top {
@@ -672,7 +673,7 @@ template.innerHTML = `
     color: var(--neon-cyan);
   }
   .platform-cell-unit.unit-orange {
-    color: var(--neon-orange, #FB923C);
+    color: var(--status-warning);
   }
   .platform-cell-unit.unit-amber {
     color: #FBBF24;
@@ -693,11 +694,11 @@ template.innerHTML = `
 
   /* Critical Thermal Alert Internal Styling (Mirrors GPU 1:1) */
   :host(.critical-thermal) .huge-number {
-    color: #FF4D4D !important;
+    color: var(--status-critical) !important;
     text-shadow: 0 0 24px rgba(239, 68, 68, 0.7) !important;
   }
   :host(.critical-thermal) .card-icon {
-    color: #EF4444 !important;
+    color: var(--status-critical) !important;
     border-color: rgba(239, 68, 68, 0.4) !important;
     background: rgba(239, 68, 68, 0.12) !important;
     box-shadow: 0 0 12px rgba(239, 68, 68, 0.3) !important;
@@ -707,9 +708,9 @@ template.innerHTML = `
     filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.8)) !important;
   }
   :host(.critical-thermal) .status-descriptor {
-    background: rgba(239, 68, 68, 0.2) !important;
+    background: var(--status-surface) !important;
     border-color: rgba(239, 68, 68, 0.4) !important;
-    color: #FF4D4D !important;
+    color: var(--status-critical) !important;
     animation: blink-soft 1.5s infinite ease-in-out;
   }
   @keyframes blink-soft {
@@ -720,7 +721,7 @@ template.innerHTML = `
 
 <div class="card-flipper" id="card-flipper">
   <!-- FRONT FACE -->
-  <div class="card-face card-front">
+  <div class="card-face card-front" aria-hidden="false">
     <div class="card-header">
       <div class="card-title-group">
         <div class="card-icon cpu-icon">
@@ -845,7 +846,7 @@ template.innerHTML = `
   </div>
 
   <!-- BACK FACE (Detailed 20-Core Matrix & Platform Thermals) -->
-  <div class="card-face card-back">
+  <div class="card-face card-back" inert aria-hidden="true">
     <div class="card-header">
       <div class="card-title-group">
         <div class="card-icon cpu-icon">
@@ -1156,12 +1157,15 @@ export class DashboardCPU extends HTMLElement {
   }
 
   connectedCallback() {
-    this.unsubscribe = EventBus.on('state-changed', this.onStateChange);
-    this.unsubscribeData = EventBus.on('telemetry:data', this.onStateChange);
+    if (this.isRunning) return;
+    this.previousTimestamp = null;
+    this.events?.abort();
+    this.events = new AbortController();
+    connectFlipFaces(this);
+    this.unsubscribe = EventBus.on('state-changed', this.onStateChange, { signal: this.events.signal });
 
-    if (window.stateManager && window.stateManager.currentState) {
-      this.onStateChange(window.stateManager.currentState);
-    }
+
+    this.onStateChange(window.stateManager?.currentState || {});
 
     // Dynamic Gauge Setup
     this._currentGaugeStyle = GaugePicker.getSavedStyle('cpu');
@@ -1180,7 +1184,7 @@ export class DashboardCPU extends HTMLElement {
         e.preventDefault();
         e.stopPropagation();
         window.GaugePicker?.open('cpu');
-      });
+      }, { signal: this.events.signal });
     }
 
     this._onStyleChanged = (detail) => {
@@ -1193,42 +1197,47 @@ export class DashboardCPU extends HTMLElement {
             unit: '°C'
           });
           const temp = this.currentValues.cpu_temp;
-          if (temp !== null && !isNaN(temp)) {
+          if (this._gaugeMount) {
             const desc = this.getTemperatureDesc(temp);
             GaugeEngine.updateGaugeSvg(this._currentGaugeStyle, this._gaugeMount, temp, 20, 100, desc);
           }
         }
       }
     };
-    this.unsubscribeStyle = EventBus.on('gauge:style-changed', this._onStyleChanged);
+    this.unsubscribeStyle = EventBus.on('gauge:style-changed', this._onStyleChanged, { signal: this.events.signal });
 
     if (this.dom.btnFlipCores) {
       this.dom.btnFlipCores.addEventListener('click', (e) => {
         e.stopPropagation();
         this.toggleFlip(true);
-      });
+      }, { signal: this.events.signal });
     }
     if (this.dom.microCoresStrip) {
       this.dom.microCoresStrip.addEventListener('click', (e) => {
         e.stopPropagation();
         this.toggleFlip(true);
-      });
+      }, { signal: this.events.signal });
     }
     if (this.dom.btnFlipBack) {
       this.dom.btnFlipBack.addEventListener('click', (e) => {
         e.stopPropagation();
         this.toggleFlip(false);
-      });
+      }, { signal: this.events.signal });
     }
 
+    this.render();
     this.isRunning = true;
-    requestAnimationFrame(this.tick);
+    this.rafId = requestAnimationFrame(this.tick);
   }
 
   disconnectedCallback() {
+    cancelAnimationFrame(this.rafId);
+    this.rafId = null;
+    this.previousTimestamp = null;
+    this.events?.abort();
+    this.flipObserver?.disconnect();
     this.isRunning = false;
     if (this.unsubscribe) this.unsubscribe();
-    if (this.unsubscribeData) this.unsubscribeData();
     if (this.unsubscribeStyle) this.unsubscribeStyle();
   }
 
@@ -1238,6 +1247,8 @@ export class DashboardCPU extends HTMLElement {
   }
 
   onStateChange(delta) {
+    if (!delta || typeof delta !== 'object') return;
+    updateTelemetryStatus(this, delta, Object.keys(this.targetValues));
     if (!delta) return;
     for (const key in this.targetValues) {
       if (delta[key] !== undefined) {
@@ -1250,8 +1261,9 @@ export class DashboardCPU extends HTMLElement {
     }
   }
 
-  tick() {
+  tick(timestamp) {
     if (!this.isRunning) return;
+    const alpha = animationAlpha(this, timestamp);
     
     let needsRender = false;
 
@@ -1275,7 +1287,7 @@ export class DashboardCPU extends HTMLElement {
             needsRender = true;
           }
         } else {
-          current += diff * 0.15;
+          current += diff * alpha;
           needsRender = true;
         }
       }
@@ -1286,21 +1298,23 @@ export class DashboardCPU extends HTMLElement {
       this.render();
     }
 
-    requestAnimationFrame(this.tick);
+    this.updateThermalAlarm(this.targetValues.cpu_temp, this.targetValues.cpu_hotspot_temp);
+
+    this.rafId = requestAnimationFrame(this.tick);
   }
 
   getTemperatureColor(temp, defaultColor = 'var(--neon-cyan)') {
     if (temp === null || isNaN(temp)) return defaultColor;
     if (temp < 70) return defaultColor;
-    if (temp < 85) return 'var(--neon-orange, #FB923C)';
-    return 'var(--neon-red, #EF4444)';
+    if (temp < 85) return 'var(--status-warning)';
+    return 'var(--status-critical)';
   }
 
-  updateTempColor(element, temp, defaultColor = '#FFFFFF') {
+  updateTempColor(element, temp, defaultColor = 'var(--text-pure-white)') {
     if (!element) return;
     const color = (temp === null || isNaN(temp)) ? defaultColor :
                   (temp < 65 ? defaultColor :
-                   temp < 80 ? 'var(--neon-orange, #FB923C)' : 'var(--neon-red, #EF4444)');
+                   temp < 85 ? 'var(--status-warning)' : 'var(--status-critical)');
     if (element.style.color !== color) {
       element.style.color = color;
     }
@@ -1323,7 +1337,7 @@ export class DashboardCPU extends HTMLElement {
 
     // CPU Dynamic Gauge
     const temp = this.currentValues.cpu_temp;
-    if (this._gaugeMount && temp !== null && !isNaN(temp)) {
+    if (this._gaugeMount) {
       const desc = this.getTemperatureDesc(temp);
       GaugeEngine.updateGaugeSvg(this._currentGaugeStyle, this._gaugeMount, temp, 20, 100, desc);
     }
@@ -1368,68 +1382,76 @@ export class DashboardCPU extends HTMLElement {
       }
     }
 
-    // Critical Thermal Alarm Evaluation (Hysteresis & Hold Time)
-    this.updateThermalAlarm(temp, this.currentValues.cpu_hotspot_temp);
+
   }
 
   renderCores() {
-    if (!this.cpuCores || !Array.isArray(this.cpuCores)) return;
+    if (!Array.isArray(this.cpuCores)) {
+      this.coreDom.miniBars.forEach(bar => { bar.style.height = '0%'; bar.title = 'غير متاح'; });
+      this.coreDom.cells.forEach(cell => {
+        this.updateText(cell.load, null, 0); this.updateText(cell.temp, null, 0);
+        cell.bar.style.width = '0%';
+      });
+      this.dom.pCoresAvg.textContent = 'غير متاح';
+      this.dom.eCoresAvg.textContent = 'غير متاح';
+      return;
+    }
 
     let pLoadSum = 0, pTempSum = 0, pCount = 0, pTempCount = 0;
     let eLoadSum = 0, eTempSum = 0, eCount = 0, eTempCount = 0;
 
-    for (let i = 0; i < this.cpuCores.length; i++) {
-      const core = this.cpuCores[i];
-      const load = (core.load !== null && !isNaN(core.load)) ? Math.min(100, Math.max(0, core.load)) : 0;
+    for (let i = 0; i < this.coreDom.cells.length; i++) {
+      const core = this.cpuCores[i] ?? { type: i < 8 ? 'P' : 'E', id: i + 1, load: null, temp: null };
+      const load = Number.isFinite(core.load) ? Math.min(100, Math.max(0, core.load)) : null;
       const temp = (core.temp !== null && !isNaN(core.temp)) ? core.temp : null;
       const defaultColor = core.type === 'P' ? 'var(--neon-cyan)' : 'var(--neon-violet)';
       const color = this.getTemperatureColor(temp, defaultColor);
 
       if (core.type === 'P') {
-        pLoadSum += load;
+        if (load !== null) { pLoadSum += load; pCount++; }
         if (temp !== null) {
           pTempSum += temp;
           pTempCount++;
         }
-        pCount++;
+
       } else {
-        eLoadSum += load;
+        if (load !== null) { eLoadSum += load; eCount++; }
         if (temp !== null) {
           eTempSum += temp;
           eTempCount++;
         }
-        eCount++;
+
       }
 
       // Update Front Mini-Bar
       const miniBar = this.coreDom.miniBars[i];
       if (miniBar) {
-        const heightPct = Math.max(15, load);
+        const heightPct = load === null ? 0 : Math.max(15, load);
         miniBar.style.height = `${heightPct}%`;
         miniBar.style.backgroundColor = color;
         const tag = core.type === 'P' ? `P-Core ${core.id}` : `E-Core ${core.id - 8}`;
-        miniBar.title = `${tag}: ${Math.round(load)}% | ${temp !== null ? Math.round(temp) : '--'}°C`;
+        miniBar.title = `${tag}: ${load === null ? '--' : Math.round(load)}% | ${temp !== null ? Math.round(temp) : '--'}°C`;
       }
 
       // Update Back Matrix Detail Cell
       const cell = this.coreDom.cells[i];
       if (cell) {
-        cell.load.textContent = `${Math.round(load)}%`;
+        cell.load.textContent = `${load === null ? '--' : Math.round(load)}%`;
         cell.temp.textContent = temp !== null ? `${Math.round(temp)}°` : '--°';
         cell.temp.style.color = color;
-        cell.bar.style.width = `${load}%`;
+        cell.bar.style.width = `${load ?? 0}%`;
         cell.bar.style.backgroundColor = color;
       }
     }
 
     // Averages on Back Face
-    if (this.dom.pCoresAvg && pCount > 0) {
-      const avgLoad = Math.round(pLoadSum / pCount);
+    if (this.dom.pCoresAvg) {
+      const avgLoad = pCount > 0 ? Math.round(pLoadSum / pCount) : '--';
       const avgTemp = pTempCount > 0 ? Math.round(pTempSum / pTempCount) : '--';
       this.dom.pCoresAvg.textContent = `متوسط: ${avgLoad}% | ${avgTemp}°C`;
     }
-    if (this.dom.eCoresAvg && eCount > 0) {
-      const avgLoad = Math.round(eLoadSum / eCount);
+    if (this.dom.eCoresAvg) {
+      const avgLoad = eCount > 0 ? Math.round(eLoadSum / eCount) : '--';
       const avgTemp = eTempCount > 0 ? Math.round(eTempSum / eTempCount) : '--';
       this.dom.eCoresAvg.textContent = `متوسط: ${avgLoad}% | ${avgTemp}°C`;
     }
@@ -1440,7 +1462,9 @@ export class DashboardCPU extends HTMLElement {
     const timeSinceTransition = now - this.lastCriticalTransitionTime;
 
     let nextState = this.isCritical;
-    if (!this.isCritical) {
+    if (temp == null && hotspot == null) {
+      nextState = false;
+    } else if (!this.isCritical) {
       if ((temp !== null && !isNaN(temp) && temp >= this.HYSTERESIS_ON) || 
           (hotspot !== null && !isNaN(hotspot) && hotspot >= this.HOTSPOT_ON)) {
         nextState = true;

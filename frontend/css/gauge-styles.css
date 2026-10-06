@@ -50,7 +50,7 @@
   font-family: var(--font-arabic, sans-serif);
   font-size: 15px;
   font-weight: 800;
-  color: #F1F5F9;
+  color: var(--text-pure-white);
   opacity: 0.95;
   margin-bottom: 2px;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
@@ -672,4 +672,14 @@
   transform: translateY(-1px);
   filter: brightness(1.15);
   box-shadow: 0 0 18px rgba(34, 211, 238, 0.5);
+}
+
+/* Interpolation is owned by the component rAF; do not add a second CSS lag. */
+.gauge-dynamic-root circle, .gauge-dynamic-root path {
+  transition-property: stroke, opacity, filter;
+}
+.gauge-status-pill {
+  background: var(--status-surface);
+  color: var(--status-normal);
+  border-color: currentColor;
 }

@@ -1,4 +1,4 @@
-import { EventBus } from './event_bus.js';
+import { EventBus } from './event_bus.js?v=20261006.2';
 
 export class StateManager {
   constructor() {
@@ -16,10 +16,45 @@ export class StateManager {
     this.isPolling = false;
     this.pongReceived = true;
     this.mockOverride = null;
+    this.stopped = true;
+    this.lastReceivedAt = null;
+    this.staleAfterMs = 5000;
+    this.staleTimer = null;
+    this.pollController = null;
+    this.pollGeneration = 0;
   }
 
   start() {
+    if (!this.stopped) return;
+    this.stopped = false;
+    this.staleTimer = setInterval(() => this.checkFreshness(), 1000);
     this.connect();
+  }
+
+  stop() {
+    this.stopped = true;
+    clearInterval(this.staleTimer);
+    this.staleTimer = null;
+    clearTimeout(this.reconnectTimeout);
+    this.reconnectTimeout = null;
+    this.stopPollingFallback();
+    this.cleanupWebSocket();
+    this.invalidateTelemetry();
+  }
+
+  checkFreshness() {
+    if (this.lastReceivedAt === null || performance.now() - this.lastReceivedAt > this.staleAfterMs) {
+      this.invalidateTelemetry();
+    }
+  }
+
+  invalidateTelemetry() {
+    if (this.currentState.telemetry_status === 'stale') return;
+    const cleared = Object.fromEntries(Object.keys(this.currentState).map(key => [key, null]));
+    cleared.telemetry_status = 'stale';
+    this.commitState(cleared);
+    this.connectionMode = 'offline';
+    EventBus.emit('connection:status', { mode: 'offline', text: 'بيانات قديمة / غير متاحة' });
   }
 
   getEndpoints() {
@@ -39,8 +74,10 @@ export class StateManager {
   }
 
   connect() {
+    if (this.stopped) return;
     this.cleanupWebSocket();
     const endpoints = this.getEndpoints();
+    this.connectionMode = 'reconnecting';
 
     EventBus.emit('connection:status', {
       mode: 'reconnecting',
@@ -57,12 +94,11 @@ export class StateManager {
     }
 
     this.ws.onopen = () => {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
       this.reconnectAttempts = 0;
       this.stopPollingFallback();
-      EventBus.emit('connection:status', {
-        mode: 'live',
-        text: 'مباشر (WebSocket)'
-      });
+      // Transport open is not proof that a sensor snapshot has arrived.
       this.startHeartbeat();
     };
 
@@ -114,10 +150,32 @@ export class StateManager {
   }
 
   processNewState(newState) {
+    if (!newState || typeof newState !== 'object' || Array.isArray(newState)) return;
+    newState = { ...newState };
     if (this.mockOverride && typeof this.mockOverride === 'object') {
       Object.assign(newState, this.mockOverride);
     }
 
+    // Both endpoints send complete snapshots: omitted fields are unavailable.
+    for (const key of Object.keys(this.currentState)) {
+      if (!(key in newState) && key !== 'telemetry_status') newState[key] = null;
+    }
+    for (const key of Object.keys(newState)) {
+      if (typeof newState[key] === 'number' && !Number.isFinite(newState[key])) newState[key] = null;
+    }
+    this.lastReceivedAt = performance.now();
+    newState.telemetry_status = 'live';
+    this.commitState(newState);
+    const mode = this.isPolling ? 'polling' : 'live';
+    if (this.connectionMode !== mode) {
+      this.connectionMode = mode;
+      EventBus.emit('connection:status', {
+        mode, text: mode === 'live' ? 'مباشر (WebSocket)' : 'احتياطي (HTTP Polling)'
+      });
+    }
+  }
+
+  commitState(newState) {
     const delta = {};
     let hasChanges = false;
 
@@ -146,8 +204,6 @@ export class StateManager {
       EventBus.emit('state-changed', delta);
     }
     
-    // Also emit raw data for legacy or complete updates if necessary
-    EventBus.emit('telemetry:data', newState);
   }
 
   startHeartbeat() {
@@ -177,25 +233,30 @@ export class StateManager {
   }
 
   startPollingFallback() {
-    if (this.isPolling) return;
+    if (this.isPolling || this.stopped) return;
     this.isPolling = true;
     this.pollFailures = 0;
 
+    this.connectionMode = 'polling';
     EventBus.emit('connection:status', {
       mode: 'polling',
       text: 'احتياطي (HTTP Polling)'
     });
 
     const endpoints = this.getEndpoints();
+    const generation = ++this.pollGeneration;
     const executePoll = async () => {
-      if (!this.isPolling) return;
+      if (!this.isPolling || generation !== this.pollGeneration) return;
       try {
         const start = performance.now();
-        const response = await fetch(endpoints.http, { cache: 'no-store' });
-        if (!this.isPolling) return;
+        this.pollController = new AbortController();
+        const response = await fetch(endpoints.http, {
+          cache: 'no-store', signal: this.pollController.signal
+        });
+        if (!this.isPolling || generation !== this.pollGeneration) return;
         if (response.ok) {
           const data = await response.json();
-          if (!this.isPolling) return;
+          if (!this.isPolling || generation !== this.pollGeneration) return;
           const latency = Math.round(performance.now() - start);
           EventBus.emit('connection:ping', latency);
           
@@ -203,21 +264,23 @@ export class StateManager {
           this.pollFailures = 0;
         } else {
           this.pollFailures++;
+          this.connectionMode = 'offline';
           EventBus.emit('connection:status', {
             mode: 'offline',
             text: 'غير متصل (خطأ API)'
           });
         }
       } catch (err) {
-        if (!this.isPolling) return;
+        if (!this.isPolling || generation !== this.pollGeneration) return;
         this.pollFailures++;
+        this.connectionMode = 'offline';
         EventBus.emit('connection:status', {
           mode: 'offline',
           text: 'غير متصل (السيرفر متوقف)'
         });
       }
       
-      if (this.isPolling) {
+      if (this.isPolling && generation === this.pollGeneration) {
         const delay = Math.min(500 * Math.pow(2, this.pollFailures), 8000);
         this.pollingTimeout = setTimeout(executePoll, delay);
       }
@@ -228,6 +291,9 @@ export class StateManager {
 
   stopPollingFallback() {
     this.isPolling = false;
+    this.pollGeneration++;
+    this.pollController?.abort();
+    this.pollController = null;
     if (this.pollingTimeout) {
       clearTimeout(this.pollingTimeout);
       this.pollingTimeout = null;
@@ -235,6 +301,7 @@ export class StateManager {
   }
 
   scheduleReconnect() {
+    if (this.stopped) return;
     if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
 
     const delay = Math.min(

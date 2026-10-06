@@ -3,8 +3,8 @@
  * Right-Click activation, 10-style visual preview grid, Web Audio feedback, and localStorage persistence
  */
 
-import { GAUGE_STYLES } from './gauge-styles-engine.js';
-import { EventBus } from '../store/event_bus.js';
+import { GAUGE_STYLES } from './gauge-styles-engine.js?v=20261006.2';
+import { EventBus } from '../store/event_bus.js?v=20261006.2';
 
 export class GaugePicker {
   static init() {
