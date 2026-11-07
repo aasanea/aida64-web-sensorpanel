@@ -1,0 +1,82 @@
+[
+  {
+    "theme": "default",
+    "frames": 1908,
+    "averageMs": 4.194811320754716,
+    "p95Ms": 4.30000000000291,
+    "maxMs": 12.39999999999418,
+    "longTasks": []
+  },
+  {
+    "theme": "oled",
+    "frames": 1894,
+    "averageMs": 4.225923970432943,
+    "p95Ms": 4.2999999999883585,
+    "maxMs": 20.699999999982538,
+    "longTasks": []
+  },
+  {
+    "theme": "cyberpunk",
+    "frames": 1907,
+    "averageMs": 4.19706345044572,
+    "p95Ms": 4.2999999999883585,
+    "maxMs": 8.5,
+    "longTasks": []
+  },
+  {
+    "theme": "emerald",
+    "frames": 1899,
+    "averageMs": 4.214691943127968,
+    "p95Ms": 4.2999999999883585,
+    "maxMs": 12.5,
+    "longTasks": []
+  },
+  {
+    "theme": "neo-tactile",
+    "frames": 1910,
+    "averageMs": 4.1904712041884755,
+    "p95Ms": 4.2999999999883585,
+    "maxMs": 8.400000000023283,
+    "longTasks": []
+  },
+  {
+    "theme": "f1-pitwall",
+    "frames": 1908,
+    "averageMs": 4.194968553459119,
+    "p95Ms": 4.300000000000182,
+    "maxMs": 8.5,
+    "longTasks": []
+  },
+  {
+    "theme": "orbit",
+    "frames": 1918,
+    "averageMs": 4.172992700729926,
+    "p95Ms": 4.300000000000182,
+    "maxMs": 8.400000000000546,
+    "longTasks": []
+  },
+  {
+    "theme": "vector",
+    "frames": 1921,
+    "averageMs": 4.166527850078085,
+    "p95Ms": 4.299999999999272,
+    "maxMs": 4.30000000000291,
+    "longTasks": []
+  },
+  {
+    "theme": "folio",
+    "frames": 1921,
+    "averageMs": 4.1664757938573675,
+    "p95Ms": 4.30000000000291,
+    "maxMs": 4.5,
+    "longTasks": []
+  },
+  {
+    "theme": "aurora",
+    "frames": 1911,
+    "averageMs": 4.188278388278388,
+    "p95Ms": 4.300000000000182,
+    "maxMs": 8.400000000000546,
+    "longTasks": []
+  }
+]

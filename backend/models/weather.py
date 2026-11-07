@@ -19,3 +19,7 @@ class WeatherMetrics(BaseModel):
     prev_prayer_name: Optional[str] = Field(default=None, description="Previous prayer Arabic name")
     prev_prayer_time: Optional[str] = Field(default=None, description="Previous prayer time HH:MM")
     prev_prayer_seconds: Optional[int] = Field(default=None, description="Seconds elapsed since previous prayer")
+
+    weather_source: Optional[dict] = None
+    prayer_source: Optional[dict] = None
+    prayer_date: Optional[str] = None

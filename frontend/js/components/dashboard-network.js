@@ -1,5 +1,5 @@
-import { animationAlpha, connectFlipFaces, updateTelemetryStatus } from './component-utils.js?v=20261006.2';
-import { EventBus } from '../store/event_bus.js?v=20261006.2';
+import { animationAlpha, connectFlipFaces, updateTelemetryStatus } from './component-utils.js?v=20261007.3';
+import { EventBus } from '../store/event_bus.js?v=20261007.3';
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -503,11 +503,11 @@ template.innerHTML = `
         </div>
       </div>
       <div class="header-actions">
-        <div class="ping-badge" id="ping-badge" title="زمن استجابة الشبكة (Ping)">
+        <div class="ping-badge" id="ping-badge" title="زمن فتح اتصال TCP إلى DNS · لا يقيس ICMP Ping">
           <span class="ping-dot" id="ping-dot"></span>
           <span id="ping-value">-- ms</span>
         </div>
-        <button class="btn-flip" id="btn-flip-apps" type="button" title="عرض أعلى البرامج استهلاكاً للإنترنت">
+        <button class="btn-flip" id="btn-flip-apps" type="button" title="عرض البرامج ذات الاتصالات النشطة">
           <span>📶</span>
           <span>أعلى البرامج</span>
         </button>
@@ -589,8 +589,8 @@ template.innerHTML = `
           </svg>
         </div>
         <div>
-          <h2 class="card-title" style="font-size: 19px;">أعلى البرامج استهلاكاً</h2>
-          <span class="card-sub" style="font-size: 11px;">LIVE PROCESS BANDWIDTH</span>
+          <h2 class="card-title" style="font-size: 19px;">اتصالات البرامج النشطة</h2>
+          <span class="card-sub" style="font-size: 11px;">LIVE PROCESS CONNECTIONS</span>
         </div>
       </div>
       <div class="header-actions">
@@ -696,7 +696,7 @@ export class DashboardNetwork extends HTMLElement {
       }, { signal: this.events.signal });
     }
 
-    this.unsubscribe = EventBus.on('state-changed', this.onStateChange);
+    this.unsubscribe = EventBus.on('state-changed', this.onStateChange, {signal:this.events.signal});
     this.onStateChange(window.stateManager?.currentState || {});
 
     this.isRunning = true;
@@ -792,38 +792,13 @@ export class DashboardNetwork extends HTMLElement {
     if (sig === this._lastAppsSignature) return;
     this._lastAppsSignature = sig;
 
-    const maxRate = Math.max(...apps.map(a => a.total_kbps || 0), 1.0);
-
-    const html = apps.map(app => {
-      const dlText = this._formatRate(app.dl_kbps);
-      const ulText = this._formatRate(app.ul_kbps);
-      const percent = Math.min(100, Math.max(8, Math.round((app.total_kbps / maxRate) * 100)));
-
-      return `
-        <div class="app-item-card">
-          <div class="app-header-row">
-            <div class="app-name-group">
-              <span class="app-icon">${app.icon || '🌐'}</span>
-              <span class="app-name" title="${app.raw_name || app.name}">${app.name}</span>
-              ${app.connections ? `<span class="app-conn-badge">${app.connections}c</span>` : ''}
-            </div>
-            <div class="app-rates-group">
-              <span class="app-dl-rate">↓${dlText}</span>
-              <span class="app-ul-rate">↑${ulText}</span>
-            </div>
-          </div>
-          <div class="app-bar-track">
-            <div class="app-bar-fill" style="width: ${percent}%;"></div>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    this.dom.apps_container.innerHTML = html;
+    const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    this.dom.apps_container.innerHTML = apps.map(app => `<div class="app-item-card"><div class="app-header-row"><div class="app-name-group"><span class="app-icon">${escape(app.icon || '🌐')}</span><span class="app-name" title="${escape(app.raw_name || app.name)}">${escape(app.name)}</span></div><span class="app-conn-badge">${escape(app.connections)} اتصال</span></div></div>`).join('');
   }
 
   _formatRate(kbps) {
-    if (!kbps || kbps < 0.1) return '0K';
+    if (kbps == null) return '—';
+    if (kbps < 0.1) return '0K';
     if (kbps >= 1024) {
       return `${(kbps / 1024).toFixed(1)}M`;
     }

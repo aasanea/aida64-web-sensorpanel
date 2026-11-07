@@ -1,0 +1,195 @@
+{
+  "capturedAt": "2026-10-06T10:53:59.960Z",
+  "source": "Live localhost:8088 production StateManager and backend; native preview-only compositions",
+  "viewport": [
+    1920,
+    1080
+  ],
+  "notes": [
+    "Histories start empty and contain only real received samples.",
+    "Benchmark samples current host rAF cadence for 12 seconds after 2 seconds warm-up; this is not a universal FPS guarantee.",
+    "Telemetry FPS=0 and Master=0 are actual source readings, separate from browser render cadence."
+  ],
+  "designs": {
+    "orbit": {
+      "benchmark": {
+        "design": "orbit",
+        "frames": 2880,
+        "longTasks": [],
+        "maxMs": 8.300000000000182,
+        "p95Ms": 4.300000000000182
+      },
+      "fps": "0",
+      "layout": "orbit-layout",
+      "master": "0",
+      "ready": "true",
+      "size": [
+        1920,
+        1080
+      ],
+      "console": []
+    },
+    "vector": {
+      "appointmentBounds": {
+        "bottom": 708,
+        "height": 300,
+        "left": 22,
+        "right": 392,
+        "top": 408,
+        "width": 370,
+        "x": 22,
+        "y": 408
+      },
+      "benchmark": {
+        "design": "vector",
+        "frames": 2881,
+        "longTasks": [],
+        "maxMs": 4.400000000000546,
+        "p95Ms": 4.299999999999272
+      },
+      "fps": "0",
+      "history": "AIDA64 / SHARED MEMORY · LIVE SENSOR STREAM86 عينة مقاسة · آخر 60 ثانيةمقارنة التصاميم ↗",
+      "lastAppointment": {
+        "bottom": 691.734375,
+        "height": 40.5,
+        "left": 38,
+        "right": 376,
+        "top": 651.234375,
+        "width": 338,
+        "x": 38,
+        "y": 651.234375
+      },
+      "layout": "vector-layout",
+      "master": "0",
+      "ready": "true",
+      "sections": [
+        {
+          "class": "observatory",
+          "height": 318,
+          "scroll": 318
+        },
+        {
+          "class": "",
+          "height": 164,
+          "scroll": 164
+        },
+        {
+          "class": "",
+          "height": 164,
+          "scroll": 164
+        },
+        {
+          "class": "resource memory",
+          "height": 185,
+          "scroll": 185
+        },
+        {
+          "class": "resource storage",
+          "height": 185,
+          "scroll": 188
+        },
+        {
+          "class": "resource network",
+          "height": 185,
+          "scroll": 188
+        },
+        {
+          "class": "gaming",
+          "height": 121,
+          "scroll": 121
+        },
+        {
+          "class": "resource audio",
+          "height": 121,
+          "scroll": 121
+        },
+        {
+          "class": "daily prayer",
+          "height": 298,
+          "scroll": 298
+        },
+        {
+          "class": "daily appointments",
+          "height": 298,
+          "scroll": 298
+        },
+        {
+          "class": "daily matches",
+          "height": 317,
+          "scroll": 317
+        }
+      ],
+      "size": [
+        1920,
+        1080
+      ],
+      "console": []
+    },
+    "folio": {
+      "benchmark": {
+        "design": "folio",
+        "frames": 2881,
+        "longTasks": [],
+        "maxMs": 4.400000000000091,
+        "p95Ms": 4.299999999999727
+      },
+      "fps": "0",
+      "layout": "folio-layout",
+      "master": "0",
+      "micWithinPanel": true,
+      "ready": "true",
+      "sections": [
+        {
+          "class": "folio-title",
+          "height": 98,
+          "scroll": 98
+        },
+        {
+          "class": "hardware-ledger",
+          "height": 400,
+          "scroll": 400
+        },
+        {
+          "class": "folio-resources",
+          "height": 170,
+          "scroll": 170
+        },
+        {
+          "class": "folio-media",
+          "height": 175,
+          "scroll": 175
+        },
+        {
+          "class": "daily-title",
+          "height": 45,
+          "scroll": 45
+        },
+        {
+          "class": "daily prayer",
+          "height": 249,
+          "scroll": 249
+        },
+        {
+          "class": "daily appointments",
+          "height": 284,
+          "scroll": 284
+        },
+        {
+          "class": "daily matches",
+          "height": 271,
+          "scroll": 271
+        }
+      ],
+      "size": [
+        1920,
+        1080
+      ],
+      "console": []
+    }
+  },
+  "interactions": {
+    "cpuDetails": "20 actual cores rendered; native dialog opened and closed",
+    "matchFiltering": "Live filter displays real empty result; Saudi filter restored"
+  },
+  "regression": "Actual-source architecture truthfulness/history checks and 14 existing remediation behavioral checks passed"
+}

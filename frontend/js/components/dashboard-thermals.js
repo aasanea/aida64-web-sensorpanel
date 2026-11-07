@@ -1,5 +1,5 @@
-import { animationAlpha, updateTelemetryStatus } from './component-utils.js?v=20261006.2';
-import { EventBus } from '../store/event_bus.js?v=20261006.2';
+import { animationAlpha, updateTelemetryStatus } from './component-utils.js?v=20261007.3';
+import { EventBus } from '../store/event_bus.js?v=20261007.3';
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -186,7 +186,7 @@ template.innerHTML = `
       <span class="vital-icon">⚡</span>
       <span class="badge-label">الطاقة</span>
       <span class="badge-val-group" dir="ltr">
-        <span class="badge-value" id="total_power">--</span>
+        <span class="badge-value" id="cpu_gpu_power">--</span>
         <span class="badge-unit">W</span>
       </span>
     </div>
@@ -264,7 +264,7 @@ export class DashboardThermals extends HTMLElement {
     
     this.currentValues = {
       max_temp: null,
-      total_power: null,
+      cpu_gpu_power: null,
       vrm_temp: null,
       pch_temp: null,
       motherboard_temp: null,
@@ -274,7 +274,7 @@ export class DashboardThermals extends HTMLElement {
 
     this.targetValues = {
       max_temp: null,
-      total_power: null,
+      cpu_gpu_power: null,
       vrm_temp: null,
       pch_temp: null,
       motherboard_temp: null,
@@ -288,7 +288,7 @@ export class DashboardThermals extends HTMLElement {
 
     this.dom = {
       max_temp: this.shadowRoot.getElementById('max_temp'),
-      total_power: this.shadowRoot.getElementById('total_power'),
+      cpu_gpu_power: this.shadowRoot.getElementById('cpu_gpu_power'),
       vrm_temp: this.shadowRoot.getElementById('vrm_temp'),
       pch_temp: this.shadowRoot.getElementById('pch_temp'),
       motherboard_temp: this.shadowRoot.getElementById('motherboard_temp'),
@@ -310,7 +310,7 @@ export class DashboardThermals extends HTMLElement {
       this.unsubscribe = null;
     }
 
-    this.unsubscribe = EventBus.on('state-changed', this.onStateChange);
+    this.unsubscribe = EventBus.on('state-changed', this.onStateChange, {signal:this.events.signal});
 
 
     if (typeof window !== 'undefined' && window.stateManager && window.stateManager.currentState) {
@@ -408,7 +408,7 @@ export class DashboardThermals extends HTMLElement {
 
   render() {
     this.updateText(this.dom.max_temp, this.currentValues.max_temp, 0);
-    this.updateText(this.dom.total_power, this.currentValues.total_power, 0);
+    this.updateText(this.dom.cpu_gpu_power, this.currentValues.cpu_gpu_power, 0);
     this.updateText(this.dom.vrm_temp, this.currentValues.vrm_temp, 0);
     this.updateText(this.dom.pch_temp, this.currentValues.pch_temp, 0);
     this.updateText(this.dom.motherboard_temp, this.currentValues.motherboard_temp, 0);

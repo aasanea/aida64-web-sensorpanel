@@ -1,4 +1,4 @@
-import { EventBus } from '../store/event_bus.js?v=20261006.2';
+import { EventBus } from '../store/event_bus.js?v=20261007.3';
 
 const THEMES = [
   { id: 'default', name: 'Cyan Glass', nameAr: 'زجاج سيان', icon: '🌊', color: '#22D3EE' },
@@ -7,7 +7,10 @@ const THEMES = [
   { id: 'emerald', name: 'Emerald', nameAr: 'زمردي أخضر', icon: '🍃', color: '#00FF66' },
   { id: 'aurora', name: 'Aurora', nameAr: 'أورورا الشفق', icon: '🌌', color: '#00FFC2' },
   { id: 'f1-pitwall', name: 'F1 Pitwall', nameAr: 'فورمولا 1', icon: '🏎️', color: '#FF3344' },
-  { id: 'neo-tactile', name: 'Neo-Tactile', nameAr: 'سيراميك تكتيكي', icon: '🏺', color: '#C8754E' }
+  { id: 'neo-tactile', name: 'Neo-Tactile', nameAr: 'سيراميك تكتيكي', icon: '🏺', color: '#C8754E' },
+  { id: 'orbit', name: 'ORBIT / COMMAND', nameAr: 'قمرة القيادة', icon: '◉', color: '#88F0D5' },
+  { id: 'vector', name: 'VECTOR / OBSERVATORY', nameAr: 'مرصد الأداء', icon: '⌁', color: '#94D9F3' },
+  { id: 'folio', name: 'FOLIO / STUDIO', nameAr: 'دفتر العتاد', icon: '▤', color: '#256B5B' }
 ];
 
 const template = document.createElement('template');
@@ -323,6 +326,9 @@ template.innerHTML = `
     right: auto;
     z-index: 1000;
     min-width: 240px;
+    max-height: min(620px, calc(100dvh - 120px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
     background: var(--dropdown-bg, rgba(15, 23, 42, 0.96));
     backdrop-filter: blur(24px) saturate(180%);
     -webkit-backdrop-filter: blur(24px) saturate(180%);
@@ -527,6 +533,16 @@ template.innerHTML = `
   .status-badge.offline { color: var(--status-critical); }
   .status-badge:is(.live, .polling, .reconnecting, .offline) .status-dot { background-color: currentColor; box-shadow: 0 0 8px currentColor; }
   .status-ping { color: inherit; }
+
+  /* The approved native mastheads keep their own clock, identity and status.
+     This mode supplies the same production theme picker without a second header. */
+  :host([mode="theme-picker"]) { display: block; width: auto; flex: none; }
+  :host([mode="theme-picker"]) :is(.header-right-group, .clock-display, .status-badge, .update-badge, .kiosk-toggle-btn) { display: none; }
+  :host([mode="theme-picker"]) .header-telemetry-group,
+  :host([mode="theme-picker"]) .header-actions { margin: 0; padding: 0; gap: 0; width: auto; }
+  :host([mode="theme-picker"]) .theme-toggle-btn { font-size: 11px; color: var(--text-pure-white); border: 1px solid var(--station-line); background: transparent; border-radius: 5px; }
+  :host([mode="theme-picker"]) .theme-dropdown-menu { min-width: 285px; border: 1px solid var(--station-line); }
+  .theme-menu-item:focus-visible { outline: 2px solid var(--theme-accent); outline-offset: -2px; }
 </style>
 
 <!-- 1. Right: Prominent Enlarged Date Badge & Display Info -->
@@ -642,6 +658,21 @@ template.innerHTML = `
           </div>
           <span class="theme-item-color-dot" style="background-color: #C8754E; box-shadow: 0 0 6px #C8754E;"></span>
           <span class="theme-item-check">✓</span>
+        </div>
+        <div class="theme-menu-item" data-theme-id="orbit" role="menuitem" tabindex="0">
+          <span class="theme-item-icon">◉</span>
+          <div class="theme-item-labels"><span class="theme-item-name-en">ORBIT / COMMAND</span><span class="theme-item-name-ar">قمرة القيادة</span></div>
+          <span class="theme-item-color-dot" style="background-color: #88F0D5;"></span><span class="theme-item-check">✓</span>
+        </div>
+        <div class="theme-menu-item" data-theme-id="vector" role="menuitem" tabindex="0">
+          <span class="theme-item-icon">⌁</span>
+          <div class="theme-item-labels"><span class="theme-item-name-en">VECTOR / OBSERVATORY</span><span class="theme-item-name-ar">مرصد الأداء</span></div>
+          <span class="theme-item-color-dot" style="background-color: #94D9F3;"></span><span class="theme-item-check">✓</span>
+        </div>
+        <div class="theme-menu-item" data-theme-id="folio" role="menuitem" tabindex="0">
+          <span class="theme-item-icon">▤</span>
+          <div class="theme-item-labels"><span class="theme-item-name-en">FOLIO / STUDIO</span><span class="theme-item-name-ar">دفتر العتاد</span></div>
+          <span class="theme-item-color-dot" style="background-color: #256B5B;"></span><span class="theme-item-check">✓</span>
         </div>
       </div>
     </div>
@@ -910,6 +941,9 @@ export class DashboardHeader extends HTMLElement {
 
   setTheme(themeId, e) {
     const theme = THEMES.find(t => t.id === themeId) || THEMES[0];
+    const current = document.documentElement.getAttribute('data-theme') || 'default';
+    const nativeLayouts = ['orbit', 'vector', 'folio'];
+    const structuralChange = nativeLayouts.includes(current) || nativeLayouts.includes(theme.id);
 
     // Determine click coordinates for CSS View Transitions ripple
     let x = '85%';
@@ -935,8 +969,9 @@ export class DashboardHeader extends HTMLElement {
       EventBus.emit('theme:changed', theme.id);
     };
 
-    // Use CSS View Transitions API with graceful fallback
-    if (document.startViewTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    // Mount structural changes immediately: a full-page transition snapshot can
+    // intercept the next picker click while the native layout is being replaced.
+    if (!structuralChange && document.startViewTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       document.startViewTransition(() => {
         applyTheme();
       });

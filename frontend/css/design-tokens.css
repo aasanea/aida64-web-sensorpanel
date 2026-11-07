@@ -1,4 +1,15 @@
 :root {
+  /* Shared vocabulary for the three approved native compositions. */
+  --station-bg: #080f18;
+  --station-surface: #101b28;
+  --station-raised: #172533;
+  --station-line: #293b4c;
+  --station-ink: #edf5fa;
+  --station-muted: #a1b6c6;
+  --station-accent: #88f0d5;
+  --station-secondary: #c0afff;
+  --station-warning: #ffe39e;
+  --station-critical: #ffa29d;
   /* Color Palette */
   --bg-deep-indigo: #0B1020;
   --neon-cyan: #22D3EE;
@@ -21,7 +32,7 @@
   /* Fonts */
   --font-numbers: 'Roboto Mono', monospace;
   --font-display: 'Barlow', sans-serif;
-  --font-arabic: 'Almarai', sans-serif;
+  --font-arabic: 'Cairo', 'Almarai', sans-serif;
 
   /* Glassmorphism Specs */
   --glass-bg: rgba(255, 255, 255, 0.03);
@@ -198,5 +209,69 @@ html[data-theme="neo-tactile"] {
 
   /* Mesh Opacity */
   --mesh-opacity: 0.15;
+}
+
+/* Approved full compositions: same palettes and surfaces as the live proposals. */
+html[data-theme="orbit"], html[data-theme="vector"] {
+  --bg-deep-indigo: var(--station-bg);
+  --text-pure-white: var(--station-ink);
+  --text-muted: var(--station-muted);
+  --neon-cyan: var(--station-accent);
+  --neon-violet: var(--station-secondary);
+  --theme-accent: var(--station-accent);
+  --glass-bg: var(--station-surface);
+  --dropdown-bg: var(--station-surface);
+  --dropdown-hover: #263644;
+  --status-normal: #88f0d5;
+  --status-warning: #ffe39e;
+  --status-critical: #ffa29d;
+  --status-surface: var(--station-surface);
+  --mesh-opacity: 0.08;
+}
+html[data-theme="orbit"] {
+  --station-bg: #080f18;
+  --station-surface: #101b28;
+  --station-raised: #172533;
+  --station-line: #293b4c;
+  --station-ink: #edf5fa;
+  --station-muted: #a1b6c6;
+  --station-accent: #88f0d5;
+  --station-secondary: #c0afff;
+}
+html[data-theme="vector"] {
+  --station-bg: #111820;
+  --station-surface: #141e28;
+  --station-raised: #1c2935;
+  --station-line: #33424f;
+  --station-ink: #eef4f9;
+  --station-muted: #a9b8c7;
+  --station-accent: #94d9f3;
+  --station-secondary: #eebd82;
+  --mesh-opacity: 0;
+}
+html[data-theme="folio"] {
+  --station-bg: #f1f0ea;
+  --station-surface: #f7f7f2;
+  --station-raised: #e7e9e4;
+  --station-line: #cbd2cc;
+  --station-ink: #263735;
+  --station-muted: #52645f;
+  --station-accent: #256b5b;
+  --station-secondary: #875727;
+  --station-warning: #7b4b00;
+  --station-critical: #9b241d;
+  --bg-deep-indigo: var(--station-bg);
+  --text-pure-white: var(--station-ink);
+  --text-muted: var(--station-muted);
+  --neon-cyan: var(--station-accent);
+  --theme-accent: var(--station-accent);
+  --glass-bg: var(--station-surface);
+  --dropdown-bg: var(--station-surface);
+  --dropdown-hover: #e7e9e4;
+  --status-normal: #256b5b;
+  --status-warning: #7b4b00;
+  --status-critical: #9b241d;
+  --status-surface: var(--station-surface);
+  --mesh-opacity: 0;
 }
 

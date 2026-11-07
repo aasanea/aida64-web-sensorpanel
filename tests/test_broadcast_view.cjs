@@ -1,0 +1,23 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const code=fs.readFileSync('frontend/js/components/broadcast-view.js','utf8').replace(/export /g,'');
+const api=vm.runInNewContext(code+';({broadcastView,playingPrograms})');
+const base={available:true,observed_at:100,routes_ready:true,stream_input_id:'stream',discord_input_id:'stream',chat_output_id:'chat',discord_output_id:'chat',volume:30,muted:false,discord_ready:true,in_voice:true,server_muted:false,stream_master_volume:100,discord_input_volume:100,discord_processing:{auto_threshold:false,echo_cancellation:false,noise_suppression:false}};
+const app={active:true,executable:'riff.exe',name:'Riff',emoji:'🎵',in_program_bus:true,excluded:false,peak:.5};
+const samples={stream_input:{status:'live',peak:.2}};
+let count=0;
+function expect(patch,result,apps=[app],routes=samples,now=100,fresh=true){assert.equal(api.broadcastView({...base,...patch},apps,routes,now,fresh).code,result);count++}
+expect({},'sending');expect({available:false},'unknown');expect({},'unknown',[app],samples,104);
+expect({routes_ready:false},'blocked');expect({discord_input_id:'rode'},'blocked');expect({discord_output_id:'game'},'blocked');
+expect({muted:true},'muted');expect({mixed_mute:true},'blocked');expect({volume:null},'blocked');
+expect({},'blocked',[{...app,excluded:true}]);expect({},'blocked',[{...app,in_program_bus:false}]);
+expect({discord_muted:true},'blocked');expect({discord_deafened:true},'blocked');expect({server_muted:true},'blocked');
+expect({in_voice:false},'idle');expect({in_voice:null},'unknown');expect({server_muted:null},'unknown');
+expect({volume:0},'muted');expect({stream_master_muted:true},'muted');expect({discord_input_volume:0},'muted');
+expect({},'idle',[]);expect({},'unknown',[app],{},100,false);expect({},'unknown',[app],{});
+expect({},'idle',[app],{stream_input:{status:'live',peak:0}});
+expect({discord_processing:{auto_threshold:true}},'unknown');expect({discord_processing:undefined},'unknown');expect({server_blocked:true},'blocked');
+assert.equal(api.playingPrograms([app,{...app,peak:.8},{...app,active:false}]).length,1);count++;
+const chrome={...app,name:'Chrome',executable:'chrome.exe',peak:.8};
+assert.equal(api.playingPrograms([app,chrome])[0].executable,'chrome.exe');
+assert.equal(api.playingPrograms([{...app,peak:.9},{...chrome,peak:.1}])[0].executable,'chrome.exe');count++;
+console.log(count+' broadcast status checks passed');

@@ -1,0 +1,171 @@
+{
+  "captured_at": "2026-10-06T19:54:00.049800+03:00",
+  "mode": "stream",
+  "classic": {
+    "masters": {
+      "stream": {},
+      "classic": {
+        "volume": 0.0,
+        "muted": false
+      }
+    },
+    "devices": {
+      "game": {
+        "stream": {},
+        "classic": {
+          "volume": 1.0,
+          "muted": false
+        }
+      },
+      "chatRender": {
+        "stream": {},
+        "classic": {
+          "volume": 1.0,
+          "muted": false
+        }
+      },
+      "chatCapture": {
+        "stream": {},
+        "classic": {
+          "volume": 1.0,
+          "muted": false
+        }
+      },
+      "media": {
+        "stream": {},
+        "classic": {
+          "volume": 1.0,
+          "muted": false
+        }
+      },
+      "aux": {
+        "stream": {},
+        "classic": {
+          "volume": 1.0,
+          "muted": false
+        }
+      }
+    }
+  },
+  "streamer": {
+    "masters": {
+      "stream": {
+        "streaming": {
+          "volume": 1.0,
+          "muted": false
+        },
+        "monitoring": {
+          "volume": 0.12,
+          "muted": false
+        }
+      },
+      "classic": {
+        "volume": 0.0,
+        "muted": false
+      }
+    },
+    "devices": {
+      "game": {
+        "stream": {
+          "streaming": {
+            "volume": 1.0,
+            "muted": false
+          },
+          "monitoring": {
+            "volume": 0.12,
+            "muted": false
+          }
+        },
+        "classic": {
+          "volume": 0.0,
+          "muted": false
+        }
+      },
+      "chatRender": {
+        "stream": {
+          "streaming": {
+            "volume": 1.0,
+            "muted": false
+          },
+          "monitoring": {
+            "volume": 0.12,
+            "muted": false
+          }
+        },
+        "classic": {
+          "volume": 0.0,
+          "muted": false
+        }
+      },
+      "chatCapture": {
+        "stream": {
+          "streaming": {
+            "volume": 1.0,
+            "muted": false
+          },
+          "monitoring": {
+            "volume": 1.0,
+            "muted": false
+          }
+        },
+        "classic": {
+          "volume": 0.0,
+          "muted": false
+        }
+      },
+      "media": {
+        "stream": {
+          "streaming": {
+            "volume": 0.3,
+            "muted": false
+          },
+          "monitoring": {
+            "volume": 0.12,
+            "muted": false
+          }
+        },
+        "classic": {
+          "volume": 0.0,
+          "muted": false
+        }
+      },
+      "aux": {
+        "stream": {
+          "streaming": {
+            "volume": 1.0,
+            "muted": false
+          },
+          "monitoring": {
+            "volume": 0.12,
+            "muted": false
+          }
+        },
+        "classic": {
+          "volume": 0.0,
+          "muted": false
+        }
+      }
+    }
+  },
+  "dashboard": {
+    "display_volume": 100.0,
+    "sonar_connected": true,
+    "audio_mic_muted": false,
+    "audio_mic_volume": 100.0,
+    "audio_master_volume": 0.0,
+    "audio_master_muted": false,
+    "audio_game_volume": 100.0,
+    "audio_game_muted": false,
+    "audio_chat_volume": 100.0,
+    "audio_chat_muted": false,
+    "audio_media_volume": 100.0,
+    "audio_media_muted": false,
+    "audio_aux_volume": 100.0,
+    "audio_aux_muted": false
+  },
+  "isolated_outage_check": {
+    "sonar_connected": false,
+    "retained_game_volume": 100.0,
+    "retained_mic_muted": false
+  }
+}

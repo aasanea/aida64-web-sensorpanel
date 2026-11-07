@@ -13,7 +13,7 @@ $scriptDir = $PSScriptRoot
 $rootDir = Split-Path -Parent $scriptDir
 $backendDir = Join-Path $rootDir "backend"
 $binExe = Join-Path $rootDir "bin\AIDA64Panel.exe"
-$healthUrl = "http://localhost:8088/health"
+$healthUrl = "http://127.0.0.1:8088/health"
 
 # 1. Verify Backend Health
 $backendHealthy = $false

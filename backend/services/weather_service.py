@@ -11,7 +11,9 @@ import os
 import json
 import time
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from services.telemetry_contract import source_meta
+RIYADH_TZ = timezone(timedelta(hours=3))
 from typing import Dict, Any, Optional
 import httpx
 from loguru import logger
@@ -69,8 +71,11 @@ class WeatherService:
             "prev_prayer_seconds": None,
         }
         self._raw_timings: Dict[str, str] = {}
+        self._schedule = {}
+        self._weather_cached = False
         self._last_weather_fetch: float = 0.0
         self._last_prayer_fetch: float = 0.0
+        self._last_prayer_attempt = 0.0
         self._running: bool = False
         self._task: Optional[asyncio.Task] = None
         self._load_cache()
@@ -88,10 +93,11 @@ class WeatherService:
                 with open(CACHE_FILE, "r", encoding="utf-8") as f:
                     cached = json.load(f)
                     self._data.update(cached.get("data", {}))
-                    self._raw_timings = cached.get("raw_timings", {})
-                    for key in ["prayer_fajr", "prayer_sunrise", "prayer_dhuhr", "prayer_asr", "prayer_maghrib", "prayer_isha"]:
-                        if key in self._data and self._data[key]:
-                            self._data[key] = format_12h(self._data[key], with_period=False)
+                    self._last_weather_fetch = cached.get("weather_observed_at", cached.get("timestamp", 0))
+                    self._weather_cached = True
+                    self._schedule = cached.get("schedule", {})
+                    for item in self._schedule.values():
+                        item["cached"] = True
                     self._calculate_prayer_intervals()
                     logger.info("Loaded Riyadh data from cache")
         except Exception as e:
@@ -105,7 +111,9 @@ class WeatherService:
                 json.dump({
                     "timestamp": time.time(),
                     "data": self._data,
-                    "raw_timings": self._raw_timings
+                    "raw_timings": self._raw_timings,
+                    "weather_observed_at": self._last_weather_fetch,
+                    "schedule": self._schedule
                 }, f, ensure_ascii=False, indent=2)
         except Exception as e:
             logger.warning(f"Failed to save Riyadh cache: {e}")
@@ -124,10 +132,10 @@ class WeatherService:
                 if resp.status_code == 200:
                     data = resp.json().get("current", {})
                     temp = data.get("temperature_2m")
-                    wcode = data.get("weather_code", 0)
+                    wcode = data.get("weather_code")
                     is_day = bool(data.get("is_day", 1))
 
-                    code_info = WMO_WEATHER_CODES.get(wcode, ("معتدل", "معتدل", "☀️", "🌙"))
+                    code_info = WMO_WEATHER_CODES.get(wcode, (None, None, None, None))
                     desc = code_info[0] if is_day else code_info[1]
                     icon = code_info[2] if is_day else code_info[3]
 
@@ -135,108 +143,90 @@ class WeatherService:
                     self._data["riyadh_weather_desc"] = desc
                     self._data["riyadh_weather_icon"] = icon
                     self._last_weather_fetch = time.time()
+                    self._weather_cached = False
                     self._save_cache()
                     logger.debug(f"Riyadh Weather updated: {self._data['riyadh_temp']}°C, {desc}")
         except Exception as e:
+            self._weather_cached = True
             logger.warning(f"Error fetching Riyadh weather: {e}")
 
     async def fetch_prayer_times(self):
-        """Fetch Riyadh prayer times from Aladhan API (Method 4: Umm Al-Qura)."""
-        url = "https://api.aladhan.com/v1/timingsByCity?city=Riyadh&country=Saudi%20Arabia&method=4"
-        try:
-            async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
-                resp = await client.get(url)
-                if resp.status_code == 200:
-                    timings = resp.json().get("data", {}).get("timings", {})
-                    if timings:
-                        self._raw_timings = timings
-                        self._data["prayer_fajr"] = format_12h(timings.get("Fajr", "04:23")[:5], with_period=False)
-                        self._data["prayer_sunrise"] = format_12h(timings.get("Sunrise", "05:41")[:5], with_period=False)
-                        self._data["prayer_dhuhr"] = format_12h(timings.get("Dhuhr", "11:46")[:5], with_period=False)
-                        self._data["prayer_asr"] = format_12h(timings.get("Asr", "15:13")[:5], with_period=False)
-                        self._data["prayer_maghrib"] = format_12h(timings.get("Maghrib", "17:51")[:5], with_period=False)
-                        self._data["prayer_isha"] = format_12h(timings.get("Isha", "19:21")[:5], with_period=False)
-                        self._last_prayer_fetch = time.time()
-                        self._calculate_prayer_intervals()
-                        self._save_cache()
-                        logger.info(f"Riyadh Prayer times updated: Fajr {self._data['prayer_fajr']}, Dhuhr {self._data['prayer_dhuhr']}")
-        except Exception as e:
-            logger.warning(f"Error fetching prayer times: {e}")
-
-    def _calculate_prayer_intervals(self):
-        """Calculate next and previous prayer names and remaining/elapsed seconds."""
-        if not self._raw_timings:
-            return
-
-        now = datetime.now()
-        today = now.date()
-
-        # The 5 primary prayers in order
-        prayer_names_ar = [
-            ("الفجر", "Fajr"),
-            ("الظهر", "Dhuhr"),
-            ("العصر", "Asr"),
-            ("المغرب", "Maghrib"),
-            ("العشاء", "Isha")
-        ]
-
-        # Parse times for today
-        prayers_today = []
-        for ar_name, en_name in prayer_names_ar:
-            time_str = self._raw_timings.get(en_name, "")[:5]
-            if time_str:
+        today = datetime.now(RIYADH_TZ).date()
+        self._last_prayer_attempt = time.time()
+        async with httpx.AsyncClient(timeout=8, follow_redirects=True) as client:
+            for shift in (-1, 0, 1):
+                day = today + timedelta(days=shift)
+                key = day.isoformat()
                 try:
-                    h, m = map(int, time_str.split(":"))
-                    p_dt = datetime(today.year, today.month, today.day, h, m)
-                    prayers_today.append((ar_name, time_str, p_dt))
-                except ValueError:
-                    continue
-
-        if not prayers_today:
-            return
-
-        # Find next and previous prayer
-        next_prayer = None
-        prev_prayer = None
-
-        for i, (ar_name, time_str, p_dt) in enumerate(prayers_today):
-            if p_dt > now:
-                next_prayer = (ar_name, time_str, p_dt)
-                if i > 0:
-                    prev_prayer = prayers_today[i - 1]
-                else:
-                    # Before Fajr today -> previous was Isha yesterday
-                    prev_ar, prev_time, _ = prayers_today[-1]
-                    h, m = map(int, prev_time.split(":"))
-                    yesterday = today - timedelta(days=1)
-                    prev_dt = datetime(yesterday.year, yesterday.month, yesterday.day, h, m)
-                    prev_prayer = (prev_ar, prev_time, prev_dt)
-                break
-
-        if next_prayer is None:
-            # After Isha today -> next is Fajr tomorrow
-            next_ar, next_time, _ = prayers_today[0]
-            h, m = map(int, next_time.split(":"))
-            tomorrow = today + timedelta(days=1)
-            next_dt = datetime(tomorrow.year, tomorrow.month, tomorrow.day, h, m)
-            next_prayer = (next_ar, next_time, next_dt)
-            prev_prayer = prayers_today[-1]
-
-        # Calculate seconds
-        next_secs = max(0, int((next_prayer[2] - now).total_seconds()))
-        prev_secs = max(0, int((now - prev_prayer[2]).total_seconds()))
-
-        self._data["next_prayer_name"] = next_prayer[0]
-        self._data["next_prayer_time"] = format_12h(next_prayer[1], with_period=False)
-        self._data["next_prayer_seconds"] = next_secs
-        self._data["prev_prayer_name"] = prev_prayer[0]
-        self._data["prev_prayer_time"] = format_12h(prev_prayer[1], with_period=False)
-        self._data["prev_prayer_seconds"] = prev_secs
-
-    def get_snapshot(self) -> Dict[str, Any]:
-        """Return the latest snapshot with real-time prayer countdown recalculation."""
+                    response = await client.get(f"https://api.aladhan.com/v1/timingsByCity/{day.strftime('%d-%m-%Y')}?city=Riyadh&country=Saudi%20Arabia&method=4&timezonestring=Asia%2FRiyadh")
+                    response.raise_for_status()
+                    payload = response.json().get("data", {})
+                    if payload.get("date", {}).get("gregorian", {}).get("date") != day.strftime('%d-%m-%Y'):
+                        raise ValueError("Prayer response date does not match request")
+                    timings = payload.get("timings", {})
+                    for name in ("Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"):
+                        datetime.strptime(timings[name][:5], "%H:%M")
+                    self._schedule[key] = {"timings": timings, "observed_at": time.time(), "cached": False}
+                except (httpx.HTTPError, ValueError, KeyError, TypeError) as error:
+                    if key in self._schedule:
+                        self._schedule[key]["cached"] = True
+                    logger.debug(f"Prayer schedule {key}: {error}")
+        self._schedule = {key: item for key, item in self._schedule.items() if abs((datetime.fromisoformat(key).date()-today).days) <= 1}
+        if today.isoformat() in self._schedule and not self._schedule[today.isoformat()].get("cached"):
+            self._last_prayer_fetch = time.time()
         self._calculate_prayer_intervals()
-        return dict(self._data)
+        self._save_cache()
+
+    def _calculate_prayer_intervals(self, now=None):
+        now = now or datetime.now(RIYADH_TZ)
+        if now.tzinfo is None:
+            now = now.replace(tzinfo=RIYADH_TZ)
+        today = now.date().isoformat()
+        for key in self._data:
+            if key.startswith(("prayer_", "next_prayer_", "prev_prayer_")):
+                self._data[key] = None
+        current = self._schedule.get(today)
+        self._raw_timings = current.get("timings", {}) if current else {}
+        if not current:
+            return
+        for name in ("Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"):
+            raw = self._raw_timings.get(name)
+            self._data[f"prayer_{name.lower()}"] = format_12h(raw[:5], with_period=False) if raw else None
+        events = []
+        for date, item in self._schedule.items():
+            for arabic, name in (("الفجر", "Fajr"), ("الظهر", "Dhuhr"), ("العصر", "Asr"), ("المغرب", "Maghrib"), ("العشاء", "Isha")):
+                raw = item.get("timings", {}).get(name)
+                if raw:
+                    try:
+                        at = datetime.fromisoformat(date + "T" + raw[:5]).replace(tzinfo=RIYADH_TZ)
+                        events.append((at, arabic, raw[:5]))
+                    except ValueError:
+                        continue
+        upcoming = sorted((event for event in events if event[0] > now), key=lambda event: event[0])
+        previous = sorted((event for event in events if event[0] <= now), key=lambda event: event[0])
+        for prefix, event in (("next", upcoming[0] if upcoming else None), ("prev", previous[-1] if previous else None)):
+            if event:
+                self._data[f"{prefix}_prayer_name"] = event[1]
+                self._data[f"{prefix}_prayer_time"] = format_12h(event[2], with_period=False)
+                self._data[f"{prefix}_prayer_seconds"] = int(abs((event[0]-now).total_seconds()))
+
+    def get_snapshot(self):
+        self._calculate_prayer_intervals()
+        result = dict(self._data)
+        weather = source_meta("Open-Meteo / Riyadh", self._last_weather_fetch, 3600, cached=self._weather_cached)
+        if weather["status"] in ("stale", "unavailable"):
+            for key in ("riyadh_temp", "riyadh_weather_desc", "riyadh_weather_icon"):
+                result[key] = None
+        today = datetime.now(RIYADH_TZ).date().isoformat()
+        schedule = self._schedule.get(today, {})
+        result["weather_source"] = weather
+        result["prayer_source"] = source_meta("Aladhan / Umm Al-Qura / Riyadh", schedule.get("observed_at"), 86400, cached=schedule.get("cached", False), available=bool(schedule))
+        if result["prayer_source"]["status"] in ("stale", "unavailable"):
+            for key in result:
+                if key.startswith(("prayer_", "next_prayer_", "prev_prayer_")) and not key.endswith("source"):
+                    result[key] = None
+        result["prayer_date"] = today if schedule else None
+        return result
 
     async def start(self):
         """Start background loop for periodic fetching."""
@@ -251,7 +241,7 @@ class WeatherService:
                 now = time.time()
                 if now - self._last_weather_fetch > 1800 or self._data["riyadh_temp"] is None:
                     await self.fetch_weather()
-                if now - self._last_prayer_fetch > 43200 or not self._raw_timings:
+                if now - self._last_prayer_fetch > 43200 or datetime.now(RIYADH_TZ).date().isoformat() not in self._schedule:
                     await self.fetch_prayer_times()
             except Exception as e:
                 logger.warning(f"Weather Service initial background fetch warning: {e}")
@@ -264,7 +254,7 @@ class WeatherService:
                         await self.fetch_weather()
 
                     # Prayer times: fetch every 12 hours (43200 seconds)
-                    if cur_time - self._last_prayer_fetch >= 43200:
+                    if cur_time - self._last_prayer_attempt >= 60 and (cur_time - self._last_prayer_fetch >= 43200 or datetime.now(RIYADH_TZ).date().isoformat() not in self._schedule):
                         await self.fetch_prayer_times()
 
                     # Recompute intervals every 1 second

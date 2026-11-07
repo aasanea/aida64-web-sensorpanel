@@ -1,5 +1,5 @@
-import { updateText, updateTelemetryStatus } from './component-utils.js?v=20261006.2';
-import { EventBus } from '../store/event_bus.js?v=20261006.2';
+import { updateText, updateTelemetryStatus } from './component-utils.js?v=20261007.3';
+import { EventBus } from '../store/event_bus.js?v=20261007.3';
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -12,6 +12,23 @@ template.innerHTML = `
     overflow: hidden;
     contain: layout style;
   }
+  :host([mode="manager"]) { position: fixed; width: 0; height: 0; overflow: visible; contain: none; }
+  :host([mode="manager"]) > :not(style):not(dialog) { display: none; }
+  :host([mode="manager"]) dialog { color: var(--station-ink); background: var(--station-surface); }
+  :host([mode="manager"]) .apt-dialog { border-color: var(--station-line); }
+  :host([mode="manager"]) .modal-title,
+  :host([mode="manager"]) .manage-item-title { color: var(--station-ink); }
+  :host([mode="manager"]) .form-label { color: var(--station-muted); }
+  :host([mode="manager"]) .form-input { background: var(--station-raised); color: var(--station-ink); border-color: var(--station-line); }
+  :host([mode="manager"]) .form-input::placeholder { color: var(--station-muted); opacity: 1; }
+  :host([mode="manager"]) .apt-category-pill { color: var(--station-accent); background: var(--station-surface); border-color: var(--station-line); }
+  :host([mode="manager"]) .form-input:focus-visible,
+  :host([mode="manager"]) button:focus-visible { outline: 2px solid var(--station-accent); outline-offset: 3px; }
+  :host([mode="manager"]) .apt-manage-item { background: var(--station-raised); border-color: var(--station-line); }
+  :host([mode="manager"]) .btn-submit-apt { background: var(--station-accent); color: var(--station-bg); box-shadow: none; }
+  :host([mode="manager"]) .btn-delete-apt { color: var(--station-critical); border-color: currentColor; }
+  :host([mode="manager"]) .apt-modal-header { border-color: var(--station-line); }
+  :host([mode="manager"]) .modal-close-btn { color: var(--station-ink); border-color: var(--station-line); }
 
   /* Card Header */
   .card-header {
@@ -534,6 +551,38 @@ template.innerHTML = `
     box-shadow: 0 0 10px rgba(34, 211, 238, 0.2);
   }
 
+  .form-input[type="date"]::-webkit-calendar-picker-indicator,
+  .form-input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+    opacity: 0.75;
+    transition: opacity 0.2s;
+  }
+  .form-input[type="date"]::-webkit-calendar-picker-indicator:hover,
+  .form-input[type="time"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
+
+  .manage-item-date {
+    font-family: var(--font-numbers, monospace);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--neon-yellow, #FACC15);
+    background: rgba(250, 204, 21, 0.1);
+    border: 1px solid rgba(250, 204, 21, 0.25);
+    padding: 2px 7px;
+    border-radius: 4px;
+    direction: ltr;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .manage-item-date.is-daily {
+    color: var(--neon-cyan, #22D3EE);
+    background: rgba(34, 211, 238, 0.1);
+    border-color: rgba(34, 211, 238, 0.25);
+  }
+
   .form-select {
     cursor: pointer;
     background: #0F172A;
@@ -713,7 +762,7 @@ template.innerHTML = `
 </div>
 
 <!-- HTML5 Top-Layer Dialog -->
-<dialog class="apt-dialog" id="apt-dialog">
+<dialog class="apt-dialog" id="apt-dialog" aria-label="إدارة المواعيد اليومية">
   <div class="apt-modal-header">
     <div class="modal-title-wrap">
       <span class="modal-icon">📅</span>
@@ -739,6 +788,16 @@ template.innerHTML = `
 
       <div class="form-row">
         <div class="form-group flex-1">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px;">
+            <label class="form-label" for="input-date">تاريخ الموعد</label>
+            <label style="display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-arabic, 'Cairo', sans-serif); font-size: 12px; color: var(--neon-cyan, #22D3EE); cursor: pointer; user-select: none;">
+              <input type="checkbox" id="input-daily" style="accent-color: var(--neon-cyan, #22D3EE); cursor: pointer; width: 14px; height: 14px;" />
+              <span>تكرار يومي</span>
+            </label>
+          </div>
+          <input class="form-input" id="input-date" type="date" required />
+        </div>
+        <div class="form-group flex-1">
           <label class="form-label" for="input-category">التصنيف</label>
           <select class="form-input form-select" id="input-category">
             <option value="work" data-label="عمل">عمل (Work)</option>
@@ -748,7 +807,10 @@ template.innerHTML = `
             <option value="health" data-label="صحة">صحة (Health)</option>
           </select>
         </div>
-        <div class="form-group flex-2">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group flex-1">
           <label class="form-label" for="input-location">المكان أو المنصة (اختياري)</label>
           <input class="form-input" id="input-location" type="text" placeholder="مثال: المكتب / Zoom / المنزل" />
         </div>
@@ -764,7 +826,7 @@ template.innerHTML = `
 
     <!-- Section 2: Manage List -->
     <div class="apt-manage-list-section">
-      <h4 class="form-section-title">📋 مواعيد اليوم المسجلة</h4>
+      <h4 class="form-section-title">📋 جميع المواعيد المجدولة</h4>
       <div class="apt-manage-items" id="apt-manage-items">
         <!-- Populated via JS -->
       </div>
@@ -817,6 +879,8 @@ export class DashboardAppointments extends HTMLElement {
       form: this.shadowRoot.getElementById('apt-form'),
       input_title: this.shadowRoot.getElementById('input-title'),
       input_time: this.shadowRoot.getElementById('input-time'),
+      input_date: this.shadowRoot.getElementById('input-date'),
+      input_daily: this.shadowRoot.getElementById('input-daily'),
       input_category: this.shadowRoot.getElementById('input-category'),
       input_location: this.shadowRoot.getElementById('input-location'),
       form_feedback: this.shadowRoot.getElementById('form-feedback'),
@@ -842,7 +906,7 @@ export class DashboardAppointments extends HTMLElement {
   connectedCallback() {
     this.events?.abort();
     this.events = new AbortController();
-    this.unsubscribe = EventBus.on('state-changed', this.onStateChange);
+    this.unsubscribe = EventBus.on('state-changed', this.onStateChange, {signal:this.events.signal});
     this.onStateChange(window.stateManager?.currentState || {});
 
     this.isRunning = true;
@@ -857,12 +921,31 @@ export class DashboardAppointments extends HTMLElement {
       this.dom.btn_close.addEventListener('click', this.closeModal, { signal: this.events.signal });
     }
     if (this.dom.dialog) {
+      this.dom.dialog.addEventListener('close', () => {
+        this.dispatchEvent(new CustomEvent('appointments:closed', { bubbles: true, composed: true }));
+      }, { signal: this.events.signal });
       this.dom.dialog.addEventListener('click', (e) => {
         const rect = this.dom.dialog.getBoundingClientRect();
         const isInDialog = (rect.top <= e.clientY && e.clientY <= rect.top + rect.height &&
                             rect.left <= e.clientX && e.clientX <= rect.left + rect.width);
         if (!isInDialog) {
           this.closeModal();
+        }
+      }, { signal: this.events.signal });
+    }
+    if (this.dom.input_daily && this.dom.input_date) {
+      this.dom.input_daily.addEventListener('change', () => {
+        if (this.dom.input_daily.checked) {
+          this.dom.input_date.disabled = true;
+          this.dom.input_date.required = false;
+          this.dom.input_date.style.opacity = '0.35';
+        } else {
+          this.dom.input_date.disabled = false;
+          this.dom.input_date.required = true;
+          this.dom.input_date.style.opacity = '1';
+          if (!this.dom.input_date.value) {
+            this.dom.input_date.value = new Date().toLocaleDateString('en-CA');
+          }
         }
       }, { signal: this.events.signal });
     }
@@ -873,6 +956,7 @@ export class DashboardAppointments extends HTMLElement {
 
   disconnectedCallback() {
     clearInterval(this.timerId);
+    this.manageListController?.abort();
     this.events?.abort();
     this.flipObserver?.disconnect();
     this.isRunning = false;
@@ -882,6 +966,15 @@ export class DashboardAppointments extends HTMLElement {
   openModal() {
     if (!this.dom.dialog) return;
     this.dom.dialog.showModal();
+    if (this.dom.input_date) {
+      this.dom.input_date.value = new Date().toLocaleDateString('en-CA');
+      this.dom.input_date.disabled = false;
+      this.dom.input_date.required = true;
+      this.dom.input_date.style.opacity = '1';
+    }
+    if (this.dom.input_daily) {
+      this.dom.input_daily.checked = false;
+    }
     this.refreshManageList();
     if (this.dom.input_title) this.dom.input_title.focus();
   }
@@ -896,12 +989,15 @@ export class DashboardAppointments extends HTMLElement {
     e.preventDefault();
     const title = this.dom.input_title.value.trim();
     const time = this.dom.input_time.value.trim();
+    const isDaily = this.dom.input_daily ? this.dom.input_daily.checked : false;
+    const dateVal = (!isDaily && this.dom.input_date) ? this.dom.input_date.value.trim() : null;
     const catSelect = this.dom.input_category;
     const category = catSelect.value;
     const category_label = catSelect.options[catSelect.selectedIndex].getAttribute('data-label') || 'عمل';
     const location = this.dom.input_location.value.trim();
 
     if (!title || !time) return;
+    if (!isDaily && !dateVal) return;
 
     try {
       this.setFeedback('جاري الحفظ...', '');
@@ -911,6 +1007,7 @@ export class DashboardAppointments extends HTMLElement {
         body: JSON.stringify({
           title,
           time,
+          date: dateVal,
           category,
           category_label,
           location
@@ -950,17 +1047,22 @@ export class DashboardAppointments extends HTMLElement {
   }
 
   async refreshManageList() {
+    this.manageListController?.abort();
+    const controller = new AbortController();
+    this.manageListController = controller;
     try {
-      const res = await fetch('/api/appointments');
+      const res = await fetch('/api/appointments', { signal: controller.signal, cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.today_appointments)) {
           this.currentItems = data.today_appointments;
           this.renderTimeline(this.currentItems);
-          this.renderManageItems(this.currentItems);
+          const manageList = Array.isArray(data.all_appointments) ? data.all_appointments : this.currentItems;
+          this.renderManageItems(manageList);
         }
       }
     } catch (err) {
+      if (err.name === 'AbortError') return;
       this.renderManageItems(this.currentItems);
     }
   }
@@ -980,6 +1082,15 @@ export class DashboardAppointments extends HTMLElement {
       const info = document.createElement('div');
       info.className = 'manage-item-info';
 
+      const dateSpan = document.createElement('span');
+      if (item.date) {
+        dateSpan.className = 'manage-item-date';
+        dateSpan.textContent = `📅 ${item.date}`;
+      } else {
+        dateSpan.className = 'manage-item-date is-daily';
+        dateSpan.textContent = '🔄 يومي';
+      }
+
       const timeSpan = document.createElement('span');
       timeSpan.className = 'manage-item-time';
       timeSpan.textContent = item.time_12h || item.time;
@@ -992,6 +1103,7 @@ export class DashboardAppointments extends HTMLElement {
       catSpan.className = `apt-category-pill category-${item.category || 'work'}`;
       catSpan.textContent = item.category_label || item.category;
 
+      info.appendChild(dateSpan);
       info.appendChild(timeSpan);
       info.appendChild(titleSpan);
       info.appendChild(catSpan);
@@ -1034,8 +1146,9 @@ export class DashboardAppointments extends HTMLElement {
     this.timerState.isOngoing = ongoing;
     updateText(this.dom.hero_location, state.next_appointment_location ?? '');
     if (this.dom.hero_location_wrapper) this.dom.hero_location_wrapper.style.display = state.next_appointment_location ? 'inline-flex' : 'none';
-    if ('next_appointment_seconds' in data || !state.next_appointment_title) {
-      this.timerState.nextSecsBase = state.next_appointment_title ? state.next_appointment_seconds : null;
+    if ('next_appointment_seconds' in data || 'today_appointments' in data || !state.next_appointment_title) {
+      const item=ongoing?state.today_appointments?.find(item=>item.status==='ongoing'):null;
+      this.timerState.nextSecsBase = state.next_appointment_title ? (item&&Number.isFinite(item.seconds_until)?Math.max(0,-item.seconds_until):state.next_appointment_seconds) : null;
       this.timerState.lastUpdateMs = this.timerState.nextSecsBase == null ? null : performance.now();
       if (this.timerState.nextSecsBase == null) updateText(this.dom.countdown, state.appointments_count == null || state.next_appointment_title ? '--:--:--' : '00:00:00');
     }
@@ -1047,6 +1160,9 @@ export class DashboardAppointments extends HTMLElement {
 
   renderTimeline(items) {
     if (!this.dom.timeline_list) return;
+    const signature=JSON.stringify(items?.map(item=>[item.title,item.time_12h,item.category,item.category_label,item.status,item.status_label])??null);
+    if(this.dom.timeline_list.dataset.signature===signature)return;
+    this.dom.timeline_list.dataset.signature=signature;
     if (!items || items.length === 0) {
       this.dom.timeline_list.innerHTML = this.telemetrySnapshot?.appointments_count == null ? '<div class="apt-empty-state">المواعيد غير متاحة</div>' : '<div class="apt-empty-state">✨ لا توجد مواعيد مسجلة لليوم</div>';
       return;
@@ -1093,4 +1209,6 @@ export class DashboardAppointments extends HTMLElement {
   }
 }
 
-customElements.define('dashboard-appointments', DashboardAppointments);
+if (!customElements.get('dashboard-appointments')) {
+  customElements.define('dashboard-appointments', DashboardAppointments);
+}

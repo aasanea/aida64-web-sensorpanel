@@ -3,8 +3,8 @@
  * Right-Click activation, 10-style visual preview grid, Web Audio feedback, and localStorage persistence
  */
 
-import { GAUGE_STYLES } from './gauge-styles-engine.js?v=20261006.2';
-import { EventBus } from '../store/event_bus.js?v=20261006.2';
+import { GAUGE_STYLES } from './gauge-styles-engine.js?v=20261007.3';
+import { EventBus } from '../store/event_bus.js?v=20261007.3';
 
 export class GaugePicker {
   static init() {
@@ -37,6 +37,7 @@ export class GaugePicker {
     cards.forEach(c => {
       const isSelected = c.getAttribute('data-style-id') === this._currentSelectedStyle;
       c.classList.toggle('active', isSelected);
+      c.setAttribute('aria-pressed', String(isSelected));
     });
 
     const titleTarget = this._activeGaugeId === 'cpu' ? 'المعالج (CPU)' : 'كرت الشاشة (GPU)';
@@ -44,12 +45,15 @@ export class GaugePicker {
     if (targetLabel) targetLabel.textContent = `العداد المستهدف: ${titleTarget}`;
 
     this._backdrop.classList.add('active');
+    if (!this._backdrop.open) this._backdrop.showModal();
+    this._backdrop.querySelector(`.gauge-choice-card[data-style-id="${this._currentSelectedStyle}"]`)?.focus();
     this._playSoftBeep(659.25); // E5
   }
 
   static close() {
     if (this._backdrop) {
       this._backdrop.classList.remove('active');
+      if (this._backdrop.open) this._backdrop.close();
     }
   }
 
@@ -58,7 +62,8 @@ export class GaugePicker {
   static _createModalElements() {
     let backdrop = document.getElementById('gauge-picker-backdrop');
     if (!backdrop) {
-      backdrop = document.createElement('div');
+      backdrop = document.createElement('dialog');
+      backdrop.setAttribute('aria-label', 'تخصيص نمط العداد الحراري');
       backdrop.id = 'gauge-picker-backdrop';
       backdrop.className = 'gauge-picker-backdrop';
 
@@ -94,14 +99,18 @@ export class GaugePicker {
     }
 
     this._backdrop = backdrop;
+    backdrop.addEventListener('cancel', event => { event.preventDefault(); this.close(); });
 
     // Populate the 10 cards
     const grid = backdrop.querySelector('#gauge-styles-grid');
     grid.innerHTML = '';
     GAUGE_STYLES.forEach(style => {
-      const card = document.createElement('div');
+      const card = document.createElement('button');
+      card.type = 'button';
       card.className = 'gauge-choice-card';
       card.setAttribute('data-style-id', style.id);
+      card.setAttribute('aria-label', `${style.nameAr} · ${style.nameEn}`);
+      card.setAttribute('aria-pressed', 'false');
       card.innerHTML = `
         <div class="gauge-choice-icon">${style.icon}</div>
         <div class="gauge-choice-info">
@@ -113,8 +122,9 @@ export class GaugePicker {
 
       card.addEventListener('click', () => {
         this._currentSelectedStyle = style.id;
-        grid.querySelectorAll('.gauge-choice-card').forEach(c => c.classList.remove('active'));
+        grid.querySelectorAll('.gauge-choice-card').forEach(c => { c.classList.remove('active'); c.setAttribute('aria-pressed', 'false'); });
         card.classList.add('active');
+        card.setAttribute('aria-pressed', 'true');
         this._playSoftBeep(880); // A5
       });
 
@@ -179,12 +189,9 @@ export class GaugePicker {
       }
     });
 
-    // Escape key closes modal
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && this._backdrop?.classList.contains('active')) {
-        this.close();
-      }
-    });
+    // Escape is handled by the native dialog's cancel event. A document-level
+    // handler would close this dialog before the default action and dismiss
+    // the inspector underneath it as well.
   }
 
   static _getAudioContext() {

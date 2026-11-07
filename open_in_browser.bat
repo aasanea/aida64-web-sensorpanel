@@ -3,7 +3,7 @@ setlocal
 
 :: ==============================================================================
 :: AIDA64 Glassmorphism Dashboard - Direct Browser Launcher
-:: Opens http://localhost:8088 in the default system browser or App Mode
+:: Opens http://127.0.0.1:8088 in the default system browser or App Mode
 :: ==============================================================================
 
 title AIDA64 Dashboard - Web Browser Launcher
@@ -14,7 +14,7 @@ echo   AIDA64 Glassmorphism 2.0 - Direct Browser Launcher
 echo =====================================================================
 echo.
 
-set "DASHBOARD_URL=http://localhost:8088"
+set "DASHBOARD_URL=http://127.0.0.1:8088"
 
 :: If --app argument is passed, launch in app-window mode via Microsoft Edge
 if /i "%~1"=="--app" goto :launch_app

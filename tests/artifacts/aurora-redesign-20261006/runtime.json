@@ -1,0 +1,192 @@
+{
+  "folio": {
+    "benchmark": "{\"design\":\"folio\",\"frames\":2880,\"p95Ms\":4.299999999999727,\"maxMs\":8.5,\"longTasks\":[]}",
+    "cards": [
+      {
+        "height": 209,
+        "name": "وحدات التخزين",
+        "scroll": 209
+      },
+      {
+        "height": 209,
+        "name": "حركة الشبكة",
+        "scroll": 209
+      },
+      {
+        "height": 189,
+        "name": "محرك العرض والألعاب",
+        "scroll": 189
+      },
+      {
+        "height": 189,
+        "name": "مكسر قنوات Sonar",
+        "scroll": 189
+      },
+      {
+        "height": 249,
+        "name": "مواقيت الصلاة والطقس",
+        "scroll": 249
+      },
+      {
+        "height": 309,
+        "name": "المواعيد اليومية",
+        "scroll": 309
+      },
+      {
+        "height": 216,
+        "name": "المباريات والمواجهات القادمة",
+        "scroll": 216
+      }
+    ],
+    "station": [
+      1080,
+      1080
+    ]
+  },
+  "vector": {
+    "benchmark": "{\"design\":\"vector\",\"frames\":2881,\"p95Ms\":4.30000000000291,\"maxMs\":4.400000000001455,\"longTasks\":[]}",
+    "cards": [
+      {
+        "height": 208,
+        "name": "الذاكرة العشوائية",
+        "scroll": 208
+      },
+      {
+        "height": 208,
+        "name": "وحدات التخزين",
+        "scroll": 208
+      },
+      {
+        "height": 208,
+        "name": "حركة الشبكة",
+        "scroll": 208
+      },
+      {
+        "height": 128,
+        "name": "محرك العرض والألعاب",
+        "scroll": 128
+      },
+      {
+        "height": 128,
+        "name": "مكسر قنوات Sonar",
+        "scroll": 128
+      },
+      {
+        "height": 298,
+        "name": "مواقيت الصلاة والطقس",
+        "scroll": 298
+      },
+      {
+        "height": 308,
+        "name": "المواعيد اليومية",
+        "scroll": 308
+      },
+      {
+        "height": 255,
+        "name": "المباريات والمواجهات القادمة",
+        "scroll": 255
+      }
+    ],
+    "station": [
+      1080,
+      1080
+    ]
+  },
+  "orbit": {
+    "benchmark": "{\"design\":\"orbit\",\"frames\":2879,\"p95Ms\":4.30000000000291,\"maxMs\":8.30000000000291,\"longTasks\":[]}",
+    "cards": [
+      {
+        "height": 304,
+        "name": "محرك العرض والألعاب",
+        "scroll": 304
+      },
+      {
+        "height": 223,
+        "name": "الذاكرة العشوائية",
+        "scroll": 223
+      },
+      {
+        "height": 223,
+        "name": "وحدات التخزين",
+        "scroll": 223
+      },
+      {
+        "height": 223,
+        "name": "حركة الشبكة",
+        "scroll": 223
+      },
+      {
+        "height": 223,
+        "name": "مكسر قنوات Sonar",
+        "scroll": 229
+      },
+      {
+        "height": 279,
+        "name": "مواقيت الصلاة والطقس",
+        "scroll": 279
+      },
+      {
+        "height": 279,
+        "name": "المواعيد اليومية",
+        "scroll": 279
+      },
+      {
+        "height": 279,
+        "name": "المباريات والمواجهات القادمة",
+        "scroll": 279
+      }
+    ],
+    "station": [
+      1080,
+      1080
+    ]
+  },
+  "console": [],
+  "finalOrbit": {
+    "appointmentTimer": "00:35:15",
+    "benchmark": "{\"design\":\"orbit\",\"frames\":2879,\"p95Ms\":4.299999999999727,\"maxMs\":8.399999999999636,\"longTasks\":[]}",
+    "cards": [
+      {
+        "height": 304,
+        "name": "محرك العرض والألعاب",
+        "scroll": 304
+      },
+      {
+        "height": 223,
+        "name": "الذاكرة العشوائية",
+        "scroll": 223
+      },
+      {
+        "height": 223,
+        "name": "وحدات التخزين",
+        "scroll": 223
+      },
+      {
+        "height": 223,
+        "name": "حركة الشبكة",
+        "scroll": 223
+      },
+      {
+        "height": 223,
+        "name": "مكسر قنوات Sonar",
+        "scroll": 223
+      },
+      {
+        "height": 279,
+        "name": "مواقيت الصلاة والطقس",
+        "scroll": 279
+      },
+      {
+        "height": 279,
+        "name": "المواعيد اليومية",
+        "scroll": 279
+      },
+      {
+        "height": 279,
+        "name": "المباريات والمواجهات القادمة",
+        "scroll": 279
+      }
+    ],
+    "frameSource": "غير متاح"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "backup": "D:\\Services\\aida64_suite\\dashboard\\backups\\av-card-20261103-131630",
+  "backupVerifiedFiles": 389,
+  "modifiedExistingSourceFiles": [
+    "frontend/index.html",
+    "tests/test_frontend_remediations.cjs",
+    "frontend/js/app.js",
+    "frontend/js/components/dashboard-display.js",
+    "frontend/js/components/sonar-panel.js"
+  ],
+  "newSourceFiles": [
+    "frontend/js/components/av-readings.js",
+    "tests/verify_av_card_live.py"
+  ],
+  "otherCardComponentsUnchanged": true,
+  "backendSourcesUnchanged": true,
+  "behavioralChecksPassed": 21,
+  "sonarAndMeterTestsPassed": 11,
+  "sonarLivePathsMatched": "12/12",
+  "knownBaselineFailures": [
+    "tests/test_frontend.py::test_google_fonts_present: 4 font families already present in backup",
+    "tests/test_frontend.py::test_units_displayed: GB absent in original source; GiB already used"
+  ],
+  "limitations": [
+    "AIDA64/RTSS values are displayed with provenance; no independent game FPS benchmark performed",
+    "No physical audio or display settings modified; source selector changes the meter only",
+    "Native host reload confirmed in host.log; visual inspection performed in local browser"
+  ]
+}

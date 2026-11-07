@@ -1,0 +1,116 @@
+{
+  "backs": [
+    {
+      "controls": [
+        {
+          "id": "btn-flip-back",
+          "text": "الرئيسية ↩"
+        }
+      ],
+      "flipped": "glass-card card-cpu flipped",
+      "tag": "DASHBOARD-CPU",
+      "text": "مصفوفة الأنوية واللوحة 20-CORE HYBRID MATRIX & PLATFORM TELEMETRY الرئيسية ↩ أنوية الأداء (P-Cores 1-8) متوسط: 37% | 41°C P1 40° 67% P2 46° 90% P3 38° 9% P4 38° 5% P5 38° 7% P6 38° 5% P7 42° 58% P8 48° 51% أنوية الكفاءة (E-Cores 9-20) متوسط: 29% | 39°C E1 40° 59% E2 46° 89% E3 36° 12% E4 36° 10% E5 36° 7% E6 36° 5% E7 40° 16% E8 40° 12% E9 40° 11% E10 40° 12% E11 38° 63% E12 42° 56% الحرارة واللوحة (Platform & Thermals) أعلى حرارة: 40°C 🎛️ منظم VRM 36 °C 🖥️ اللوحة الأم 26 °C 💎 الشريحة PCH 33 °C 💾 التخزين NVMe 40 °C ⚡ الفولتية VCORE 1.368 V 🌀 مروحة CPU 1923 RPM 🔥 البقعة الساخنة 47 °C ⚡ طاقة النظام 120 W INTEL CORE ULTRA 7 265KF • LION COVE (8P) + SKYMONT (12E) • ARROW LAKE PLATFORM"
+    },
+    {
+      "controls": [
+        {
+          "id": "btn-flip-back",
+          "text": "عودة ↩️"
+        }
+      ],
+      "flipped": "glass-card card-gpu flipped",
+      "tag": "DASHBOARD-GPU",
+      "text": "تفاصيل كرت الشاشة والذاكرة GPU & VRAM TELEMETRY عودة ↩️ حرارة البقعة الساخنة HOTSPOT 49 °C حرارة رقاقات الذاكرة VRAM TEMP 54 °C تردد ذاكرة الفيديو VRAM CLOCK 15001 MHz المروحة RPM FAN SPEED 0 RPM فولتية النواة CORE VOLT 990 mV استهلاك طاقة الكرت BOARD POWER 55 W NVIDIA GEFORCE RTX 4080 • AD103 GPU • 16GB GDDR6X 256-BIT • TELEMETRY MATRIX"
+    },
+    {
+      "controls": [
+        {
+          "id": "btn-flip-matches",
+          "text": "↩️\n          عودة للمباريات"
+        },
+        {
+          "id": "tab-roshn",
+          "text": "دوري روشن"
+        },
+        {
+          "id": "tab-afc",
+          "text": "نخبة آسيا"
+        },
+        {
+          "id": "tab-king",
+          "text": "كأس الملك"
+        }
+      ],
+      "flipped": "glass-card card-matches flipped",
+      "tag": "DASHBOARD-MATCHES",
+      "text": "🏆 جدول الترتيب والبطولات TOURNAMENT STANDINGS & BRACKETS ↩️ عودة للمباريات دوري روشن نخبة آسيا كأس الملك دوري أبطال آسيا للنخبة (1-3) مراكز الهبوط (16-18) # النادي ل فارق نقاط 1 الهلال 7 +18 18 2 الاتحاد 7 +6 17 3 النصر 7 +9 16 4 القادسية 7 +8 16 5 نيوم 7 +7 15 6 الأهلي 7 +6 12 7 الخلود 7 +2 12 8 الدرعية 7 +2 11 9 الاتفاق 7 0 11 10 الحزم 7 -2 8 11 الرياض 7 -8 8 12 الفيحاء 7 -4 6 13 الخليج 7 -7 5 14 الشباب 7 -5 4 15 الفتح 7 -7 3 16 الفيصلي 7 -8 3 17 التعاون 7 -9 3 18 أبها 7 -8 2"
+    },
+    {
+      "controls": [
+        {
+          "id": "flip-to-front",
+          "text": "↩️\n        عودة"
+        }
+      ],
+      "flipped": "glass-card card-slot-1 flipped",
+      "tag": "DASHBOARD-DISPLAY",
+      "text": "🎛️ استوديو الصوت ومحرك العرض المتقدم CONFIGURED PROFILES // LIVE VALUES LABELED SEPARATELY ↩️ عودة 🎙️ بروفايلات الصوت المُعرّفة (غير مقاسة) SONAR AI 🛡️ عزل الضوضاء الذكي ClearCast AI بروفايل مُعرّف • غير مقاس إعداد ClearCast مُعرّف؛ لا تتوفر قراءة مباشرة لفعالية خفض الضوضاء 🎚️ بروفايلات المعادل النشطة (EQ Matrix) PARAMETRIC Warzone Footsteps Focus 🎮 تنافسي Broadcast Voice Clarity 🎙️ صوت نقي Hi-Res Immersion 🎵 96kHz 🎧 التوجيه والصوت المحيطي (Spatial Audio) 360° SURROUND الصوت المحيطي: Spatial Audio 7.1 Virtual Surround (مفعّل) سماعة الرأس: Headset Arctis Nova Pro Wireless 🖥️ مواصفات العرض المُعرّفة (غير مقاسة) VIDEO LAB 🎨 مواصفات إشارة الفيديو (Signal Specs) 10-BIT HDR عمق الألوان 10-bit (1.07B colors) النطاق اللوني RGB 4:4:4 Full Range المدى الديناميكي DisplayHDR 1000 ⚡ ديناميكية الإطارات ومزامنة الشاشة (VRR) VRR PROFILE مزامنة الشاشة NVIDIA G-Sync Profile VRR 48 - 240 Hz زمن تأخير الإطار -- ms غير متاح أدنى إطارات 1% Low غير متاح لا يوجد مستشعر 1% Low 🔌 الواجهة الفيزيائية والنطاق الترددي 32.4 Gbps DisplayPort 1.4a DSC 32.4 Gbps نطاق ترددي فائق بدقة 4K ومعدل 240Hz مع دعم كامل لمكتبة HDR10 و 10-Bit"
+    },
+    {
+      "controls": [
+        {
+          "id": "btn-flip-back",
+          "text": "↩\n          السرعات"
+        }
+      ],
+      "flipped": "glass-card card-network flipped",
+      "tag": "DASHBOARD-NETWORK",
+      "text": "أعلى البرامج استهلاكاً LIVE PROCESS BANDWIDTH ↩ السرعات 🌐 Node_repl 8c ↓3.2M ↑5.4M 🤖 ChatGPT 19c ↓76K ↑3.2M 🌐 Codex 3c ↓2.3M ↑140K ⚡ Code AI Assistant 3c ↓64K ↑0K ☄️ Comet Browser 11c ↓0K ↑0K LAN: 192.168.3.22 LINK: 1G TOT: 3.1G↓ / 0.7G↑"
+    }
+  ],
+  "afc": "🏆\nجدول الترتيب والبطولات\nTOURNAMENT STANDINGS & BRACKETS\n↩️\nعودة للمباريات\nدوري روشن\nنخبة آسيا\nكأس الملك\nالمراكز المؤهلة لثمن النهائي (1-8)\n#\tالنادي\tل\tفارق\tنقاط\n1\t\nالعين\n\t1\t+4\t3\n2\t\nاستقلال\n\t1\t+3\t3\n3\t\nالقادسية\n\t1\t+1\t3\n4\t\nالهلال\n\t1\t+1\t3\n5\t\nشباب الاهلي\n\t1\t+1\t3\n6\t\nنيفتشي فرغانة\n\t1\t+1\t3\n7\t\nالاتحاد\n\t1\t0\t1\n8\t\nالشمال\n\t1\t0\t1\n9\t\nباختاكور\n\t1\t0\t1\n10\t\nالأهلي\n\t1\t0\t1\n11\t\nالوصل\n\t1\t-1\t0\n12\t\nالغرافة\n\t1\t-1\t0\n13\t\nالقوة الجوية\n\t1\t-1\t0\n14\t\nتراکتورسازي\n\t1\t-1\t0\n15\t\nالسد\n\t1\t-3\t0\n16\t\nالنصر\n\t1\t-4\t0",
+  "king": "🏆\nجدول الترتيب والبطولات\nTOURNAMENT STANDINGS & BRACKETS\n↩️\nعودة للمباريات\nدوري روشن\nنخبة آسيا\nكأس الملك\nالنجمة\n0 - 3\nدور الـ 32\nالاتحاد✓ تأهل\nالدرعية\n1 - 4\nدور الـ 32\nالنصر✓ تأهل\nالفيصلي\n1 - 3\nدور الـ 32\nنيوم✓ تأهل\nضمك\n0 - 3\nدور الـ 32\nالتعاون✓ تأهل\nجدة\n0 - 5\nدور الـ 32\nالخلود✓ تأهل\n✓ تأهلالعلا\n3 - 0\nدور الـ 32\nالفتح\nالجبلين\n-1 - -1\nدور الـ 16\nالاتحاد\nالعروبة\n-1 - -1\nدور الـ 16\nالأخدود\nالرياض\n-1 - -1\nدور الـ 16\nالفيحاء\nالهلال\n-1 - -1\nدور الـ 16\nالحزم\nالتعاون\n-1 - -1\nدور الـ 16\nالوحدة\nالعلا\n-1 - -1\nدور الـ 16\nالأهلي\nالنصر\n-1 - -1\nدور الـ 16\nالخلود\nالقادسية\n-1 - -1\nدور الـ 16\nنيوم",
+  "appointments": {
+    "buttons": [
+      "✕",
+      "+ إضافة الموعد الآن",
+      "🗑️ حذف",
+      "🗑️ حذف",
+      "🗑️ حذف"
+    ],
+    "fields": [
+      {
+        "id": "input-title",
+        "options": null,
+        "required": true,
+        "type": "text"
+      },
+      {
+        "id": "input-time",
+        "options": null,
+        "required": true,
+        "type": "time"
+      },
+      {
+        "id": "input-category",
+        "options": [
+          "عمل (Work)",
+          "اجتماع (Meeting)",
+          "شخصي (Personal)",
+          "هام (Urgent)",
+          "صحة (Health)"
+        ],
+        "required": false,
+        "type": "select-one"
+      },
+      {
+        "id": "input-location",
+        "options": null,
+        "required": false,
+        "type": "text"
+      }
+    ],
+    "open": true,
+    "text": "📅 إدارة المواعيد اليومية ✕ ✨ إضافة موعد جديد عنوان الموعد الوقت (24h) التصنيف عمل (Work) اجتماع (Meeting) شخصي (Personal) هام (Urgent) صحة (Health) المكان أو المنصة (اختياري) + إضافة الموعد الآن 📋 مواعيد اليوم المسجلة 9:30 صمراجعة تقارير السيرفرات والشبكةعمل🗑️ حذف2:00 مجلسة تطوير برمجيات وهندسة عتادعمل🗑️ حذف6:30 متمرين رياضي مسائيشخصي🗑️ حذف"
+  }
+}

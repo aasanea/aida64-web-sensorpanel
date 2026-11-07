@@ -1,4 +1,4 @@
-import { EventBus } from './event_bus.js?v=20261006.2';
+import { EventBus } from './event_bus.js?v=20261007.3';
 
 export class StateManager {
   constructor() {
@@ -50,6 +50,7 @@ export class StateManager {
 
   invalidateTelemetry() {
     if (this.currentState.telemetry_status === 'stale') return;
+    EventBus.emit('audio-levels', {routes:{},receivedAt:performance.now()});
     const cleared = Object.fromEntries(Object.keys(this.currentState).map(key => [key, null]));
     cleared.telemetry_status = 'stale';
     this.commitState(cleared);
@@ -94,6 +95,7 @@ export class StateManager {
     }
 
     this.ws.onopen = () => {
+      this.ws.send(JSON.stringify({type:'subscribe',stream:'audio-levels'}));
       clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;
       this.reconnectAttempts = 0;
@@ -135,11 +137,28 @@ export class StateManager {
 
       try {
         const payload = JSON.parse(messageData);
-        this.processNewState(payload);
+        if (payload?.type === 'audio-levels') this.processAudioLevels(payload.data);
+        else this.processNewState(payload);
       } catch (err) {
         console.warn('[StateManager] Could not parse JSON message:', err);
       }
     }
+  }
+
+  processAudioLevels(sample) {
+    if (this.stopped) return;
+    const routes = {};
+    const fresh = Number.isFinite(sample?.observed_at) && Math.abs(Date.now()/1000-sample.observed_at) < 0.5;
+    for (const key of ['mic','input','monitoring','streaming','stream_input']) {
+      const route=sample?.routes?.[key];
+      const valid=fresh && route?.status==='live' && Number.isFinite(route.peak) && route.peak>=0 && route.peak<=1;
+      routes[key]={...route,peak:valid?route.peak:null,status:valid?'live':'unavailable'};
+    }
+    const applications=fresh && Array.isArray(sample?.applications)?sample.applications.filter(app=>app && Number.isFinite(app.peak) && app.peak>=0 && app.peak<=1):[];
+    const data={source:sample?.source,observed_at:sample?.observed_at,routes,applications,applicationsAvailable:fresh && Array.isArray(sample?.applications),receivedAt:performance.now(),maxAgeMs:this.isPolling?1200:300};
+    this.currentState.audio_levels=data;
+    // Peaks have one dedicated delivery path; hardware cards do not redraw at 30 Hz.
+    EventBus.emit('audio-levels',data);
   }
 
   setMockTelemetry(override) {
@@ -158,10 +177,15 @@ export class StateManager {
 
     // Both endpoints send complete snapshots: omitted fields are unavailable.
     for (const key of Object.keys(this.currentState)) {
-      if (!(key in newState) && key !== 'telemetry_status') newState[key] = null;
+      if (!(key in newState) && key !== 'telemetry_status' && key !== 'audio_levels') newState[key] = null;
     }
     for (const key of Object.keys(newState)) {
       if (typeof newState[key] === 'number' && !Number.isFinite(newState[key])) newState[key] = null;
+    }
+    // A healthy transport must not make a failed upstream sensor look live.
+    for (const [key, field] of Object.entries(newState.telemetry_fields || {})) {
+      const source = newState.telemetry_sources?.[field.source];
+      if (source && ['stale', 'unavailable'].includes(source.status) && !key.endsWith('_source') && !key.startsWith('telemetry_') && key!=='sonar_connected') newState[key] = null;
     }
     this.lastReceivedAt = performance.now();
     newState.telemetry_status = 'live';
@@ -261,6 +285,7 @@ export class StateManager {
           EventBus.emit('connection:ping', latency);
           
           this.processNewState(data);
+          try{const audio=await fetch(endpoints.http.replace('/api/sensors','/api/audio-levels'),{cache:'no-store',signal:this.pollController.signal});if(this.isPolling&&generation===this.pollGeneration)this.processAudioLevels(audio.ok?await audio.json():null);}catch{if(this.isPolling&&generation===this.pollGeneration)this.processAudioLevels(null);}
           this.pollFailures = 0;
         } else {
           this.pollFailures++;

@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 
 :: ==============================================================================
 :: AIDA64 Glassmorphism 2.0 Dashboard - Self-Healing Health Watchdog
-:: Pings http://localhost:8088/health. Kills orphaned processes & restarts if dead.
+:: Pings http://127.0.0.1:8088/health. Kills orphaned processes & restarts if dead.
 :: Supports single-check (Task Scheduler) or continuous loop mode (--loop).
 :: ==============================================================================
 
@@ -13,7 +13,7 @@ set "SCRIPT_DIR=%~dp0"
 set "ROOT_DIR=%SCRIPT_DIR%.."
 set "BACKEND_DIR=%ROOT_DIR%\backend"
 set "PORT=8088"
-set "HEALTH_URL=http://localhost:%PORT%/health"
+set "HEALTH_URL=http://127.0.0.1:%PORT%/health"
 set "LOOP_MODE=0"
 set "CHECK_INTERVAL=15"
 

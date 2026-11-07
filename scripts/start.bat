@@ -20,8 +20,8 @@ set "ROOT_DIR=%SCRIPT_DIR%.."
 set "BACKEND_DIR=%ROOT_DIR%\backend"
 set "REQ_FILE=%BACKEND_DIR%\requirements.txt"
 set "PORT=8088"
-set "HOST=0.0.0.0"
-set "URL=http://localhost:%PORT%"
+set "HOST=127.0.0.1"
+set "URL=http://127.0.0.1:%PORT%"
 set "HEALTH_URL=%URL%/health"
 
 :: ------------------------------------------------------------------------------

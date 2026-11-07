@@ -1,0 +1,1670 @@
+=== CPU ===
+
+<style>
+  @import url('/css/gauge-styles.css?v=20261007.3');
+  /* Local Component Styles */
+  :host {
+    display: block;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    perspective: 1200px;
+    contain: layout style;
+    padding: 0 !important;
+  }
+
+  /* 3D Card Flipper Mechanics */
+  .card-flipper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  :host(.flipped) .card-flipper {
+    transform: rotateY(180deg);
+  }
+
+  .card-face {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 10px 16px;
+    box-sizing: border-box;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .card-front {
+    transform: rotateY(0deg);
+    z-index: 2;
+  }
+
+  .card-back {
+    transform: rotateY(180deg);
+    z-index: 1;
+  }
+
+  :host(.flipped) .card-front {
+    pointer-events: none;
+  }
+
+  :host(.flipped) .card-back {
+    pointer-events: auto;
+  }
+
+  /* Typography (Mirrors GPU Component 1:1) */
+  .arabic-label {
+    font-family: var(--font-arabic);
+    font-size: 19px;
+    font-weight: 800;
+    color: var(--text-pure-white);
+    opacity: 1;
+    letter-spacing: 0.3px;
+    line-height: 1.2;
+  }
+
+  .huge-number {
+    font-family: var(--font-numbers);
+    font-size: 52px;
+    font-weight: 800;
+    color: var(--text-pure-white);
+    line-height: 1;
+    direction: ltr;
+    display: inline-block;
+    text-shadow: 0 0 24px rgba(248, 250, 255, 0.25);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .huge-unit {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--neon-cyan);
+    margin-right: 4px;
+    direction: ltr;
+  }
+
+  /* Card Header */
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    flex-shrink: 0;
+  }
+  .card-title-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--neon-cyan);
+  }
+  .card-title {
+    font-family: var(--font-arabic);
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--text-pure-white);
+    line-height: 1.2;
+    margin: 0;
+  }
+  .card-sub {
+    font-family: var(--font-numbers);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--text-muted, #94A3B8);
+  }
+  
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Badges */
+  .card-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 14px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 15px;
+  }
+  .badge-label {
+    font-family: var(--font-arabic);
+    font-weight: 800;
+    color: #F8FAFC;
+    font-size: 17px;
+  }
+  .badge-val-group {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    direction: ltr;
+  }
+  .badge-value {
+    font-family: var(--font-numbers);
+    font-weight: 800;
+    font-size: 22px;
+    color: var(--text-pure-white);
+    direction: ltr;
+  }
+  .badge-unit {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--neon-cyan);
+    direction: ltr;
+  }
+
+  /* Flip Buttons */
+  .btn-flip-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    color: var(--neon-cyan);
+    font-family: var(--font-arabic);
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+  }
+  .btn-flip-toggle:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 10px var(--neon-cyan);
+    transform: translateY(-1px);
+  }
+  .btn-flip-toggle.btn-back {
+    color: var(--neon-violet);
+    border-color: var(--glass-border);
+  }
+  .btn-flip-toggle.btn-back:hover {
+    border-color: var(--neon-violet);
+    box-shadow: 0 0 10px var(--neon-violet);
+  }
+
+  /* Body Split (Mirrors GPU Grid 1:1) */
+  .card-body-split {
+    display: grid;
+    grid-template-columns: 145px 1fr;
+    gap: 16px;
+    align-items: center;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* SVG Circular Temperature Rings (Mirrors GPU 1:1) */
+  .gauge-circular-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .svg-ring-wrapper {
+    position: relative;
+    width: 135px;
+    height: 135px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .temp-ring-svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+    overflow: visible;
+  }
+  .ring-bg {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.06);
+    stroke-width: 3px;
+  }
+  .ring-progress {
+    fill: none;
+    stroke: var(--neon-cyan);
+    stroke-width: 3px;
+    stroke-linecap: round;
+    stroke-dasharray: 471.24;
+    stroke-dashoffset: 471.24;
+    will-change: stroke-dashoffset;
+    transition: stroke 0.3s ease;
+    filter: drop-shadow(0 0 6px var(--neon-cyan));
+  }
+
+  .ring-center-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+  .arabic-ring-label {
+    font-family: var(--font-arabic);
+    font-size: 17px;
+    font-weight: 800;
+    opacity: 0.95;
+    margin-bottom: 2px;
+    color: #F1F5F9;
+  }
+  .temp-val-wrapper {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    direction: ltr;
+  }
+  .temp-val-wrapper .huge-number {
+    font-size: 52px;
+    font-weight: 800;
+  }
+  .temp-val-wrapper .huge-unit {
+    font-size: 22px;
+    font-weight: 700;
+  }
+  .status-descriptor {
+    font-family: var(--font-arabic);
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--neon-cyan);
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+  }
+
+  /* Performance Bars Stack (Mirrors GPU 1:1) */
+  .metrics-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    justify-content: center;
+  }
+  .metric-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .metric-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .metric-num-group {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    direction: ltr;
+  }
+  .metric-val {
+    font-family: var(--font-numbers);
+    font-size: 27px;
+    font-weight: 700;
+    color: var(--text-pure-white);
+    line-height: 1;
+  }
+  .metric-unit {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--neon-cyan);
+    direction: ltr;
+  }
+
+  /* Progress Tracks & Bars (Mirrors GPU 1:1) */
+  .progress-track {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 4px;
+    position: relative;
+    direction: ltr;
+    overflow: visible;
+    contain: layout style;
+  }
+  .progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--neon-cyan), var(--neon-violet));
+    border-radius: 4px;
+    position: relative;
+    will-change: width;
+    transform: translateZ(0);
+    transition: width 0.1s linear;
+    box-shadow: 0 0 10px rgba(34, 211, 238, 0.35);
+  }
+  .progress-dot {
+    position: absolute;
+    right: -4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #F8FAFF;
+    box-shadow: 0 0 8px var(--neon-cyan), 0 0 16px var(--neon-violet);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+  }
+  .progress-bar.active .progress-dot {
+    opacity: 1;
+  }
+  .progress-bar.pump-bar {
+    background: linear-gradient(90deg, #06B6D4, #3B82F6);
+    box-shadow: 0 0 10px rgba(6, 182, 212, 0.4);
+  }
+  .progress-bar.pump-bar .progress-dot {
+    box-shadow: 0 0 8px #06B6D4, 0 0 16px #3B82F6;
+  }
+
+  /* Micro Heatmap Strip (20 Cores on Front Face) */
+  .micro-cores-strip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+    padding: 3px 8px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    flex-shrink: 0;
+  }
+  .micro-cores-strip:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 10px var(--neon-cyan);
+  }
+  .strip-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex: 1;
+  }
+  .strip-tag {
+    font-family: var(--font-numbers);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    line-height: 1;
+  }
+  .strip-tag.p-tag {
+    color: var(--neon-cyan);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--neon-cyan);
+  }
+  .strip-tag.e-tag {
+    color: var(--neon-violet);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--neon-violet);
+  }
+  .strip-bars-container {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 12px;
+    flex: 1;
+  }
+  .mini-core-bar {
+    flex: 1;
+    min-width: 3px;
+    height: 15%;
+    border-radius: 2px;
+    background: var(--neon-cyan);
+    transition: height 0.25s ease, background-color 0.25s ease;
+  }
+  .mini-core-bar.e-core-bar {
+    background: var(--neon-violet);
+  }
+  .strip-sep {
+    width: 1px;
+    height: 12px;
+    background: rgba(255, 255, 255, 0.15);
+    margin: 0 2px;
+  }
+  .strip-hint {
+    font-family: var(--font-arabic);
+    font-size: 11px;
+    font-weight: 700;
+    color: #94A3B8;
+    margin-right: auto;
+    transition: color 0.2s;
+  }
+  .micro-cores-strip:hover .strip-hint {
+    color: var(--neon-cyan);
+  }
+
+  /* Back Face Detailed Matrix */
+  .cores-matrix-content {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex: 1;
+    min-height: 0;
+    justify-content: space-between;
+  }
+  .core-group-row {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+    min-height: 0;
+  }
+  .core-group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    line-height: 1;
+  }
+  .core-group-badge {
+    font-family: var(--font-numbers);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    padding: 2px 7px;
+    border-radius: 5px;
+  }
+  .core-group-badge.p-badge {
+    color: var(--neon-cyan);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--neon-cyan);
+  }
+  .core-group-badge.e-badge {
+    color: var(--neon-violet);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--neon-violet);
+  }
+  .core-group-badge.plat-badge {
+    color: var(--status-warning);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--status-warning);
+  }
+  .core-group-avg {
+    font-family: var(--font-arabic);
+    font-size: 11px;
+    font-weight: 700;
+    color: #94A3B8;
+    direction: rtl;
+  }
+  .p-cores-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+    flex: 1;
+  }
+  .e-cores-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 3px;
+    flex: 1;
+  }
+  .core-cell {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 3px 4px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+    box-sizing: border-box;
+    transition: border-color 0.2s, background-color 0.2s;
+    min-width: 0;
+  }
+  .core-cell:hover {
+    border-color: var(--neon-cyan);
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .core-cell-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    line-height: 1;
+    gap: 2px;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .core-cell-name {
+    font-family: var(--font-numbers);
+    font-size: 10px;
+    font-weight: 800;
+    color: #94A3B8;
+  }
+  .core-cell-temp {
+    font-family: var(--font-numbers);
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--neon-cyan);
+    direction: ltr;
+  }
+  .e-core-cell .core-cell-temp {
+    color: var(--neon-violet);
+  }
+  .core-cell-load {
+    font-family: var(--font-numbers);
+    font-size: 12px;
+    font-weight: 800;
+    color: #FFFFFF;
+    line-height: 1;
+    direction: ltr;
+    margin: 1px 0;
+  }
+  .core-cell-bar-track {
+    width: 100%;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .core-cell-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--neon-cyan);
+    border-radius: 2px;
+    transition: width 0.25s ease, background-color 0.25s ease;
+  }
+  .e-core-cell .core-cell-bar-fill {
+    background: var(--neon-violet);
+  }
+
+  /* Platform & Thermals Grid */
+  .platform-section {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+    min-height: 0;
+  }
+  .platform-grid {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 4px;
+    flex: 1;
+  }
+  @media (max-width: 600px) {
+    .platform-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+  .platform-cell {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 3px 5px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+    box-sizing: border-box;
+    transition: border-color 0.2s, background-color 0.2s;
+    min-width: 0;
+  }
+  .platform-cell:hover {
+    border-color: var(--status-warning);
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .platform-cell-top {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    line-height: 1;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .platform-cell-name {
+    font-family: var(--font-arabic);
+    font-size: 10px;
+    font-weight: 700;
+    color: #94A3B8;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .platform-cell-val-group {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+    direction: ltr;
+    margin: 2px 0 0 0;
+  }
+  .platform-cell-val {
+    font-family: var(--font-numbers);
+    font-size: 13px;
+    font-weight: 800;
+    color: #FFFFFF;
+    line-height: 1;
+  }
+  .platform-cell-unit {
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--neon-cyan);
+  }
+  .platform-cell-unit.unit-orange {
+    color: var(--status-warning);
+  }
+  .platform-cell-unit.unit-amber {
+    color: #FBBF24;
+  }
+  .cores-footer-strip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-numbers);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    color: #64748B;
+    padding-top: 2px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    flex-shrink: 0;
+  }
+
+  /* Critical Thermal Alert Internal Styling (Mirrors GPU 1:1) */
+  :host(.critical-thermal) .huge-number {
+    color: var(--status-critical) !important;
+    text-shadow: 0 0 24px rgba(239, 68, 68, 0.7) !important;
+  }
+  :host(.critical-thermal) .card-icon {
+    color: var(--status-critical) !important;
+    border-color: rgba(239, 68, 68, 0.4) !important;
+    background: rgba(239, 68, 68, 0.12) !important;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.3) !important;
+  }
+  :host(.critical-thermal) .temp-ring-svg circle.ring-progress {
+    stroke: #EF4444 !important;
+    filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.8)) !important;
+  }
+  :host(.critical-thermal) .status-descriptor {
+    background: var(--status-surface) !important;
+    border-color: rgba(239, 68, 68, 0.4) !important;
+    color: var(--status-critical) !important;
+    animation: blink-soft 1.5s infinite ease-in-out;
+  }
+  @keyframes blink-soft {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.65; transform: scale(1.05); }
+  }
+</style>
+
+<div class="card-flipper" id="card-flipper">
+  <!-- FRONT FACE -->
+  <div class="card-face card-front" aria-hidden="false">
+    <div class="card-header">
+      <div class="card-title-group">
+        <div class="card-icon cpu-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none">
+            <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+            <rect x="9" y="9" width="6" height="6"></rect>
+            <path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"></path>
+          </svg>
+        </div>
+        <div>
+          <h2 class="card-title">المعالج المركزي</h2>
+          <span class="card-sub">CPU MASTER TELEMETRY</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="card-badge">
+          <span class="badge-label">حرارة الحزمة Package</span>
+          <span class="badge-val-group" dir="ltr">
+            <span class="badge-value" id="cpu_hotspot_temp" title="مقاس · AIDA64 shared memory / registry · °C · مباشر · آخر قراءة ٨:٠٠:٠١ م" data-source-status="live">50</span>
+            <span class="badge-unit">°C</span>
+          </span>
+        </div>
+        <button class="btn-flip-toggle" id="btn-flip-cores" type="button" title="عرض مصفوفة الأنوية واللوحة">
+          <span>🎛️ مصفوفة الأنوية واللوحة</span>
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2">
+            <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+            <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+            <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+            <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="card-body-split">
+      <!-- Dynamic Circular Temperature Gauge (Right-click to customize) -->
+      <div class="gauge-circular-container" id="cpu-gauge-wrapper" data-gauge-id="cpu" title="انقر بزر الفأرة الأيمن لتغيير شكل العداد">
+        <div id="cpu-dynamic-gauge" class="gauge-dynamic-root gauge-tachometer gauge-tachometer gauge-tachometer" data-gauge-id="cpu" data-gauge-style="tachometer" data-telemetry-status="live"><svg class="gauge-svg-layer" viewBox="0 0 180 180"><g class="tacho-ticks"><line x1="40.5" y1="139.5" x2="46.2" y2="133.8"></line><line x1="32.9" y1="130.5" x2="36.2" y2="128.2"></line><line x1="26.9" y1="120.4" x2="30.5" y2="118.6"></line><line x1="22.7" y1="109.4" x2="26.6" y2="108.3"></line><line x1="20.4" y1="97.8" x2="28.4" y2="96.9"></line><line x1="20.1" y1="86.1" x2="24.1" y2="86.3"></line><line x1="21.8" y1="74.4" x2="25.7" y2="75.3"></line><line x1="25.3" y1="63.2" x2="29.0" y2="64.7"></line><line x1="30.7" y1="52.8" x2="37.5" y2="57.0"></line><line x1="37.8" y1="43.4" x2="40.8" y2="46.0"></line><line x1="46.4" y1="35.3" x2="48.8" y2="38.4"></line><line x1="56.1" y1="28.7" x2="58.1" y2="32.2"></line><line x1="66.9" y1="23.9" x2="69.5" y2="31.5"></line><line x1="78.3" y1="21.0" x2="78.9" y2="24.9"></line><line x1="90.0" y1="20.0" x2="90.0" y2="24.0"></line><line x1="101.7" y1="21.0" x2="101.1" y2="24.9"></line><line x1="113.1" y1="23.9" x2="110.5" y2="31.5"></line><line x1="123.9" y1="28.7" x2="121.9" y2="32.2"></line><line x1="133.6" y1="35.3" x2="131.2" y2="38.4"></line><line x1="142.2" y1="43.4" x2="139.2" y2="46.0"></line><line x1="149.3" y1="52.8" x2="142.5" y2="57.0"></line><line x1="154.7" y1="63.2" x2="151.0" y2="64.7"></line><line x1="158.2" y1="74.4" x2="154.3" y2="75.3" class="tick-redline"></line><line x1="159.9" y1="86.1" x2="155.9" y2="86.3" class="tick-redline"></line><line x1="159.6" y1="97.8" x2="151.6" y2="96.9" class="tick-redline"></line><line x1="157.3" y1="109.4" x2="153.4" y2="108.3" class="tick-redline"></line><line x1="153.1" y1="120.4" x2="149.5" y2="118.6" class="tick-redline"></line><line x1="147.1" y1="130.5" x2="143.8" y2="128.2" class="tick-redline"></line><line x1="139.5" y1="139.5" x2="133.8" y2="133.8" class="tick-redline"></line></g><circle class="tacho-track" cx="90" cy="90" r="72" style="stroke-dasharray: 339.292, 113.097; transform-origin: 90px 90px; transform: rotate(135deg);"></circle><circle class="tacho-progress" cx="90" cy="90" r="72" style="stroke-dasharray: 339.292, 113.097; stroke-dashoffset: 199.682px; transform-origin: 90px 90px; transform: rotate(135deg);"></circle><circle class="laser-bead" r="4" cx="60.8" cy="24.2"></circle></svg><div class="gauge-center-stack">
+      <span class="gauge-title-label">حرارة المعالج</span>
+      <div class="gauge-val-group">
+        <span class="gauge-huge-number" id="cpu_temp" title="مقاس · AIDA64 shared memory / registry · °C · مباشر · آخر قراءة ٨:٠٠:٠١ م" data-source-status="live">53</span>
+        <span class="gauge-huge-unit">°C</span>
+      </div>
+      <div class="gauge-status-pill" id="cpu-temp-desc-pill" style="color: var(--status-normal); border-color: currentcolor;">
+        <span class="pill-dot"></span>
+        <span class="pill-text" id="cpu-temp-desc">مثالي</span>
+      </div>
+    </div></div>
+      </div>
+
+      <!-- Performance Bars Stack -->
+      <div class="metrics-stack">
+        <!-- CPU Utilization Bar -->
+        <div class="metric-row">
+          <div class="metric-info">
+            <span class="arabic-label">نسبة الاستهلاك</span>
+            <span class="metric-num-group">
+              <span class="metric-val" id="cpu_load" title="مقاس · AIDA64 shared memory / registry · % · مباشر · آخر قراءة ٨:٠٠:٠١ م" data-source-status="live">43</span>
+              <span class="metric-unit">%</span>
+            </span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-bar active" id="cpu_load_bar" style="width: 43%;">
+              <span class="progress-dot"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CPU Clock Speed Bar -->
+        <div class="metric-row">
+          <div class="metric-info">
+            <span class="arabic-label">التردد MHz</span>
+            <span class="metric-num-group">
+              <span class="metric-val" id="cpu_clock" title="مقاس · AIDA64 shared memory / registry · MHz · مباشر · آخر قراءة ٨:٠٠:٠١ م" data-source-status="live">5200</span>
+              <span class="metric-unit">MHz</span>
+            </span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-bar active" id="cpu_clock_bar" style="width: 87%;">
+              <span class="progress-dot"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CPU Power Bar -->
+        <div class="metric-row">
+          <div class="metric-info">
+            <span class="arabic-label">الطاقة W</span>
+            <span class="metric-num-group">
+              <span class="metric-val" id="cpu_power" title="مقاس · AIDA64 shared memory / registry · W · مباشر · آخر قراءة ٨:٠٠:٠١ م" data-source-status="live">91</span>
+              <span class="metric-unit">W</span>
+            </span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-bar active" id="cpu_power_bar" style="width: 36%;">
+              <span class="progress-dot"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Water Cooling Pump RPM Bar -->
+        <div class="metric-row">
+          <div class="metric-info">
+            <span class="arabic-label">💧 مضخة التبريد PUMP</span>
+            <span class="metric-num-group">
+              <span class="metric-val" id="pump_rpm" title="مقاس · AIDA64 shared memory / registry · RPM · غير متاح · آخر قراءة ٨:٠٠:٠١ م" data-source-status="unavailable">--</span>
+              <span class="metric-unit">RPM</span>
+            </span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-bar pump-bar" id="pump_rpm_bar" style="width: 0%;">
+              <span class="progress-dot"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Micro Heatmap Strip (20 Cores) -->
+    <div class="micro-cores-strip" id="micro-cores-strip" title="تفاصيل 20 من أنوية المصدر">
+      <div class="strip-group">
+        <span class="strip-tag p-tag">8P</span>
+        <div class="strip-bars-container" id="p-mini-bars"><div class="mini-core-bar p-core-bar" title="P 1: 58% | 42°C" style="height: 58%; background-color: var(--neon-cyan);"></div><div class="mini-core-bar p-core-bar" title="P 2: 95% | 52°C" style="height: 95%; background-color: var(--neon-cyan);"></div><div class="mini-core-bar p-core-bar" title="P 7: 58% | 46°C" style="height: 58%; background-color: var(--neon-cyan);"></div><div class="mini-core-bar p-core-bar" title="P 8: 66% | 46°C" style="height: 66%; background-color: var(--neon-cyan);"></div><div class="mini-core-bar p-core-bar" title="P 9: 46% | 40°C" style="height: 46%; background-color: var(--neon-cyan);"></div><div class="mini-core-bar p-core-bar" title="P 10: 90% | 48°C" style="height: 90%; background-color: var(--neon-cyan);"></div><div class="mini-core-bar p-core-bar" title="P 19: 48% | 42°C" style="height: 48%; background-color: var(--neon-cyan);"></div><div class="mini-core-bar p-core-bar" title="P 20: 44% | 50°C" style="height: 44%; background-color: var(--neon-cyan);"></div></div>
+      </div>
+      <div class="strip-sep"></div>
+      <div class="strip-group">
+        <span class="strip-tag e-tag">12E</span>
+        <div class="strip-bars-container" id="e-mini-bars"><div class="mini-core-bar e-core-bar" title="E 3: 28% | 44°C" style="height: 28%; background-color: var(--neon-violet);"></div><div class="mini-core-bar e-core-bar" title="E 4: 25% | 44°C" style="height: 25%; background-color: var(--neon-violet);"></div><div class="mini-core-bar e-core-bar" title="E 5: 27% | 44°C" style="height: 27%; background-color: var(--neon-violet);"></div><div class="mini-core-bar e-core-bar" title="E 6: 28% | 44°C" style="height: 28%; background-color: var(--neon-violet);"></div><div class="mini-core-bar e-core-bar" title="E 11: 19% | 40°C" style="height: 19%; background-color: var(--neon-violet);"></div><div class="mini-core-bar e-core-bar" title="E 12: 20% | 40°C" style="height: 20%; background-color: var(--neon-violet);"></div><div class="mini-core-bar e-core-bar" title="E 13: 23% | 40°C" style="height: 23%; background-color: var(--neon-violet);"></div><div class="mini-core-bar e-core-bar" title="E 14: 26% | 40°C" style="height: 26%; background-color: var(--neon-violet);"></div><div class="mini-core-bar e-core-bar" title="E 15: 83% | 44°C" style="height: 83%; background-color: var(--neon-violet);"></div><div class="mini-core-bar e-core-bar" title="E 16: 72% | 44°C" style="height: 72%; background-color: var(--neon-violet);"></div><div class="mini-core-bar e-core-bar" title="E 17: 76% | 44°C" style="height: 76%; background-color: var(--neon-violet);"></div><div class="mini-core-bar e-core-bar" title="E 18: 75% | 44°C" style="height: 75%; background-color: var(--neon-violet);"></div></div>
+      </div>
+      <span class="strip-hint">مصفوفة الأنوية 🔲</span>
+    </div>
+  </div>
+
+  <!-- BACK FACE (Detailed 20-Core Matrix & Platform Thermals) -->
+  <div class="card-face card-back" inert="" aria-hidden="true">
+    <div class="card-header">
+      <div class="card-title-group">
+        <div class="card-icon cpu-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+            <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+            <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+            <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+            <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+          </svg>
+        </div>
+        <div>
+          <h2 class="card-title">مصفوفة الأنوية واللوحة</h2>
+          <span class="card-sub">CORE MATRIX / WINDOWS TOPOLOGY</span>
+        </div>
+      </div>
+      <button class="btn-flip-toggle btn-back" id="btn-flip-back" type="button" title="العودة للواجهة الرئيسية">
+        <span>الرئيسية ↩</span>
+      </button>
+    </div>
+
+    <div class="cores-matrix-content">
+      <!-- Row 1: 8 P-Cores -->
+      <div class="core-group-row">
+        <div class="core-group-header">
+          <span class="core-group-badge p-badge">أنوية الأداء · 8</span>
+          <span class="core-group-avg" id="p-cores-avg">متوسط: 63% | 46°C</span>
+        </div>
+        <div class="p-cores-grid" id="p-cores-grid"><div class="core-cell p-core-cell"><div class="core-cell-top"><span class="core-cell-name">P1</span><span class="core-cell-temp" style="color: var(--neon-cyan);">42°</span></div><div class="core-cell-load">58%</div><div class="core-cell-bar-track"><div class="core-cell-bar-fill" style="width: 58%; background-color: var(--neon-cyan);"></div></div></div><div class="core-cell p-core-cell"><div class="core-cell-top"><span class="core-cell-name">P2</span><span class="core-cell-temp" style="color: var(--neon-cyan);">52°</span></div><div class="core-cell-load">95%</div><div class="core-cell-bar-track"><div class="core-cell-bar-fill" style="width: 95%; background-color: var(--neon-cyan);"></div></div></div><div class="core-cell p-core-cell"><div class="core-cell-top"><span class="core-cell-name">P7</span><span class="core-cell-temp" style="color: var(--neon-cyan);">46°</span></div><div class="core-cell-load">58%</div><div class="core-cell-bar-track"><div class="core-cell-bar-fill" style="width: 58%; background-color: var(--neon-cyan);"></div></div></div><div class="core-cell p-core-cell"><div class="core-cell-top"><span class="core-cell-name">P8</span><span class="core-cell-temp" style="color: var(--neon-cyan);">46°</span></div><div class="core-cell-load">66%</div><div class="core-cell-bar-track"><div class="core-cell-bar-fill" style="width: 66%; background-color: var(--neon-cyan);"></div></div></div><div class="core-cell p-core-cell"><div class="core-cell-top"><span class="core-cell-name">P9</span><span class="core-cell-temp" style="color: var(--neon-cyan);">40°</span></div><div class="core-cell-load">46%</div><div class="core-cell-bar-track"><div class="core-cell-bar-fill" style="width: 46%; background-color: var(--neon-cyan);"></div></div></div><div class="core-cell p-core-cell"><div class="core-cell-top"><span class="core-cell-name">P10</span><span class="core-cell-temp" style="color: var(--neon-cyan);">48°</span></div><div class="core-cell-load">90%</div><div class="core-cell-bar-track"><div class="core-cell-bar-fill" style="width: 90%; background-color: var(--neon-cyan);"></div></div></div><div class="core-cell p-core-cell"><div class="core-cell-top"><span class="core-cell-name">P19</span><span class="core-cell-temp" style="color: var(--neon-cyan);">42°</span></div><div class="core-cell-load">48%</div><div class="core-cell-bar-track"><div class="core-cell-bar-fill" style="width: 48%; background-color: var(--neon-cyan);"></div></div></div><div class="core-cell p-core-cell"><div class="core-cell-top"><span class="core-cell-name">P20</span><span class="core-cell-temp" style="color: var(--neon-cyan);">50°</span></div><div class="core-cell-load">44%</div><div class="core-cell-bar-track"><div class="core-cell-bar-fill" style="width: 44%; background-color: var(--neon-cyan);"></div></div></div></div>
+      </div>
+
+      <!-- Row 2: 12 E-Cores -->
+      <div class="core-group-row">
+        <div class="core-group-header">
+          <span class="core-group-badge e-badge">أنوية الكفاءة · 12</span>
+          <span class="core-group-avg" id="e-cores-avg">متوسط: 42% | 43°C</span>
+        </div>
+        <div class="e-cores-grid" id="e-cores-grid"><div class="core-cell e-core-cell"><div class="core-cell-top"><span class="core-cell-name">E3</span><span class="core-cell-temp" style="color: var(--neon-violet);">44°</span></div><div class="core-cell-load">28%</div><div class="core-cell-bar-track"><div class="core-cell-bar-fill" style="width: 28%; background-color: var(--neon-violet);"></div></div></div><div class="core-cell e-core-cell"><div class="core-cell-top"><span class="core-cell-name">E4</span><span class="core-cell-temp" style="color: var(--neon-violet);">44°</span></div><div class="core-cell-load">25%</div><div class="core-cell-bar-track"><div class="core-cell-bar-fill" style="width: 25%; background-color: var(--neon-violet);"></div></div></div><div class="core-cell e-core-cell"><div class="core-cell-top"><span class="core-cell-name">E5</span><span class="core-cell-temp" style="color: var(--neon-violet);">44°</span></div><div class="core-cell-load">27%</div><div class="core-cell-bar-track"><div class="core-cell-bar-fill" style="width: 27%; background-color: var(--neon-violet);"></div></div></div><div class="core-cell e-core-cell"><div class="core-cell-top"><span class="core-cell-name">E6</span><span class="core-cell-temp" style="color: var(--neon-violet);">44°</span></div><div class="core-cell-load">28%</div><div class="core-cell-bar-track"><div class="core-cell-bar-fill" style="width: 28%; background-color: var(--neon-violet);"></div></div></div><div class="core-cell e-core-cell"><div class="core-cell-top"><span class="core-cell-name">E11</span><span class="core-cell-temp" style="color: var(--neon-violet);">40°</span></div><div class="core-cell-load">19%</div><div class="core-cell-bar-track"><div class="core-cell-bar-fill" style="width: 19%; background-color: var(--neon-violet);"></div></div></div><div class="core-cell e-core-cell"><div class="core-cell-top"><span class="core-cell-name">E12</span><span class="core-cell-temp" style="color: var(--neon-violet);">40°</span></div><div class="core-cell-load">20%</div><div class="core-cell-bar-track"><div class="core-cell-bar-fill" style="width: 20%; background-color: var(--neon-violet);"></div></div></div><div class="core-cell e-core-cell"><div class="core-cell-top"><span class="core-cell-name">E13</span><span class="core-cell-temp" style="color: var(--neon-violet);">40°</span></div><div class="core-cell-load">23%</div><div class="core-cell-bar-track"><div class="core-cell-bar-fill" style="width: 23%; background-color: var(--neon-violet);"></div></div></div><div class="core-cell e-core-cell"><div class="core-cell-top"><span class="core-cell-name">E14</span><span class="core-cell-temp" style="color: var(--neon-violet);">40°</span></div><div class="core-cell-load">26%</div><div class="core-cell-bar-track"><div class="core-cell-bar-fill" style="width: 26%; background-color: var(--neon-violet);"></div></div></div><div class="core-cell e-core-cell"><div class="core-cell-top"><span class="core-cell-name">E15</span><span class="core-cell-temp" style="color: var(--neon-violet);">44°</span></div><div class="core-cell-load">83%</div><div class="core-cell-bar-track"><div class="core-cell-bar-fill" style="width: 83%; background-color: var(--neon-violet);"></div></div></div><div class="core-cell e-core-cell"><div class="core-cell-top"><span class="core-cell-name">E16</span><span class="core-cell-temp" style="color: var(--neon-violet);">44°</span></div><div class="core-cell-load">72%</div><div class="core-cell-bar-track"><div class="core-cell-bar-fill" style="width: 72%; background-color: var(--neon-violet);"></div></div></div><div class="core-cell e-core-cell"><div class="core-cell-top"><span class="core-cell-name">E17</span><span class="core-cell-temp" style="color: var(--neon-violet);">44°</span></div><div class="core-cell-load">76%</div><div class="core-cell-bar-track"><div class="core-cell-bar-fill" style="width: 76%; background-color: var(--neon-violet);"></div></div></div><div class="core-cell e-core-cell"><div class="core-cell-top"><span class="core-cell-name">E18</span><span class="core-cell-temp" style="color: var(--neon-violet);">44°</span></div><div class="core-cell-load">75%</div><div class="core-cell-bar-track"><div class="core-cell-bar-fill" style="width: 75%; background-color: var(--neon-violet);"></div></div></div></div>
+      </div>
+
+      <!-- Row 3: Platform & Thermals -->
+      <div class="core-group-row platform-section">
+        <div class="core-group-header">
+          <span class="core-group-badge plat-badge">الحرارة واللوحة (Platform &amp; Thermals)</span>
+          <span class="core-group-avg" id="platform-summary">أعلى حرارة: 45°C</span>
+        </div>
+        <div class="platform-grid" id="platform-grid">
+          <!-- VRM Temperature -->
+          <div class="platform-cell" title="حرارة منظم الجهد VRM Temperature">
+            <div class="platform-cell-top">
+              <span class="platform-cell-name">🎛️ منظم VRM</span>
+            </div>
+            <div class="platform-cell-val-group" dir="ltr">
+              <span class="platform-cell-val" id="vrm_temp" style="color: var(--text-pure-white);" title="مقاس · AIDA64 shared memory / registry · °C · مباشر · آخر قراءة ٨:٠٠:٠١ م" data-source-status="live">42</span>
+              <span class="platform-cell-unit">°C</span>
+            </div>
+          </div>
+
+          <!-- Motherboard Temperature -->
+          <div class="platform-cell" title="حرارة اللوحة الأم Motherboard Temperature">
+            <div class="platform-cell-top">
+              <span class="platform-cell-name">🖥️ اللوحة الأم</span>
+            </div>
+            <div class="platform-cell-val-group" dir="ltr">
+              <span class="platform-cell-val" id="motherboard_temp" style="color: var(--text-pure-white);" title="مقاس · AIDA64 shared memory / registry · °C · مباشر · آخر قراءة ٨:٠٠:٠١ م" data-source-status="live">29</span>
+              <span class="platform-cell-unit">°C</span>
+            </div>
+          </div>
+
+          <!-- Chipset / PCH Temperature -->
+          <div class="platform-cell" title="حرارة شريحة اللوحة Chipset / PCH Temperature">
+            <div class="platform-cell-top">
+              <span class="platform-cell-name">💎 الشريحة PCH</span>
+            </div>
+            <div class="platform-cell-val-group" dir="ltr">
+              <span class="platform-cell-val" id="pch_temp" style="color: var(--text-pure-white);" title="مقاس · AIDA64 shared memory / registry · °C · مباشر · آخر قراءة ٨:٠٠:٠١ م" data-source-status="live">36</span>
+              <span class="platform-cell-unit">°C</span>
+            </div>
+          </div>
+
+          <!-- NVMe SSD Temperature -->
+          <div class="platform-cell" title="حرارة التخزين السريع NVMe SSD Temperature">
+            <div class="platform-cell-top">
+              <span class="platform-cell-name">💾 التخزين NVMe</span>
+            </div>
+            <div class="platform-cell-val-group" dir="ltr">
+              <span class="platform-cell-val" id="nvme_temp" style="color: var(--text-pure-white);" title="مقاس · AIDA64 shared memory / registry · °C · مباشر · آخر قراءة ٨:٠٠:٠١ م · Samsung SSD 990 EVO Plus 4TB" data-source-status="live">45</span>
+              <span class="platform-cell-unit">°C</span>
+            </div>
+          </div>
+
+          <!-- Core Voltage -->
+          <div class="platform-cell" title="فولتية أنوية المعالج Core Voltage">
+            <div class="platform-cell-top">
+              <span class="platform-cell-name">⚡ الفولتية VCORE</span>
+            </div>
+            <div class="platform-cell-val-group" dir="ltr">
+              <span class="platform-cell-val" id="cpu_voltage" title="مقاس · AIDA64 shared memory / registry ·  · مباشر · آخر قراءة ٨:٠٠:٠١ م" data-source-status="live">1.356</span>
+              <span class="platform-cell-unit unit-amber">V</span>
+            </div>
+          </div>
+
+          <!-- CPU Fan -->
+          <div class="platform-cell" title="سرعة مروحة المعالج CPU Fan RPM">
+            <div class="platform-cell-top">
+              <span class="platform-cell-name">🌀 مروحة CPU</span>
+            </div>
+            <div class="platform-cell-val-group" dir="ltr">
+              <span class="platform-cell-val" id="cpu_fan_rpm" title="مقاس · AIDA64 shared memory / registry · RPM · مباشر · آخر قراءة ٨:٠٠:٠١ م" data-source-status="live">2279</span>
+              <span class="platform-cell-unit">RPM</span>
+            </div>
+          </div>
+
+          <!-- CPU Package Hotspot -->
+          <div class="platform-cell" title="حرارة البقعة القصوى للمعالج CPU Hotspot">
+            <div class="platform-cell-top">
+              <span class="platform-cell-name">🔥 حرارة الحزمة Package</span>
+            </div>
+            <div class="platform-cell-val-group" dir="ltr">
+              <span class="platform-cell-val" id="back_cpu_hotspot_temp" style="color: var(--text-pure-white);">50</span>
+              <span class="platform-cell-unit unit-orange">°C</span>
+            </div>
+          </div>
+
+          <!-- Total System Power -->
+          <div class="platform-cell" title="مجموع طاقة CPU + GPU فقط · محسوب">
+            <div class="platform-cell-top">
+              <span class="platform-cell-name">⚡ CPU + GPU · محسوب</span>
+            </div>
+            <div class="platform-cell-val-group" dir="ltr">
+              <span class="platform-cell-val" id="cpu_gpu_power" title="محسوب · AIDA64 shared memory / registry · W · مباشر · آخر قراءة ٨:٠٠:٠١ م" data-source-status="live">143</span>
+              <span class="platform-cell-unit unit-amber">W</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cores-footer-strip">
+      <span data-inventory="cpu">Intel(R) Core(TM) Ultra 7 265KF</span>
+    </div>
+  </div>
+</div>
+
+
+=== HEADER ===
+
+<style>
+  :host {
+    position: relative;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 14px;
+    background: var(--glass-bg, rgba(255, 255, 255, 0.02));
+    backdrop-filter: var(--glass-blur, blur(16px));
+    -webkit-backdrop-filter: var(--glass-blur, blur(16px));
+    border: var(--glass-border, 1px solid rgba(255, 255, 255, 0.06));
+    border-radius: 14px;
+    box-shadow: var(--glass-shadow, inset 0 1px 0 rgba(255, 255, 255, 0.1));
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    flex-shrink: 0;
+    gap: 16px;
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .header-right-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  /* Prominent Enlarged Date Badge */
+  .date-group-badge {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(34, 211, 238, 0.25);
+    border-radius: 16px;
+    font-family: var(--font-numbers, 'Rajdhani', sans-serif);
+    font-size: 20px;
+    color: var(--text-pure-white, #FFFFFF);
+    letter-spacing: 0.5px;
+    box-shadow: 0 0 15px rgba(34, 211, 238, 0.1);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .date-icon {
+    font-size: 19px;
+  }
+
+  .date-sep {
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 15px;
+  }
+
+  .date-hijri {
+    color: var(--neon-cyan, #22D3EE);
+    font-size: 20px;
+    font-weight: 800;
+    text-shadow: 0 0 10px rgba(34, 211, 238, 0.4);
+  }
+
+  .date-greg {
+    color: var(--text-pure-white, #FFFFFF);
+    font-size: 18px;
+    font-weight: 700;
+    opacity: 0.95;
+  }
+
+  /* Weekdays Strip (7 Days of the Week) */
+  .weekdays-strip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px 6px;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+    overflow: visible;
+  }
+
+  .weekday-pill {
+    position: relative;
+    font-family: var(--font-arabic, 'Cairo', sans-serif);
+    font-size: 11.5px;
+    font-weight: 600;
+    color: rgba(248, 250, 255, 0.36);
+    padding: 3px 6px;
+    border-radius: 8px;
+    border: 1.5px solid transparent;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    white-space: nowrap;
+    user-select: none;
+    line-height: 1.2;
+  }
+
+  /* Active Day: Magnifying Lens Aesthetic (عدسة مكبرة متوهجة) */
+  .weekday-pill.active-day {
+    position: relative;
+    z-index: 5;
+    font-size: 16.5px;
+    font-weight: 800;
+    color: #FFFFFF;
+    padding: 5px 14px;
+    margin: 0 5px;
+    border-radius: 13px;
+    background: radial-gradient(ellipse at 50% 20%, rgba(255, 255, 255, 0.32) 0%, rgba(34, 211, 238, 0.3) 40%, rgba(124, 92, 255, 0.22) 100%);
+    border: 2px solid var(--neon-cyan, #22D3EE);
+    box-shadow: 
+      0 0 18px rgba(34, 211, 238, 0.55),
+      0 4px 12px rgba(0, 0, 0, 0.4),
+      inset 0 2px 4px rgba(255, 255, 255, 0.6),
+      inset 0 -1px 3px rgba(0, 0, 0, 0.4);
+    text-shadow: 
+      0 0 10px rgba(34, 211, 238, 0.8),
+      0 2px 4px rgba(0, 0, 0, 0.6);
+    transform: scale(1.15) translateY(-1px);
+    letter-spacing: 0.5px;
+  }
+
+  /* 12-Hour System Clock (Guaranteed Non-Wrapping Single Line & Absolute Dead-Center Anchor) */
+  .clock-display {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-numbers, 'Rajdhani', sans-serif);
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    color: var(--text-pure-white, #FFFFFF);
+    text-shadow: 0 0 16px rgba(248, 250, 255, 0.3);
+    direction: ltr;
+    white-space: nowrap !important;
+    display: inline-flex;
+    align-items: baseline;
+    justify-content: center;
+    width: 240px;
+    min-width: 240px;
+    max-width: 240px;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .clock-ampm {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--neon-cyan, #22D3EE);
+    margin-left: 6px;
+    vertical-align: baseline;
+  }
+
+  /* Header Telemetry Group */
+  .header-telemetry-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  /* Header Actions & Status Badge */
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 14px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 30px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    font-size: 13px;
+    font-family: var(--font-arabic, 'Cairo', sans-serif);
+    font-weight: 600;
+    direction: ltr;
+    transition: all 0.3s ease;
+  }
+
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--neon-yellow, #FACC15);
+    box-shadow: 0 0 8px var(--neon-yellow, #FACC15);
+    transition: all 0.3s ease;
+  }
+
+  .status-badge.live .status-dot {
+    background-color: var(--neon-green, #10B981);
+    box-shadow: 0 0 10px var(--neon-green, #10B981), 0 0 20px var(--neon-green, #10B981);
+    animation: pulse-glow 2s infinite ease-in-out;
+  }
+
+  .status-badge.polling .status-dot {
+    background-color: var(--neon-cyan, #22D3EE);
+    box-shadow: 0 0 8px var(--neon-cyan, #22D3EE);
+  }
+
+  .status-badge.reconnecting .status-dot {
+    background-color: var(--neon-orange, #FB923C);
+    box-shadow: 0 0 8px var(--neon-orange, #FB923C);
+    animation: blink-fast 1s infinite;
+  }
+
+  .status-badge.offline .status-dot {
+    background-color: var(--neon-red, #EF4444);
+    box-shadow: 0 0 8px var(--neon-red, #EF4444);
+  }
+
+  .status-ping {
+    font-family: var(--font-numbers, 'Rajdhani', sans-serif);
+    font-size: 11px;
+    color: var(--neon-cyan, #22D3EE);
+    direction: ltr;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.75; }
+  }
+
+  @keyframes blink-fast {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+
+  /* Theme Dropdown Container */
+  .theme-dropdown-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Theme Switcher Button (Trigger) */
+  .theme-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    color: var(--text-pure-white, #FFFFFF);
+    cursor: pointer;
+    font-family: var(--font-arabic, 'Cairo', sans-serif);
+    font-size: 13px;
+    font-weight: 700;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    outline: none;
+  }
+
+  .theme-toggle-btn:hover,
+  .theme-dropdown-container.open .theme-toggle-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--neon-cyan, #22D3EE);
+    color: var(--neon-cyan, #22D3EE);
+    transform: translateY(-1px);
+    box-shadow: 0 0 14px rgba(34, 211, 238, 0.25);
+  }
+
+  .theme-indicator-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--theme-accent, #22D3EE);
+    box-shadow: 0 0 8px var(--theme-accent, #22D3EE);
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    flex-shrink: 0;
+  }
+
+  .theme-label-text {
+    white-space: nowrap;
+    line-height: 1;
+  }
+
+  .theme-chevron-icon {
+    font-size: 11px;
+    line-height: 1;
+    margin-left: 2px;
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    opacity: 0.75;
+    display: inline-block;
+  }
+
+  .theme-dropdown-container.open .theme-chevron-icon {
+    transform: rotate(180deg);
+    opacity: 1;
+  }
+
+  /* Dropdown Menu Panel */
+  .theme-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: auto;
+    z-index: 1000;
+    min-width: 240px;
+    max-height: min(620px, calc(100dvh - 120px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: var(--dropdown-bg, rgba(15, 23, 42, 0.96));
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.14));
+    border-radius: 14px;
+    padding: 6px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    display: none;
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+    transform-origin: top left;
+    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+    box-sizing: border-box;
+  }
+
+  .theme-dropdown-menu.open {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+    animation: dropdown-pop-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes dropdown-pop-in {
+    0% {
+      opacity: 0;
+      transform: translateY(-8px) scale(0.96);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  /* Theme Menu Item */
+  .theme-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-pure-white, #FFFFFF);
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    text-align: left;
+    font-family: var(--font-arabic, 'Cairo', sans-serif);
+    width: 100%;
+    box-sizing: border-box;
+    outline: none;
+  }
+
+  .theme-menu-item:hover,
+  .theme-menu-item:focus-visible {
+    background: var(--dropdown-hover, rgba(255, 255, 255, 0.08));
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateX(-2px);
+  }
+
+  .theme-menu-item.active {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: var(--theme-accent, #22D3EE);
+    box-shadow: inset 0 0 10px rgba(34, 211, 238, 0.12);
+  }
+
+  .theme-item-icon {
+    font-size: 16px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    flex-shrink: 0;
+  }
+
+  .theme-item-labels {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    gap: 1px;
+  }
+
+  .theme-item-name-en {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-pure-white, #FFFFFF);
+    line-height: 1.2;
+    letter-spacing: 0.2px;
+  }
+
+  .theme-item-name-ar {
+    font-size: 10.5px;
+    color: var(--text-muted, rgba(255, 255, 255, 0.55));
+    line-height: 1.2;
+    direction: rtl;
+    text-align: right;
+  }
+
+  .theme-item-color-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .theme-item-check {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--neon-cyan, #22D3EE);
+    opacity: 0;
+    transform: scale(0.6);
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    width: 14px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .theme-menu-item.active .theme-item-check {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .kiosk-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    color: var(--text-pure-white, #FFFFFF);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .kiosk-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--neon-cyan, #22D3EE);
+    color: var(--neon-cyan, #22D3EE);
+    transform: translateY(-1px);
+  }
+
+  /* Live Auto-Update Badge Pill */
+  .update-badge {
+    display: none;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 12px;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.16) 0%, rgba(234, 88, 12, 0.22) 100%);
+    border: 1.5px solid rgba(251, 191, 36, 0.65);
+    border-radius: 20px;
+    color: #FDE68A;
+    font-family: var(--font-arabic, 'Cairo', sans-serif);
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: update-pulse-glow 2.5s infinite ease-in-out;
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  .update-badge:hover {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.32) 0%, rgba(234, 88, 12, 0.38) 100%);
+    border-color: #FCD34D;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    transform: translateY(-1px) scale(1.03);
+    color: #FFFFFF;
+  }
+
+  .update-badge-icon {
+    font-size: 14px;
+    filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.8));
+    animation: bolt-flicker 1.8s infinite alternate;
+  }
+
+  @keyframes update-pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+    50% {
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.65), 0 0 35px rgba(245, 158, 11, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    }
+  }
+
+  @keyframes bolt-flicker {
+    0% { opacity: 0.85; transform: scale(0.95); }
+    100% { opacity: 1; transform: scale(1.15); }
+  }
+
+  /* Status is semantic and readable in every theme, including light ceramic. */
+  .status-badge { background: var(--status-surface); color: var(--status-warning); border-color: currentColor; }
+  .status-badge.live, .status-badge.polling { color: var(--status-normal); }
+  .status-badge.offline { color: var(--status-critical); }
+  .status-badge:is(.live, .polling, .reconnecting, .offline) .status-dot { background-color: currentColor; box-shadow: 0 0 8px currentColor; }
+  .status-ping { color: inherit; }
+
+  /* The approved native mastheads keep their own clock, identity and status.
+     This mode supplies the same production theme picker without a second header. */
+  :host([mode="theme-picker"]) { display: block; width: auto; flex: none; }
+  :host([mode="theme-picker"]) :is(.header-right-group, .clock-display, .status-badge, .update-badge, .kiosk-toggle-btn) { display: none; }
+  :host([mode="theme-picker"]) .header-telemetry-group,
+  :host([mode="theme-picker"]) .header-actions { margin: 0; padding: 0; gap: 0; width: auto; }
+  :host([mode="theme-picker"]) .theme-toggle-btn { font-size: 11px; color: var(--text-pure-white); border: 1px solid var(--station-line); background: transparent; border-radius: 5px; }
+  :host([mode="theme-picker"]) .theme-dropdown-menu { min-width: 285px; border: 1px solid var(--station-line); }
+  .theme-menu-item:focus-visible { outline: 2px solid var(--theme-accent); outline-offset: -2px; }
+</style>
+
+<!-- 1. Right: Prominent Enlarged Date Badge & Display Info -->
+<div class="header-right-group">
+  <!-- Prominent Enlarged Date Badge -->
+  <div class="date-group-badge">
+    <span class="date-icon">📅</span>
+    <span class="date-item date-hijri" id="date_hijri">1448/05/26</span>
+    <span class="date-sep">•</span>
+    <span class="date-item date-greg" id="date_gregorian">2026/11/06</span>
+  </div>
+
+  <!-- Weekdays Strip (7 Days of the Week) -->
+  <div class="weekdays-strip" id="weekdays-strip" aria-label="أيام الأسبوع">
+    <span class="weekday-pill" data-day="6">السبت</span>
+    <span class="weekday-pill" data-day="0">الأحد</span>
+    <span class="weekday-pill" data-day="1">الأثنين</span>
+    <span class="weekday-pill" data-day="2">الثلاثاء</span>
+    <span class="weekday-pill" data-day="3">الأربعاء</span>
+    <span class="weekday-pill" data-day="4">الخميس</span>
+    <span class="weekday-pill active-day" data-day="5">الجمعة</span>
+  </div>
+</div>
+
+<!-- 2. Center: 12-Hour Clock Display (Standalone, Unwrapped, Dead Center) -->
+<div class="clock-display" id="system-clock"><span id="clock-time">08:00:01</span>&nbsp;<span class="clock-ampm" id="clock-ampm">PM</span></div>
+
+<!-- 3. Left: Connection Status & Fullscreen -->
+<div class="header-telemetry-group">
+  <div class="header-actions">
+    <!-- Live Connection Status Badge -->
+    <div class="status-badge live" id="status-badge" dir="ltr">
+      <span class="status-dot" id="status-dot"></span>
+      <span class="status-text" id="status-text">مباشر (WebSocket)</span>
+      <span class="status-ping" id="status-ping">1 ms</span>
+    </div>
+
+    <!-- Live Auto-Update Badge Pill -->
+    <button class="update-badge" id="btn-update-badge" title="تحديث جديد متوفر" aria-label="تحديث جديد متوفر">
+      <span class="update-badge-icon">⚡</span>
+      <span class="update-badge-text" id="update-badge-text">تحديث متوفر</span>
+    </button>
+
+    <!-- Theme Dropdown Container -->
+    <div class="theme-dropdown-container" id="theme-dropdown-container">
+      <button class="theme-toggle-btn" id="btn-theme-toggle" title="اختيار النمط المظهري" aria-label="اختيار النمط المظهري" aria-haspopup="true" aria-expanded="false">
+        <span class="theme-indicator-dot" id="theme-dot" style="background-color: rgb(34, 211, 238); box-shadow: rgb(34, 211, 238) 0px 0px 8px;"></span>
+        <span class="theme-label-text" id="theme-text">🌊 Cyan Glass</span>
+        <span class="theme-chevron-icon">▾</span>
+      </button>
+
+      <!-- Dropdown Menu Panel -->
+      <div class="theme-dropdown-menu" id="theme-dropdown-menu" role="menu" aria-label="قائمة الأنماط المظهرية">
+        <div class="theme-menu-item active" data-theme-id="default" role="menuitem" tabindex="0" aria-selected="true">
+          <span class="theme-item-icon">🌊</span>
+          <div class="theme-item-labels">
+            <span class="theme-item-name-en">Cyan Glass</span>
+            <span class="theme-item-name-ar">زجاج سيان</span>
+          </div>
+          <span class="theme-item-color-dot" style="background-color: #22D3EE; box-shadow: 0 0 6px #22D3EE;"></span>
+          <span class="theme-item-check">✓</span>
+        </div>
+        <div class="theme-menu-item" data-theme-id="oled" role="menuitem" tabindex="0" aria-selected="false">
+          <span class="theme-item-icon">🖤</span>
+          <div class="theme-item-labels">
+            <span class="theme-item-name-en">OLED Black</span>
+            <span class="theme-item-name-ar">أوليد أسود</span>
+          </div>
+          <span class="theme-item-color-dot" style="background-color: #38BDF8; box-shadow: 0 0 6px #38BDF8;"></span>
+          <span class="theme-item-check">✓</span>
+        </div>
+        <div class="theme-menu-item" data-theme-id="cyberpunk" role="menuitem" tabindex="0" aria-selected="false">
+          <span class="theme-item-icon">⚡</span>
+          <div class="theme-item-labels">
+            <span class="theme-item-name-en">Cyberpunk</span>
+            <span class="theme-item-name-ar">سايبر بانك</span>
+          </div>
+          <span class="theme-item-color-dot" style="background-color: #FFE600; box-shadow: 0 0 6px #FFE600;"></span>
+          <span class="theme-item-check">✓</span>
+        </div>
+        <div class="theme-menu-item" data-theme-id="emerald" role="menuitem" tabindex="0" aria-selected="false">
+          <span class="theme-item-icon">🍃</span>
+          <div class="theme-item-labels">
+            <span class="theme-item-name-en">Emerald</span>
+            <span class="theme-item-name-ar">زمردي أخضر</span>
+          </div>
+          <span class="theme-item-color-dot" style="background-color: #00FF66; box-shadow: 0 0 6px #00FF66;"></span>
+          <span class="theme-item-check">✓</span>
+        </div>
+        <div class="theme-menu-item" data-theme-id="aurora" role="menuitem" tabindex="0" aria-selected="false">
+          <span class="theme-item-icon">🌌</span>
+          <div class="theme-item-labels">
+            <span class="theme-item-name-en">Aurora</span>
+            <span class="theme-item-name-ar">أورورا الشفق</span>
+          </div>
+          <span class="theme-item-color-dot" style="background-color: #00FFC2; box-shadow: 0 0 6px #00FFC2;"></span>
+          <span class="theme-item-check">✓</span>
+        </div>
+        <div class="theme-menu-item" data-theme-id="f1-pitwall" role="menuitem" tabindex="0" aria-selected="false">
+          <span class="theme-item-icon">🏎️</span>
+          <div class="theme-item-labels">
+            <span class="theme-item-name-en">F1 Pitwall</span>
+            <span class="theme-item-name-ar">فورمولا 1</span>
+          </div>
+          <span class="theme-item-color-dot" style="background-color: #FF3344; box-shadow: 0 0 6px #FF3344;"></span>
+          <span class="theme-item-check">✓</span>
+        </div>
+        <div class="theme-menu-item" data-theme-id="neo-tactile" role="menuitem" tabindex="0" aria-selected="false">
+          <span class="theme-item-icon">🏺</span>
+          <div class="theme-item-labels">
+            <span class="theme-item-name-en">Neo-Tactile</span>
+            <span class="theme-item-name-ar">سيراميك تكتيكي</span>
+          </div>
+          <span class="theme-item-color-dot" style="background-color: #C8754E; box-shadow: 0 0 6px #C8754E;"></span>
+          <span class="theme-item-check">✓</span>
+        </div>
+        <div class="theme-menu-item" data-theme-id="orbit" role="menuitem" tabindex="0" aria-selected="false">
+          <span class="theme-item-icon">◉</span>
+          <div class="theme-item-labels"><span class="theme-item-name-en">ORBIT / COMMAND</span><span class="theme-item-name-ar">قمرة القيادة</span></div>
+          <span class="theme-item-color-dot" style="background-color: #88F0D5;"></span><span class="theme-item-check">✓</span>
+        </div>
+        <div class="theme-menu-item" data-theme-id="vector" role="menuitem" tabindex="0" aria-selected="false">
+          <span class="theme-item-icon">⌁</span>
+          <div class="theme-item-labels"><span class="theme-item-name-en">VECTOR / OBSERVATORY</span><span class="theme-item-name-ar">مرصد الأداء</span></div>
+          <span class="theme-item-color-dot" style="background-color: #94D9F3;"></span><span class="theme-item-check">✓</span>
+        </div>
+        <div class="theme-menu-item" data-theme-id="folio" role="menuitem" tabindex="0" aria-selected="false">
+          <span class="theme-item-icon">▤</span>
+          <div class="theme-item-labels"><span class="theme-item-name-en">FOLIO / STUDIO</span><span class="theme-item-name-ar">دفتر العتاد</span></div>
+          <span class="theme-item-color-dot" style="background-color: #256B5B;"></span><span class="theme-item-check">✓</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fullscreen Button -->
+    <button class="kiosk-toggle-btn" id="btn-fullscreen" title="ملء الشاشة Kiosk Mode" aria-label="ملء الشاشة">
+      <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+      </svg>
+    </button>
+  </div>
+</div>

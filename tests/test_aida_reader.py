@@ -52,34 +52,15 @@ def test_live_aida_read():
     data = aida_reader.get_sensor_data()
     assert data is not None, "get_sensor_data() returned None"
     
-    # Verify values for key components are populated if AIDA64 is running
-    print("\n--- Live Data Verification ---")
-    data_dict = data.model_dump()
-    for k, v in data_dict.items():
-        print(f"{k}: {v}")
-        if v is not None:
-            string_fields = (
-                "display_res", "date_gregorian", "date_hijri",
-                "riyadh_weather_desc", "riyadh_weather_icon",
-                "prayer_fajr", "prayer_sunrise", "prayer_dhuhr",
-                "prayer_asr", "prayer_maghrib", "prayer_isha",
-                "next_prayer_name", "next_prayer_time",
-                "prev_prayer_name", "prev_prayer_time",
-                "next_appointment_title", "next_appointment_time",
-                "next_appointment_category", "next_appointment_category_label",
-                "next_appointment_location",
-            )
-            if k in string_fields:
-                assert isinstance(v, str), f"Field {k} must be string, got {type(v)}"
-            elif k in ("today_appointments", "cpu_cores"):
-                assert isinstance(v, list), f"Field {k} must be list, got {type(v)}"
-                if k == "cpu_cores":
-                    assert len(v) == 20, f"Expected 20 CPU cores, got {len(v)}"
-                    assert v[0]["type"] == "P" and v[8]["type"] == "E"
-            elif k == "next_appointment_ongoing":
-                assert isinstance(v, bool), f"Field {k} must be bool, got {type(v)}"
-            else:
-                assert isinstance(v, (int, float)), f"Field {k} must be numeric or None, got {type(v)}"
+    # Validate the public schema rather than assuming one machine's topology.
+    from models import SensorData
+    SensorData.model_validate(data.model_dump())
+    for core in data.cpu_cores or []:
+        assert isinstance(core["id"], int)
+        assert core.get("type") in ("P", "E", None)
+        for name in ("load", "temp"):
+            value = core.get(name)
+            assert value is None or isinstance(value, (int, float))
 
 
 if __name__ == "__main__":

@@ -1,0 +1,50 @@
+{
+  "titanium": {
+    "theme": "titanium",
+    "frames": 2225,
+    "meanMs": 4.496044943820224,
+    "p95Ms": 8.300000000000182,
+    "maxMs": 20.899999999999636,
+    "longTasks": []
+  },
+  "lumen": {
+    "theme": "lumen",
+    "frames": 2104,
+    "meanMs": 4.754562737642586,
+    "p95Ms": 8.399999999999636,
+    "maxMs": 16.80000000000109,
+    "longTasks": []
+  },
+  "pearl": {
+    "theme": "pearl",
+    "frames": 2225,
+    "meanMs": 4.496044943820224,
+    "p95Ms": 8.300000000000182,
+    "maxMs": 16.699999999999818,
+    "longTasks": []
+  },
+  "console": [],
+  "titaniumInitial": {
+    "theme": "titanium",
+    "frames": 2249,
+    "meanMs": 4.449888839484216,
+    "p95Ms": 8.299999999999272,
+    "maxMs": 16.699999999999818,
+    "longTasks": [
+      76
+    ],
+    "longTaskWindow": "Includes initial 2 second warm-up"
+  },
+  "pearlInitial": {
+    "theme": "pearl",
+    "frames": 2187,
+    "meanMs": 4.576085962505716,
+    "p95Ms": 8.300000000000182,
+    "maxMs": 25.100000000000364,
+    "longTasks": [
+      69
+    ],
+    "context": "Live preview; display and network flip interactions exercised during sample.",
+    "longTaskWindow": "Includes initial 2 second warm-up"
+  }
+}

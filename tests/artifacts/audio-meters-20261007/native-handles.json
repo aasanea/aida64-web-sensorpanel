@@ -1,0 +1,8 @@
+{
+  "read_calls": 8000,
+  "endpoint_count": 4,
+  "open_close_cycles": 20,
+  "handles_before": 231,
+  "handles_after": 231,
+  "handle_delta": 0
+}

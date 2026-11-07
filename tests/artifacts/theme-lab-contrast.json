@@ -1,0 +1,27 @@
+{
+  "lumen": {
+    "text": 14.84,
+    "muted": 8.74,
+    "accent": 11.66
+  },
+  "titanium": {
+    "text": 13.33,
+    "muted": 8.06,
+    "accent": 9.13
+  },
+  "pearl": {
+    "text": 12.83,
+    "muted": 5.91,
+    "accent": 5.96
+  },
+  "semantic_dark": {
+    "normal": 12.26,
+    "warning": 14.27,
+    "critical": 9.36
+  },
+  "semantic_light": {
+    "normal": 7.16,
+    "warning": 7.41,
+    "critical": 7.88
+  }
+}

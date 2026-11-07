@@ -1,6 +1,7 @@
 """REST API Endpoints."""
 
 import time
+from services.telemetry_contract import source_meta, field_meta
 from fastapi import APIRouter
 from models import HealthResponse, SensorData, AppointmentCreateRequest
 from core.config import settings
@@ -11,10 +12,17 @@ from services.sonar_service import SonarService
 from services.matches_service import MatchesService
 from services.updater_service import UpdaterService
 from services.network_service import NetworkService
+from services.audio_meter_service import AudioMeterService
+from services.broadcast_service import BroadcastService
 from api.websocket import manager
 from utils.time_utils import get_current_dates
 
 router = APIRouter()
+
+
+@router.get('/api/audio-levels')
+async def audio_levels():
+    return AudioMeterService.get_instance().get_snapshot()
 
 def build_aggregated_sensor_data(fallback_registry: bool) -> SensorData:
     """Builds the aggregated SensorData payload."""
@@ -29,7 +37,26 @@ def build_aggregated_sensor_data(fallback_registry: bool) -> SensorData:
     hw_dump["date_gregorian"] = greg
     hw_dump["date_hijri"] = hijri
     hw_dump.update(sonar)
+    hw_dump["audio_broadcast"] = BroadcastService.get_instance().get_snapshot()
     hw_dump.update(network_snap)
+    sources = hw_dump.setdefault("telemetry_sources", {})
+    sources.update(sonar=sonar.get("sonar_source"), network=network_snap.get("network_source"), weather=weather.get("weather_source"), prayer=weather.get("prayer_source"), appointments=source_meta("Local appointment schedule / Riyadh", time.time(), 5))
+    fields = hw_dump.setdefault("telemetry_fields", {})
+    for key in sonar:
+        if key.endswith("_source"):
+            continue
+        fields[key] = field_meta("sonar", "%" if key.endswith("volume") else "")
+    for key in network_snap:
+        if key.endswith("_source"):
+            continue
+        fields[key] = field_meta("network", "Mbps" if key.endswith("mbps") else "GiB" if key.endswith("gb") else "ms" if key.endswith("ms") else "")
+    for key in weather:
+        if key.endswith("_source"):
+            continue
+        fields[key] = field_meta("weather" if key.startswith("riyadh") else "prayer", "°C" if key.endswith("temp") else "", "derived" if key.endswith("seconds") else "measured")
+    for key in appointments:
+        fields[key] = field_meta("appointments", "", "derived" if key.endswith(("seconds", "remaining", "count")) else "configured")
+
     
     return SensorData(
         **hw_dump,
@@ -68,6 +95,7 @@ async def create_appointment(req: AppointmentCreateRequest):
     new_apt = service.add_appointment(
         title=req.title,
         time_str=req.time,
+        date_str=req.date,
         category=req.category,
         category_label=req.category_label,
         location=req.location or "",

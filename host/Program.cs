@@ -171,6 +171,145 @@ namespace AIDA64Panel
         }
     }
 
+    public static class JobManager
+    {
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr CreateJobObject(IntPtr lpJobAttributes, string? lpName);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool SetInformationJobObject(
+            IntPtr hJob,
+            JobObjectInfoClass JobObjectInformationClass,
+            IntPtr lpJobObjectInformation,
+            uint cbJobObjectInformationLength);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool AssignProcessToJobObject(IntPtr hJob, IntPtr hProcess);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool CloseHandle(IntPtr hObject);
+
+        private enum JobObjectInfoClass
+        {
+            BasicLimitInformation = 2,
+            ExtendedLimitInformation = 9
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct IO_COUNTERS
+        {
+            public ulong ReadOperationCount;
+            public ulong WriteOperationCount;
+            public ulong OtherOperationCount;
+            public ulong ReadTransferCount;
+            public ulong WriteTransferCount;
+            public ulong OtherTransferCount;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct JOBOBJECT_BASIC_LIMIT_INFORMATION
+        {
+            public long PerProcessUserTimeLimit;
+            public long PerJobUserTimeLimit;
+            public uint LimitFlags;
+            public UIntPtr MinimumWorkingSetSize;
+            public UIntPtr MaximumWorkingSetSize;
+            public uint ActiveProcessLimit;
+            public UIntPtr Affinity;
+            public uint PriorityClass;
+            public uint SchedulingClass;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct JOBOBJECT_EXTENDED_LIMIT_INFORMATION
+        {
+            public JOBOBJECT_BASIC_LIMIT_INFORMATION BasicLimitInformation;
+            public IO_COUNTERS IoInfo;
+            public UIntPtr ProcessMemoryLimit;
+            public UIntPtr JobMemoryLimit;
+            public UIntPtr PeakProcessMemoryLimit;
+            public UIntPtr PeakJobMemoryLimit;
+        }
+
+        private const uint JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x2000;
+
+        private static readonly IntPtr s_jobHandle = IntPtr.Zero;
+
+        static JobManager()
+        {
+            try
+            {
+                s_jobHandle = CreateJobObject(IntPtr.Zero, null);
+                if (s_jobHandle == IntPtr.Zero)
+                {
+                    Program.Log($"JobManager: Failed to create job object, Win32 Error: {Marshal.GetLastWin32Error()}");
+                    return;
+                }
+
+                var info = new JOBOBJECT_EXTENDED_LIMIT_INFORMATION();
+                info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+
+                int length = Marshal.SizeOf(typeof(JOBOBJECT_EXTENDED_LIMIT_INFORMATION));
+                IntPtr extendedInfoPtr = Marshal.AllocHGlobal(length);
+                try
+                {
+                    Marshal.StructureToPtr(info, extendedInfoPtr, false);
+                    if (!SetInformationJobObject(s_jobHandle, JobObjectInfoClass.ExtendedLimitInformation, extendedInfoPtr, (uint)length))
+                    {
+                        Program.Log($"JobManager: Failed to set JobObject limit info, Win32 Error: {Marshal.GetLastWin32Error()}");
+                    }
+                    else
+                    {
+                        Program.Log("JobManager: Job Object created and configured with JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE.");
+                    }
+                }
+                finally
+                {
+                    Marshal.FreeHGlobal(extendedInfoPtr);
+                }
+            }
+            catch (Exception ex)
+            {
+                Program.Log($"JobManager initialization exception: {ex.Message}");
+            }
+        }
+
+        public static bool Attach(Process process)
+        {
+            if (s_jobHandle == IntPtr.Zero)
+            {
+                Program.Log("JobManager.Attach failed: Job handle is invalid.");
+                return false;
+            }
+
+            try
+            {
+                if (process.HasExited)
+                {
+                    Program.Log("JobManager.Attach: Process already exited.");
+                    return false;
+                }
+
+                bool success = AssignProcessToJobObject(s_jobHandle, process.Handle);
+                if (!success)
+                {
+                    int err = Marshal.GetLastWin32Error();
+                    Program.Log($"JobManager: AssignProcessToJobObject failed for PID {process.Id}, Win32 Error: {err}");
+                }
+                else
+                {
+                    Program.Log($"JobManager: Successfully attached process PID {process.Id} to Job Object.");
+                }
+                return success;
+            }
+            catch (Exception ex)
+            {
+                Program.Log($"JobManager.Attach exception for PID {process.Id}: {ex.Message}");
+                return false;
+            }
+        }
+    }
+
     public class DashboardHostForm : Form
     {
         private WebView2 _webView = null!;
@@ -180,8 +319,18 @@ namespace AIDA64Panel
         private ToolStripMenuItem? _autoStartItem;
         private int _currentScreenIndex = 0;
         private bool _startOnPrimary = false;
-        private const string DashboardUrl = "http://localhost:8088";
+        private const string DashboardUrl = "http://127.0.0.1:8088";
+        private const string HealthUrl = "http://127.0.0.1:8088/health";
         private const string AutoStartKeyName = "AIDA64WebSensorPanel";
+
+        private static readonly HttpClient _httpClient = new HttpClient
+        {
+            Timeout = TimeSpan.FromSeconds(2)
+        };
+        private static bool _isRecovering = false;
+        private static readonly object _recoveryLock = new object();
+        private static Process? _backendProcess = null;
+        private System.Windows.Forms.Timer? _watchdogTimer;
 
         private EventWaitHandle? _showSignalEvent;
         private RegisteredWaitHandle? _registeredShowWait;
@@ -527,37 +676,73 @@ namespace AIDA64Panel
 
         private void SetupIpcSignal()
         {
-            RegisterIpcEvent(ref _showSignalEvent, ref _registeredShowWait, Program.ShowSignalEventName, () =>
+            RegisterIpcEvent(ref _showSignalEvent, ref _registeredShowWait, Program.ShowSignalEventName, async () =>
             {
-                Program.Log("Received IPC wake/show signal.");
-                this.Visible = true;
-                this.WindowState = FormWindowState.Normal;
-                IntPtr insertAfter = this.TopMost ? HWND_TOPMOST : HWND_NOTOPMOST;
-                SetWindowPos(this.Handle, insertAfter, this.Bounds.X, this.Bounds.Y, this.Bounds.Width, this.Bounds.Height, SWP_SHOWWINDOW);
-                this.BringToFront();
-                this.Activate();
-                try { _webView?.CoreWebView2?.Reload(); } catch { }
-                _trayIcon?.ShowBalloonTip(3000, "لوحة AIDA64 SensorPanel", $"تم تنشيط اللوحة وإظهارها ⚡ ({this.Bounds.Width}x{this.Bounds.Height})", ToolTipIcon.Info);
+                try
+                {
+                    Program.Log("Received IPC wake/show signal.");
+                    this.Visible = true;
+                    this.WindowState = FormWindowState.Normal;
+                    IntPtr insertAfter = this.TopMost ? HWND_TOPMOST : HWND_NOTOPMOST;
+                    SetWindowPos(this.Handle, insertAfter, this.Bounds.X, this.Bounds.Y, this.Bounds.Width, this.Bounds.Height, SWP_SHOWWINDOW);
+                    this.BringToFront();
+                    this.Activate();
+                    await EnsureBackendReadyAsync();
+                    try { _webView?.CoreWebView2?.Reload(); } catch { }
+                    _trayIcon?.ShowBalloonTip(3000, "لوحة AIDA64 SensorPanel", $"تم تنشيط اللوحة وإظهارها ⚡ ({this.Bounds.Width}x{this.Bounds.Height})", ToolTipIcon.Info);
+                }
+                catch (Exception ex)
+                {
+                    Program.Log($"Error handling IPC show signal: {ex.Message}");
+                }
             });
 
-            RegisterIpcEvent(ref _primarySignalEvent, ref _registeredPrimaryWait, Program.PrimarySignalEventName, () =>
+            RegisterIpcEvent(ref _primarySignalEvent, ref _registeredPrimaryWait, Program.PrimarySignalEventName, async () =>
             {
-                Program.Log("Received IPC primary display signal. Moving to primary screen...");
-                MoveToPrimaryDisplay();
-                try { _webView?.CoreWebView2?.Reload(); } catch { }
+                try
+                {
+                    Program.Log("Received IPC primary display signal. Moving to primary screen...");
+                    MoveToPrimaryDisplay();
+                    await EnsureBackendReadyAsync();
+                    try { _webView?.CoreWebView2?.Reload(); } catch { }
+                }
+                catch (Exception ex)
+                {
+                    Program.Log($"Error handling IPC primary signal: {ex.Message}");
+                }
             });
 
-            RegisterIpcEvent(ref _dedicatedSignalEvent, ref _registeredDedicatedWait, Program.DedicatedSignalEventName, () =>
+            RegisterIpcEvent(ref _dedicatedSignalEvent, ref _registeredDedicatedWait, Program.DedicatedSignalEventName, async () =>
             {
-                Program.Log("Received IPC dedicated display signal. Moving to dedicated screen...");
-                MoveToDedicatedDisplay();
-                try { _webView?.CoreWebView2?.Reload(); } catch { }
+                try
+                {
+                    Program.Log("Received IPC dedicated display signal. Moving to dedicated screen...");
+                    MoveToDedicatedDisplay();
+                    await EnsureBackendReadyAsync();
+                    try { _webView?.CoreWebView2?.Reload(); } catch { }
+                }
+                catch (Exception ex)
+                {
+                    Program.Log($"Error handling IPC dedicated signal: {ex.Message}");
+                }
             });
 
-            RegisterIpcEvent(ref _toggleSignalEvent, ref _registeredToggleWait, Program.ToggleSignalEventName, () =>
+            RegisterIpcEvent(ref _toggleSignalEvent, ref _registeredToggleWait, Program.ToggleSignalEventName, async () =>
             {
-                Program.Log("Received IPC toggle signal.");
-                OnToggleVisibility(null, EventArgs.Empty);
+                try
+                {
+                    Program.Log("Received IPC toggle signal.");
+                    OnToggleVisibility(null, EventArgs.Empty);
+                    if (this.Visible)
+                    {
+                        await EnsureBackendReadyAsync();
+                        try { _webView?.CoreWebView2?.Reload(); } catch { }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Program.Log($"Error handling IPC toggle signal: {ex.Message}");
+                }
             });
         }
 
@@ -718,66 +903,145 @@ namespace AIDA64Panel
 
         private async Task EnsureBackendReadyAsync()
         {
-            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(1) };
-
-            try
+            lock (_recoveryLock)
             {
-                var res = await client.GetAsync("http://localhost:8088/health");
-                if (res.IsSuccessStatusCode)
+                if (_isRecovering)
                 {
-                    Program.Log("Backend is already running and healthy.");
+                    Program.Log("EnsureBackendReadyAsync: Recovery already in progress, skipping duplicate call.");
                     return;
                 }
+                _isRecovering = true;
             }
-            catch { }
 
             try
             {
-                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                string backendDir = Path.GetFullPath(Path.Combine(baseDir, "..", "backend"));
-                if (!Directory.Exists(backendDir))
-                {
-                    backendDir = @"D:\Services\aida64_suite\dashboard\backend";
-                }
-
-                string pythonExe = @"C:\Python314\pythonw.exe";
-                if (!File.Exists(pythonExe))
-                {
-                    pythonExe = "pythonw";
-                }
-
-                Program.Log($"Launching backend using {pythonExe} from {backendDir}");
-                var psi = new ProcessStartInfo
-                {
-                    FileName = pythonExe,
-                    Arguments = "main.py",
-                    WorkingDirectory = backendDir,
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    CreateNoWindow = true
-                };
-                Process.Start(psi);
-            }
-            catch (Exception ex)
-            {
-                Program.Log($"Failed to launch backend: {ex.Message}");
-            }
-
-            // Wait up to 25 seconds for /health to respond
-            for (int i = 0; i < 50; i++)
-            {
-                await Task.Delay(500);
                 try
                 {
-                    var res = await client.GetAsync("http://localhost:8088/health");
+                    var res = await _httpClient.GetAsync(HealthUrl);
                     if (res.IsSuccessStatusCode)
                     {
-                        Program.Log($"Backend reported healthy after {(i + 1) * 500}ms.");
+                        Program.Log("Backend is already running and healthy.");
                         return;
                     }
                 }
                 catch { }
+
+                try
+                {
+                    if (_backendProcess != null && !_backendProcess.HasExited)
+                    {
+                        Program.Log($"Backend process PID {_backendProcess.Id} exists but did not respond to /health. Attempting to start/recover...");
+                    }
+                }
+                catch { }
+
+                try
+                {
+                    string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                    string backendDir = Path.GetFullPath(Path.Combine(baseDir, "..", "backend"));
+                    if (!Directory.Exists(backendDir))
+                    {
+                        backendDir = @"D:\Services\aida64_suite\dashboard\backend";
+                    }
+
+                    string pythonExe = @"C:\Python314\pythonw.exe";
+                    if (!File.Exists(pythonExe))
+                    {
+                        pythonExe = "pythonw";
+                    }
+
+                    Program.Log($"Launching backend using {pythonExe} from {backendDir}");
+                    var psi = new ProcessStartInfo
+                    {
+                        FileName = pythonExe,
+                        Arguments = "main.py",
+                        WorkingDirectory = backendDir,
+                        WindowStyle = ProcessWindowStyle.Hidden,
+                        CreateNoWindow = true
+                    };
+
+                    var proc = Process.Start(psi);
+                    if (proc != null)
+                    {
+                        _backendProcess = proc;
+                        JobManager.Attach(proc);
+                        Program.Log($"Backend launched with PID: {proc.Id} and attached to Job Object.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Program.Log($"Failed to launch backend: {ex.Message}");
+                }
+
+                // Wait up to 25 seconds for /health to respond
+                for (int i = 0; i < 50; i++)
+                {
+                    await Task.Delay(500);
+                    try
+                    {
+                        var res = await _httpClient.GetAsync(HealthUrl);
+                        if (res.IsSuccessStatusCode)
+                        {
+                            Program.Log($"Backend reported healthy after {(i + 1) * 500}ms.");
+                            return;
+                        }
+                    }
+                    catch { }
+                }
+                Program.Log("Warning: Backend health check timed out after 25s.");
             }
-            Program.Log("Warning: Backend health check timed out after 25s.");
+            finally
+            {
+                lock (_recoveryLock)
+                {
+                    _isRecovering = false;
+                }
+            }
+        }
+
+        private void InitializeWatchdog()
+        {
+            if (_watchdogTimer != null) return;
+
+            _watchdogTimer = new System.Windows.Forms.Timer
+            {
+                Interval = 15000 // 15 seconds
+            };
+            _watchdogTimer.Tick += async (s, e) =>
+            {
+                if (_isRecovering || this.IsDisposed || !this.IsHandleCreated) return;
+
+                bool healthy = false;
+                try
+                {
+                    var res = await _httpClient.GetAsync(HealthUrl);
+                    healthy = res.IsSuccessStatusCode;
+                }
+                catch
+                {
+                    healthy = false;
+                }
+
+                if (!healthy)
+                {
+                    Program.Log("Watchdog: Backend health check failed. Triggering recovery...");
+                    await EnsureBackendReadyAsync();
+                    try
+                    {
+                        if (!this.IsDisposed && _webView?.CoreWebView2 != null)
+                        {
+                            _webView.CoreWebView2.Reload();
+                            Program.Log("Watchdog: WebView2 reloaded successfully.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Program.Log($"Watchdog: Failed to reload WebView2: {ex.Message}");
+                    }
+                }
+            };
+            _watchdogTimer.Start();
+            Program.Log("Watchdog timer initialized and started (15s interval).");
         }
 
         private async Task InitializeWebViewAsync()
@@ -805,18 +1069,16 @@ namespace AIDA64Panel
                 _webView.CoreWebView2.Settings.IsStatusBarEnabled = false;
                 _webView.CoreWebView2.Settings.AreDevToolsEnabled = true;
 
-                _webView.NavigationCompleted += (s, args) =>
+                _webView.NavigationCompleted += async (s, args) =>
                 {
                     if (!args.IsSuccess)
                     {
-                        Program.Log($"Navigation to {DashboardUrl} failed (WebErrorStatus: {args.WebErrorStatus}). Retrying in 2 seconds...");
-                        Task.Delay(2000).ContinueWith(_ =>
+                        Program.Log($"Navigation to {DashboardUrl} failed (WebErrorStatus: {args.WebErrorStatus}). Triggering backend check & retrying...");
+                        await EnsureBackendReadyAsync();
+                        if (!this.IsDisposed && _webView?.CoreWebView2 != null)
                         {
-                            if (!this.IsDisposed && _webView?.CoreWebView2 != null)
-                            {
-                                try { this.BeginInvoke(() => _webView.CoreWebView2.Navigate(DashboardUrl)); } catch { }
-                            }
-                        });
+                            try { this.BeginInvoke(() => _webView.CoreWebView2.Navigate(DashboardUrl)); } catch { }
+                        }
                     }
                     else
                     {
@@ -828,6 +1090,8 @@ namespace AIDA64Panel
 
                 Program.Log($"Navigating to: {DashboardUrl}");
                 _webView.CoreWebView2.Navigate(DashboardUrl);
+
+                InitializeWatchdog();
             }
             catch (Exception ex)
             {
@@ -867,10 +1131,18 @@ namespace AIDA64Panel
             }
         }
 
-        private void OnRefreshDashboard(object? sender, EventArgs e)
+        private async void OnRefreshDashboard(object? sender, EventArgs e)
         {
             Program.Log("User requested Reload.");
-            _webView?.CoreWebView2?.Reload();
+            try
+            {
+                await EnsureBackendReadyAsync();
+                _webView?.CoreWebView2?.Reload();
+            }
+            catch (Exception ex)
+            {
+                Program.Log($"Error during OnRefreshDashboard: {ex.Message}");
+            }
         }
 
         private bool IsAutoStartEnabled()
@@ -911,11 +1183,20 @@ namespace AIDA64Panel
         private void OnExitApplication(object? sender, EventArgs e)
         {
             Program.Log("User requested Exit Application.");
+            _watchdogTimer?.Stop();
             if (_trayIcon != null)
             {
                 _trayIcon.Visible = false;
                 _trayIcon.Dispose();
             }
+            try
+            {
+                if (_backendProcess != null && !_backendProcess.HasExited)
+                {
+                    _backendProcess.Kill();
+                }
+            }
+            catch { }
             Application.Exit();
         }
 
@@ -923,6 +1204,13 @@ namespace AIDA64Panel
         {
             if (disposing)
             {
+                if (_watchdogTimer != null)
+                {
+                    _watchdogTimer.Stop();
+                    _watchdogTimer.Dispose();
+                    _watchdogTimer = null;
+                }
+
                 _registeredShowWait?.Unregister(null);
                 _showSignalEvent?.Dispose();
 

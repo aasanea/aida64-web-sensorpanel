@@ -683,3 +683,17 @@
   color: var(--status-normal);
   border-color: currentColor;
 }
+
+/* Native modal supplies focus containment, Escape and focus restoration. */
+dialog.gauge-picker-backdrop{margin:0;border:0;padding:0;max-width:none;max-height:none;color:var(--text-pure-white,#fff)}
+dialog.gauge-picker-backdrop:not([open]){display:none}
+dialog.gauge-picker-backdrop::backdrop{background:#04060fc0}
+button.gauge-choice-card{text-align:right;color:inherit;font:inherit}
+button.gauge-choice-card:focus-visible{outline:2px solid var(--neon-cyan,#22d3ee);outline-offset:3px}
+
+html:is([data-theme="orbit"],[data-theme="vector"],[data-theme="folio"]) .gauge-picker-modal{background:var(--station-surface);border-color:var(--station-line);color:var(--station-ink)}
+html:is([data-theme="orbit"],[data-theme="vector"],[data-theme="folio"]) :is(.gauge-picker-title,.gauge-choice-name-ar,.gauge-picker-close,.gauge-scope-toggle){color:var(--station-ink)}
+html:is([data-theme="orbit"],[data-theme="vector"],[data-theme="folio"]) .gauge-choice-card{background:var(--station-raised);border-color:var(--station-line)}
+html:is([data-theme="orbit"],[data-theme="vector"],[data-theme="folio"]) .gauge-choice-card.active{border-color:var(--station-accent);box-shadow:0 0 0 1px var(--station-accent)}
+html:is([data-theme="orbit"],[data-theme="vector"],[data-theme="folio"]) .gauge-btn-apply{color:var(--station-bg);background:var(--station-accent);box-shadow:none}
+html:is([data-theme="orbit"],[data-theme="vector"],[data-theme="folio"]) :is(.gauge-picker-header,.gauge-picker-footer,.gauge-picker-close,.gauge-choice-radio){border-color:var(--station-line)}

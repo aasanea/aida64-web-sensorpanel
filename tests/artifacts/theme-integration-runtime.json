@@ -1,0 +1,165 @@
+{
+  "capturedAt": "2026-10-06T11:09:31.963Z",
+  "url": "http://localhost:8088/",
+  "checks": [
+    {
+      "cpu": "47",
+      "headers": 1,
+      "layout": "orbit-layout",
+      "legacy": false,
+      "theme": "orbit"
+    },
+    {
+      "cpu": "47",
+      "headers": 1,
+      "layout": "vector-layout",
+      "legacy": false,
+      "theme": "vector"
+    },
+    {
+      "cpu": "49",
+      "headers": 1,
+      "layout": "folio-layout",
+      "legacy": false,
+      "theme": "folio"
+    },
+    {
+      "headers": 1,
+      "layout": "bento-grid",
+      "legacy": true,
+      "theme": "default"
+    },
+    {
+      "cpu": "48",
+      "headers": 1,
+      "layout": "orbit-layout",
+      "legacy": false,
+      "theme": "orbit"
+    },
+    {
+      "headers": 1,
+      "layout": "bento-grid",
+      "legacy": true,
+      "theme": "neo-tactile"
+    },
+    {
+      "cpu": "48",
+      "headers": 1,
+      "layout": "vector-layout",
+      "legacy": false,
+      "theme": "vector"
+    },
+    {
+      "cpu": "48",
+      "headers": 1,
+      "layout": "folio-layout",
+      "legacy": false,
+      "theme": "folio"
+    },
+    {
+      "cpu": "48",
+      "headers": 1,
+      "layout": "orbit-layout",
+      "legacy": false,
+      "theme": "orbit"
+    }
+  ],
+  "menu": {
+    "expanded": "true",
+    "items": [
+      {
+        "active": false,
+        "id": "default",
+        "text": "🌊 Cyan Glass زجاج سيان ✓"
+      },
+      {
+        "active": false,
+        "id": "oled",
+        "text": "🖤 OLED Black أوليد أسود ✓"
+      },
+      {
+        "active": false,
+        "id": "cyberpunk",
+        "text": "⚡ Cyberpunk سايبر بانك ✓"
+      },
+      {
+        "active": false,
+        "id": "emerald",
+        "text": "🍃 Emerald زمردي أخضر ✓"
+      },
+      {
+        "active": false,
+        "id": "aurora",
+        "text": "🌌 Aurora أورورا الشفق ✓"
+      },
+      {
+        "active": false,
+        "id": "f1-pitwall",
+        "text": "🏎️ F1 Pitwall فورمولا 1 ✓"
+      },
+      {
+        "active": false,
+        "id": "neo-tactile",
+        "text": "🏺 Neo-Tactile سيراميك تكتيكي ✓"
+      },
+      {
+        "active": true,
+        "id": "orbit",
+        "text": "◉ ORBIT / COMMANDقمرة القيادة ✓"
+      },
+      {
+        "active": false,
+        "id": "vector",
+        "text": "⌁ VECTOR / OBSERVATORYمرصد الأداء ✓"
+      },
+      {
+        "active": false,
+        "id": "folio",
+        "text": "▤ FOLIO / STUDIOدفتر العتاد ✓"
+      }
+    ],
+    "menuBounds": {
+      "bottom": 573.9375,
+      "height": 506.9375,
+      "left": 78.34375,
+      "right": 363.34375,
+      "top": 67,
+      "width": 285,
+      "x": 78.34375,
+      "y": 67
+    },
+    "persistedTheme": "orbit"
+  },
+  "performance": {
+    "benchmark": {
+      "design": "orbit",
+      "frames": 2879,
+      "longTasks": [],
+      "maxMs": 8.299999999999727,
+      "p95Ms": 4.300000000000182
+    },
+    "fps": "0",
+    "frameTime": "—",
+    "headers": 1,
+    "history": "39 عينة مقاسة · آخر 60 ثانية",
+    "layout": "orbit-layout",
+    "master": "0",
+    "ready": "true",
+    "size": [
+      1920,
+      1080
+    ],
+    "theme": "orbit"
+  },
+  "persistedReloads": [
+    "vector",
+    "orbit"
+  ],
+  "keyboardSelection": "folio via Enter",
+  "console": [],
+  "tests": [
+    "test_theme_integration.cjs",
+    "test_theme_architectures.cjs",
+    "test_frontend_remediations.cjs (14 passed)"
+  ]
+}

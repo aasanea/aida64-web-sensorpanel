@@ -1,5 +1,8 @@
-import { animationAlpha, connectFlipFaces, updateTelemetryStatus, updateText } from './component-utils.js?v=20261006.2';
-import { EventBus } from '../store/event_bus.js?v=20261006.2';
+import { renderSonarPanel } from './sonar-panel.js?v=20261103.audio11';
+import { displayReadings } from './av-readings.js?v=20261103.av1';
+import { broadcastView, playingPrograms } from './broadcast-view.js?v=20261103.audio11';
+import { animationAlpha, connectFlipFaces, updateTelemetryStatus, updateText } from './component-utils.js?v=20261007.3';
+import { EventBus } from '../store/event_bus.js?v=20261007.3';
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -545,6 +548,16 @@ template.innerHTML = `
     box-shadow: none !important;
   }
 
+  /* Keep both Sonar paths inside the fixed kiosk card. */
+  .wing { min-height: 0; overflow: hidden; }
+  .audio-hub-content { min-height: 0; overflow: auto; }
+  .wing-audio .sonar-note { display: none; }
+  .wing-audio .sonar-mode { font-size: 10px; line-height: 1; margin-bottom: 5px; }
+  .wing-audio .sonar-channel { padding: 4px 6px; }
+  .wing-audio .sonar-channel b { font-size: 11px; line-height: 1.1; margin-bottom: 3px; }
+  .wing-audio .sonar-level { line-height: 1.1; font-size: 10px; }
+  .wing-audio .sonar-level strong { font-size: 13px; line-height: 1.1; }
+
   /* Bottom Strip */
   .bottom-media-strip {
     display: flex;
@@ -634,6 +647,9 @@ template.innerHTML = `
 
   /* Back Face (A/V Studio Lab) */
   .back-sections-grid {
+    overflow-y: auto;
+    scrollbar-width: thin;
+    align-items: start;
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
@@ -1005,6 +1021,56 @@ template.innerHTML = `
   .mic-live, .sonar-status-pill.connected, .status-badge-green { color: var(--status-normal); background: var(--status-surface); border-color: currentColor; }
   .mic-muted { color: var(--status-critical); background: var(--status-surface); border-color: currentColor; }
   .mic-live .mic-dot, .mic-muted .mic-dot { background: currentColor; }
+  .card-back .sonar-live{line-height:1.1}
+  .card-back .sonar-mode{font-size:10px;line-height:1.1;margin-bottom:5px}
+  .card-back .sonar-channel{padding:5px 7px}
+  .card-back .sonar-channel b{line-height:1;margin-bottom:4px}
+  .card-back .sonar-level,.card-back .sonar-level strong{line-height:1.1}
+  .card-back .sonar-note{line-height:1.2}
+
+  /* A/V card only: keep the existing surfaces, accents and dimensions. */
+  .quick-audio { gap:8px; overflow:hidden; box-shadow:none; justify-content:center; }
+  .quick-signal { padding:8px 10px; border:1px solid var(--border-glass,rgba(255,255,255,.08)); border-radius:8px; background:rgba(255,255,255,.025); }
+  .quick-heading { display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:15px; line-height:1.5; }
+  .quick-heading span { font-size:13px; color:var(--text-secondary,#94a3b8); white-space:nowrap; }
+  .quick-device { font-size:12px; line-height:1.7; color:var(--text-secondary,#94a3b8); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; margin:3px 0; }
+  .quick-legend,.diagnostic-note { color:var(--text-secondary,#94a3b8); font-size:11px; line-height:1.6; margin:0; }
+  .diagnostic-row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:7px 0; border-bottom:1px solid rgba(255,255,255,.06); font-size:12px; }
+  .diagnostic-row b { direction:ltr; font:700 13px var(--font-numbers,monospace); }
+  .unavailable-summary { padding:8px 10px; border:1px solid var(--border-glass,rgba(255,255,255,.08)); border-radius:8px; font-size:12px; color:var(--text-secondary,#94a3b8); }
+  .unavailable-summary summary { cursor:pointer; font-weight:700; }
+  .unavailable-summary p { margin:6px 0 0; line-height:1.7; }
+  .flip-btn:focus-visible,summary:focus-visible { outline:2px solid var(--neon-cyan,#22d3ee); outline-offset:3px; }
+  @media(prefers-reduced-motion:reduce) { .card-flipper { transition:none; } .mic-dot { animation:none; } }
+
+  /* Front: four distinct audio roles, with display limited to measured FPS. */
+  .operational-wings{grid-template-columns:minmax(145px,.22fr) minmax(0,1fr);gap:10px}
+  .wing-display{justify-content:center;gap:10px}.wing-display .wing-header{justify-content:center;margin:0}
+  .wing-display .wing-tag{font-size:14px}.wing-display .display-hub-content{justify-content:center;flex:0}
+  .wing-display .fps-hero-capsule{flex-direction:column;justify-content:center;gap:20px;padding:15px 6px;min-height:155px}
+  .wing-display .fps-label{font-size:14px;text-align:center}.wing-display .fps-status-live{text-align:center;font-size:10px}.wing-display .fps-num{font-size:42px}.wing-display .fps-unit{font-size:14px}
+  .audio-overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr) minmax(0,1fr);gap:9px;min-height:0}
+  .audio-tile{--tile-accent:var(--neon-cyan,#22d3ee);min-width:0;min-height:0;border:1px solid var(--border-glass,rgba(255,255,255,.09));border-radius:12px;background:rgba(255,255,255,.025);padding:9px 11px;display:flex;flex-direction:column;gap:5px;overflow:hidden;box-sizing:border-box}
+  .audio-tile-head{display:flex;align-items:center;gap:9px;min-width:0}.audio-symbol{display:grid;place-items:center;flex:0 0 46px;width:46px;height:46px;color:var(--tile-accent);border:1px solid color-mix(in srgb,var(--tile-accent) 35%,transparent);border-radius:10px;background:color-mix(in srgb,var(--tile-accent) 9%,transparent)}
+  .audio-symbol svg{width:29px;height:29px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .audio-tile-heading{min-width:0;flex:1}.audio-tile-heading b{display:block;font-size:20px;line-height:1.35;font-weight:800}.audio-tile-heading small{display:block;font-size:12px;color:var(--text-secondary,#94a3b8);line-height:1.4}
+  .audio-gain{font:800 32px var(--font-numbers,monospace);direction:ltr;white-space:nowrap;color:var(--tile-accent)}
+  .audio-tile-state{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:700;line-height:1.3;color:var(--text-secondary,#94a3b8)}
+  .audio-tile-state::before{content:'';width:6px;height:6px;flex:0 0 6px;border-radius:50%;background:currentColor}
+  .audio-tile[data-state="live"] .audio-tile-state{color:var(--status-normal,#00e6aa)}.audio-tile[data-state="muted"] .audio-tile-state{color:var(--status-critical,#ff6275)}
+  .audio-device{font-size:17px;font-weight:700;line-height:1.35;color:var(--text-primary,#f1f5f9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:ltr;text-align:right}
+  .audio-tile audio-signal-meter{margin-top:auto}.listening-tile{--tile-accent:var(--status-normal,#00e6aa)}.sources-tile{--tile-accent:var(--neon-yellow,#facc15);padding-top:7px;padding-bottom:7px}
+  .playing-programs{display:flex;gap:10px;overflow-x:auto;align-items:center;min-height:64px;margin-top:auto;scrollbar-width:thin;overflow-y:hidden;font-size:14px;color:var(--text-secondary,#94a3b8)}
+  .program-chip{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;flex:0 0 64px;min-width:64px;box-sizing:border-box;border:1px solid var(--border-glass,rgba(255,255,255,.1));border-radius:10px;background:rgba(255,255,255,.035);padding:2px 7px;color:var(--text-primary,#fff)}
+  .program-chip[data-excluded="true"]{border-color:var(--text-secondary,#94a3b8)}
+  .program-chip audio-signal-meter{width:44px;margin-top:1px;flex:0 0 6px}
+  .logo-missing{font-size:10px;text-align:center;line-height:1.2;width:44px;height:44px;display:grid;place-items:center;color:var(--text-secondary,#94a3b8)}
+  .broadcast-panel{--tile-accent:var(--neon-violet,#a78bfa)}.broadcast-label{font-size:15px;font-weight:800;line-height:1.35;color:var(--tile-accent)}
+  .broadcast-panel[data-state="muted"] .broadcast-label,.broadcast-panel[data-state="blocked"] .broadcast-label{color:var(--status-critical,#ff6275)}.broadcast-panel[data-state="sending"] .broadcast-label{color:var(--status-normal,#00e6aa)}.broadcast-panel[data-state="unknown"] .broadcast-label{color:var(--status-warning,#ffc85a)}
+  .broadcast-rail{height:5px;min-height:5px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;direction:ltr;margin-top:auto}.broadcast-rail i{display:block;height:100%;width:0;background:var(--tile-accent);transition:width .12s}.broadcast-panel[data-state="muted"] .broadcast-rail i{background:var(--status-critical,#ff6275)}
+  .broadcast-detail{font-size:12px;line-height:1.35;color:var(--text-secondary,#94a3b8);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .audio-symbol.rode-symbol{background:linear-gradient(145deg,#e7e4dc,#999a9a);overflow:hidden;position:relative}.rode-symbol img{width:40px;height:46px;object-fit:contain;display:block}.program-logo{width:42px;height:42px;object-fit:contain;display:block;flex:0 0 42px;filter:drop-shadow(0 1px 4px rgba(0,0,0,.25))}
+  @media(max-height:800px){.audio-tile{padding:6px 8px;gap:3px}.audio-tile-heading b{font-size:18px}.audio-symbol{width:38px;height:38px;flex-basis:38px}.audio-symbol svg{width:26px;height:26px}.rode-symbol img{width:33px;height:38px}.audio-gain{font-size:28px}.audio-device{font-size:15px}}
 </style>
 
 <div class="card-flipper" id="flipper">
@@ -1026,184 +1092,43 @@ template.innerHTML = `
       </div>
       <button class="flip-btn" id="flip-to-back" title="فتح استوديو الصوت والعرض المتقدم">
         <span>🎛️</span>
-        <span>استوديو الصوت والعرض المتقدم</span>
+        <span>تفاصيل الصوت والعرض</span>
       </button>
     </div>
 
-    <!-- Operational Wings -->
     <div class="operational-wings">
-      <!-- Left Wing: Display & Gaming Hub -->
-      <div class="wing wing-display">
-        <div class="wing-header">
-          <span class="wing-tag">🎮 محرك العرض والألعاب</span>
-          <span class="wing-status">HDR1000 // G-SYNC</span>
-        </div>
-
+      <section class="wing wing-display" aria-label="الإطارات المقاسة">
+        <div class="wing-header"><span class="wing-tag">🎮 الإطارات</span></div>
         <div class="display-hub-content">
-          <!-- Live Real-Time FPS: huge 27px+ emerald Orbitron numbers -->
-          <div class="fps-hero-capsule" title="معدل الإطارات الفعلي المباشر">
-            <div class="fps-label-row">
-              <span class="fps-label">معدل الإطارات الحقيقي</span>
-              <span class="fps-status-live">مباشر REAL-TIME</span>
-            </div>
-            <div class="fps-val-row" dir="ltr">
-              <span class="fps-num" id="fps">--</span>
-              <span class="fps-unit">FPS</span>
-            </div>
-          </div>
-
-          <!-- Display Metrics Triad -->
-          <div class="display-triad-grid">
-            <!-- Screen Refresh Rate -->
-            <div class="telemetry-pill hz-pill" title="تردد تحديث الشاشة الفعلي">
-              <div class="pill-info">
-                <span class="pill-icon">🖥️</span>
-                <span class="pill-label">التردد</span>
-              </div>
-              <div class="pill-val-group" dir="ltr">
-                <span class="pill-val" id="display_hz">--</span>
-                <span class="pill-unit">Hz</span>
-              </div>
-            </div>
-
-            <!-- Frametime / Latency -->
-            <div class="telemetry-pill frametime-pill" title="زمن الإطار: قراءة مقاسة أو متوسط مشتق من FPS">
-              <div class="pill-info">
-                <span class="pill-icon">⏱️</span>
-                <span class="pill-label" id="frametime-source">زمن الإطار • غير متاح</span>
-              </div>
-              <div class="pill-val-group" dir="ltr">
-                <span class="pill-val" id="frametime_ms">--</span>
-                <span class="pill-unit">ms</span>
-              </div>
-            </div>
-
-            <!-- Display Resolution -->
-            <div class="telemetry-pill res-pill" title="دقة العرض الحالية">
-              <div class="pill-info">
-                <span class="pill-icon">📐</span>
-                <span class="pill-label">دقة الشاشة</span>
-              </div>
-              <div class="pill-val-group" dir="ltr">
-                <span class="pill-val res-val" id="display_res">--</span>
-              </div>
-            </div>
+          <div class="fps-hero-capsule" title="معدل الإطارات المقاس من المصدر">
+            <div class="fps-label-row"><span class="fps-label">معدل الإطارات المقاس</span><span class="fps-status-live" id="fps-source">المصدر غير متاح</span></div>
+            <div class="fps-val-row" dir="ltr"><span class="fps-num" id="fps">--</span><span class="fps-unit">FPS</span></div>
           </div>
         </div>
-      </div>
-
-      <!-- Right Wing: Audio & Sonar Mixer Hub -->
-      <div class="wing wing-audio">
-        <div class="wing-header">
-          <span class="wing-tag">🎛️ مكسر قنوات Sonar</span>
-          <!-- Live Mic Status capsule -->
-          <div class="mic-badge" id="mic-status-badge" title="حالة كتم الميكروفون المباشرة">
-            <span class="mic-dot"></span>
-            <span class="mic-title">🎙️ المايك:</span>
-            <span id="mic-status-text">غير متاح</span>
-          </div>
-        </div>
-
-        <div class="audio-hub-content">
-          <!-- Master Audio Header Capsule -->
-          <div class="master-audio-box" title="مستوى الصوت العام الرئيسي">
-            <div class="master-audio-top">
-              <div class="master-title-group">
-                <span class="master-icon" id="master-vol-icon">🔊</span>
-                <span class="master-label">الصوت العام (Master)</span>
-              </div>
-              <div class="master-val-group" dir="ltr">
-                <span class="master-val" id="display_volume">--</span>
-                <span class="master-unit">%</span>
-              </div>
-            </div>
-            <div class="master-track">
-              <div class="channel-fill fill-master" id="mixer-bar-master" style="width: 0%;"></div>
-            </div>
-          </div>
-
-          <!-- 4 Sonar Virtual Channels directly visible on the front face -->
-          <div class="sonar-channels-quad">
-            <!-- Game Channel -->
-            <div class="channel-card channel-game">
-              <div class="channel-header-mini">
-                <div class="ch-left">
-                  <span class="ch-icon">🎮</span>
-                  <span class="ch-name">Game</span>
-                </div>
-                <span class="ch-val" id="mixer-val-game" dir="ltr">--%</span>
-              </div>
-              <div class="ch-track">
-                <div class="channel-fill fill-game" id="mixer-bar-game" style="width: 0%;"></div>
-              </div>
-            </div>
-
-            <!-- Chat Channel -->
-            <div class="channel-card channel-chat">
-              <div class="channel-header-mini">
-                <div class="ch-left">
-                  <span class="ch-icon">💬</span>
-                  <span class="ch-name">Chat</span>
-                </div>
-                <span class="ch-val" id="mixer-val-chat" dir="ltr">--%</span>
-              </div>
-              <div class="ch-track">
-                <div class="channel-fill fill-chat" id="mixer-bar-chat" style="width: 0%;"></div>
-              </div>
-            </div>
-
-            <!-- Media Channel -->
-            <div class="channel-card channel-media">
-              <div class="channel-header-mini">
-                <div class="ch-left">
-                  <span class="ch-icon">🎵</span>
-                  <span class="ch-name">Media</span>
-                </div>
-                <span class="ch-val" id="mixer-val-media" dir="ltr">--%</span>
-              </div>
-              <div class="ch-track">
-                <div class="channel-fill fill-media" id="mixer-bar-media" style="width: 0%;"></div>
-              </div>
-            </div>
-
-            <!-- Aux Channel -->
-            <div class="channel-card channel-aux">
-              <div class="channel-header-mini">
-                <div class="ch-left">
-                  <span class="ch-icon">🎚️</span>
-                  <span class="ch-name">Aux</span>
-                </div>
-                <span class="ch-val" id="mixer-val-aux" dir="ltr">--%</span>
-              </div>
-              <div class="ch-track">
-                <div class="channel-fill fill-aux" id="mixer-bar-aux" style="width: 0%;"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Bottom Strip -->
-    <div class="bottom-media-strip">
-      <div class="strip-left">
-        <div class="spectrum-visualizer" title="طيف الصوت التفاعلي">
-          <span class="spectrum-bar sb-1"></span>
-          <span class="spectrum-bar sb-2"></span>
-          <span class="spectrum-bar sb-3"></span>
-          <span class="spectrum-bar sb-4"></span>
-          <span class="spectrum-bar sb-5"></span>
-          <span class="spectrum-bar sb-6"></span>
-          <span class="spectrum-bar sb-7"></span>
-          <span class="spectrum-bar sb-8"></span>
-        </div>
-        <div class="strip-media-meta">
-          <span class="strip-media-title">SteelSeries Sonar AI Engine</span>
-          <span class="strip-media-desc">Spatial Audio 7.1 Virtual Surround & ClearCast AI Profile</span>
-        </div>
-      </div>
-      <div class="strip-right">
-        <span class="sonar-status-pill" id="sonar-pill">Sonar ⚪</span>
+      </section>
+      <div class="audio-overview">
+        <section class="audio-tile mic-tile" id="mic-overview" data-state="unknown" aria-label="الميكروفون">
+          <div class="audio-tile-head"><span class="audio-symbol rode-symbol"><img src="/assets/audio/rode-podmic-usb.webp" alt="RØDE PodMic USB" width="40" height="46"></span><div class="audio-tile-heading"><b>الميكروفون</b><small>صوتك · مستقل عن بث البرامج</small></div><strong class="audio-gain" id="quick-mic-gain" title="ضبط قناة المايك في Sonar">—</strong></div>
+          <div class="audio-tile-state" id="mic-overview-status">الحالة غير متاحة</div>
+          <div class="audio-device" id="quick-input-device">مصدر المايك غير متاح</div>
+          <audio-signal-meter data-quick-mic route="input" signal-only></audio-signal-meter>
+        </section>
+        <section class="audio-tile listening-tile" id="listening-overview" data-state="unknown" aria-label="صوت سماعك الشخصي">
+          <div class="audio-tile-head"><span class="audio-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 14v-3a9 9 0 0 1 18 0v3"/><rect x="3" y="12" width="4" height="9" rx="2"/><rect x="17" y="12" width="4" height="9" rx="2"/></svg></span><div class="audio-tile-heading"><b>صوت سماعك</b><small>المخرج الذي تستمع منه الآن</small></div><strong class="audio-gain" id="quick-master-gain" title="ضبط مستوى الاستماع في Sonar">—</strong></div>
+          <div class="audio-tile-state" id="listening-overview-status">الحالة غير متاحة</div>
+          <div class="audio-device" id="quick-output-device">مخرج الاستماع غير متاح</div>
+          <audio-signal-meter route="monitoring" signal-only></audio-signal-meter>
+        </section>
+        <section class="audio-tile sources-tile" aria-label="مصادر الصوت النشطة">
+          <div class="audio-tile-head"><span class="audio-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 10v4M7 6v12M12 2v20M17 6v12M21 10v4"/></svg></span><div class="audio-tile-heading"><b>الصوت يأتي من</b><small>شعار البرنامج · قوة الإشارة الآن</small></div></div>
+          <div id="playing-programs" class="playing-programs" aria-live="polite">جارٍ قراءة البرامج…</div>
+        </section>
+        <section class="audio-tile broadcast-panel" id="broadcast-panel" data-state="unknown" aria-label="بث صوت البرامج إلى Discord">
+          <div class="audio-tile-head"><span class="audio-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="10" r="2"/><path d="M8.5 6.5a5 5 0 0 0 0 7M15.5 6.5a5 5 0 0 1 0 7M5 3a10 10 0 0 0 0 14M19 3a10 10 0 0 1 0 14M12 12v10M8 22h8"/></svg></span><div class="audio-tile-heading"><b>بث البرامج</b><small>إلى Discord · العجلة الثانية</small></div><strong class="audio-gain" id="broadcast-percent">—</strong></div>
+          <div id="broadcast-label" class="broadcast-label" role="status">حالة البث غير متاحة</div>
+          <div class="broadcast-detail" id="broadcast-detail">Discord مستثنى · المايك مستقل</div>
+          <div class="broadcast-rail" role="meter" aria-label="مستوى بث البرامج فقط" aria-valuemin="0" aria-valuemax="100"><i id="broadcast-fill"></i></div>
+        </section>
       </div>
     </div>
   </div>
@@ -1217,7 +1142,7 @@ template.innerHTML = `
         </div>
         <div>
           <h2 class="card-title">استوديو الصوت ومحرك العرض المتقدم</h2>
-          <span class="card-sub">CONFIGURED PROFILES // LIVE VALUES LABELED SEPARATELY</span>
+          <span class="card-sub">SONAR PATHS / DISPLAY SOURCES</span>
         </div>
       </div>
       <button class="flip-btn btn-back" id="flip-to-front" title="العودة لشاشة القيادة">
@@ -1226,79 +1151,19 @@ template.innerHTML = `
       </button>
     </div>
 
-    <div class="back-sections-grid">
+    <div class="back-sections-grid" tabindex="0" role="region" aria-label="تفاصيل الصوت والعرض، قابلة للتمرير">
       <!-- Section A: Sonar AI Studio -->
       <div class="studio-section studio-audio">
         <div class="section-title-bar">
           <div class="sec-title-left">
             <span class="sec-icon">🎙️</span>
-            <span class="sec-heading">بروفايلات الصوت المُعرّفة (غير مقاسة)</span>
+            <span class="sec-heading">مسارات Sonar الحية</span>
           </div>
           <span class="sec-badge">SONAR AI</span>
         </div>
 
-        <!-- 1. ClearCast AI Noise Cancellation -->
-        <div class="studio-card ai-noise-card">
-          <div class="studio-card-header">
-            <div class="card-label-group">
-              <span class="card-emoji">🛡️</span>
-              <span class="card-primary-label">عزل الضوضاء الذكي ClearCast AI</span>
-            </div>
-            <span class="status-badge-green" id="clearcast-badge">بروفايل مُعرّف • غير مقاس</span>
-          </div>
-          <div class="ai-meter-track">
-            <div class="ai-meter-fill" style="width: 0%;"></div>
-          </div>
-          <div class="studio-card-caption">
-            إعداد ClearCast مُعرّف؛ لا تتوفر قراءة مباشرة لفعالية خفض الضوضاء
-          </div>
-        </div>
-
-        <!-- 2. EQ Presets Matrix -->
-        <div class="studio-card eq-matrix-card">
-          <div class="studio-card-header">
-            <div class="card-label-group">
-              <span class="card-emoji">🎚️</span>
-              <span class="card-primary-label">بروفايلات المعادل النشطة (EQ Matrix)</span>
-            </div>
-            <span class="matrix-status">PARAMETRIC</span>
-          </div>
-          <div class="eq-presets-row">
-            <div class="eq-pill active">
-              <span class="eq-pill-name">Warzone Footsteps Focus</span>
-              <span class="eq-pill-type">🎮 تنافسي</span>
-            </div>
-            <div class="eq-pill">
-              <span class="eq-pill-name">Broadcast Voice Clarity</span>
-              <span class="eq-pill-type">🎙️ صوت نقي</span>
-            </div>
-            <div class="eq-pill">
-              <span class="eq-pill-name">Hi-Res Immersion</span>
-              <span class="eq-pill-type">🎵 96kHz</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 3. Output Routing & Spatial Audio -->
-        <div class="studio-card routing-card">
-          <div class="studio-card-header">
-            <div class="card-label-group">
-              <span class="card-emoji">🎧</span>
-              <span class="card-primary-label">التوجيه والصوت المحيطي (Spatial Audio)</span>
-            </div>
-            <span class="status-badge-cyan">360° SURROUND</span>
-          </div>
-          <div class="routing-details-grid">
-            <div class="routing-item">
-              <span class="route-label">الصوت المحيطي:</span>
-              <span class="route-val">Spatial Audio 7.1 Virtual Surround (مفعّل)</span>
-            </div>
-            <div class="routing-item">
-              <span class="route-label">سماعة الرأس:</span>
-              <span class="route-val">Headset Arctis Nova Pro Wireless</span>
-            </div>
-          </div>
-        </div>
+        <div class="studio-card"><div data-sonar-back-panel></div></div>
+        <details class="unavailable-summary"><summary>خصائص صوت غير مقاسة</summary><p>ClearCast AI والصوت المحيطي والبروفايلات غير متاحة من المصدر الحالي. لا تدل هذه الحالة على أنها متوقفة.</p></details>
       </div>
 
       <!-- Section B: Display Pipeline Lab -->
@@ -1306,86 +1171,21 @@ template.innerHTML = `
         <div class="section-title-bar">
           <div class="sec-title-left">
             <span class="sec-icon">🖥️</span>
-            <span class="sec-heading">مواصفات العرض المُعرّفة (غير مقاسة)</span>
+            <span class="sec-heading">قياسات العرض ومعلومات المصدر</span>
           </div>
           <span class="sec-badge">VIDEO LAB</span>
         </div>
 
-        <!-- 1. Video Signal Specs -->
-        <div class="studio-card video-specs-card">
-          <div class="studio-card-header">
-            <div class="card-label-group">
-              <span class="card-emoji">🎨</span>
-              <span class="card-primary-label">مواصفات إشارة الفيديو (Signal Specs)</span>
-            </div>
-            <span class="status-badge-purple">10-BIT HDR</span>
-          </div>
-          <div class="specs-pills-row">
-            <div class="spec-pill">
-              <span class="spec-prop">عمق الألوان</span>
-              <span class="spec-data">10-bit (1.07B colors)</span>
-            </div>
-            <div class="spec-pill">
-              <span class="spec-prop">النطاق اللوني</span>
-              <span class="spec-data">RGB 4:4:4 Full Range</span>
-            </div>
-            <div class="spec-pill">
-              <span class="spec-prop">المدى الديناميكي</span>
-              <span class="spec-data">DisplayHDR 1000</span>
-            </div>
-          </div>
+        <div class="studio-card av-diagnostics">
+          <div class="diagnostic-row"><span>مصدر FPS</span><b id="back-fps-source">غير متاح</b></div>
+          <div class="diagnostic-row"><span>الإطارات المقاسة</span><b id="back-fps">—</b></div>
+          <div class="diagnostic-row"><span>تردد شاشة المصدر</span><b id="back-hz">—</b></div>
+          <div class="diagnostic-row"><span>دقة شاشة المصدر</span><b id="back-res">—</b></div>
+          <div class="diagnostic-row"><span>زمن الإطار</span><b id="back-frametime-val">— ms</b></div>
+          <div class="diagnostic-note" id="back-frametime-source">غير متاح</div>
+          <p class="diagnostic-note">زمن الإطار المحسوب = 1000 ÷ FPS؛ ليس قياسًا لتأخير الاستجابة أو انتظام الإطارات.</p>
         </div>
-
-        <!-- 2. Frame Dynamics -->
-        <div class="studio-card frame-dynamics-card">
-          <div class="studio-card-header">
-            <div class="card-label-group">
-              <span class="card-emoji">⚡</span>
-              <span class="card-primary-label">ديناميكية الإطارات ومزامنة الشاشة (VRR)</span>
-            </div>
-            <span class="status-badge-green">VRR PROFILE</span>
-          </div>
-          <div class="dynamics-grid">
-            <div class="dynamic-cell">
-              <span class="dyn-label">مزامنة الشاشة</span>
-              <span class="dyn-val dyn-highlight">NVIDIA G-Sync Profile</span>
-              <span class="dyn-sub">VRR 48 - 240 Hz</span>
-            </div>
-            <div class="dynamic-cell">
-              <span class="dyn-label">زمن تأخير الإطار</span>
-              <span class="dyn-val dyn-cyan" id="back-frametime-val">-- ms</span>
-              <span class="dyn-sub" id="back-frametime-source">غير متاح</span>
-            </div>
-            <div class="dynamic-cell">
-              <span class="dyn-label">أدنى إطارات 1% Low</span>
-              <span class="dyn-val dyn-green">غير متاح</span>
-              <span class="dyn-sub">لا يوجد مستشعر 1% Low</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 3. Interface & Bandwidth -->
-        <div class="studio-card interface-card">
-          <div class="studio-card-header">
-            <div class="card-label-group">
-              <span class="card-emoji">🔌</span>
-              <span class="card-primary-label">الواجهة الفيزيائية والنطاق الترددي</span>
-            </div>
-            <span class="status-badge-cyan">32.4 Gbps</span>
-          </div>
-          <div class="bandwidth-meter-box">
-            <div class="bw-info-row">
-              <span class="bw-port">DisplayPort 1.4a DSC</span>
-              <span class="bw-speed">32.4 Gbps</span>
-            </div>
-            <div class="bw-track">
-              <div class="bw-fill" style="width: 78%;"></div>
-            </div>
-            <div class="bw-caption">
-              نطاق ترددي فائق بدقة 4K ومعدل 240Hz مع دعم كامل لمكتبة HDR10 و 10-Bit
-            </div>
-          </div>
-        </div>
+        <details class="unavailable-summary"><summary>خصائص عرض غير مقاسة</summary><p>HDR وVRR وعمق الألوان والنطاق اللوني و1% Low وواجهة التوصيل وعرض النطاق: لا تتوفر لها قياسات موثوقة حاليًا.</p></details>
       </div>
     </div>
   </div>
@@ -1484,7 +1284,8 @@ export class DashboardDisplay extends HTMLElement {
       this.dom.flipToFront.addEventListener('click', this.handleFlipBtnClick, { signal: this.events.signal });
     }
 
-    this.addEventListener('click', this.handleCardClick, { signal: this.events.signal });
+    EventBus.on('audio-levels', sample => { this.audioSample = sample; this.updateQuickAudio(); this.updateBroadcastView(); }, { signal: this.events.signal });
+    EventBus.on('audio-meter:source', () => this.updateQuickAudio(), { signal: this.events.signal });
 
     this.isRunning = true;
     this.rafId = requestAnimationFrame(this.tick);
@@ -1517,7 +1318,7 @@ export class DashboardDisplay extends HTMLElement {
   }
 
   handleCardClick(e) {
-    if (e?.target && (e.target.closest('button') || e.target.closest('.flip-btn'))) return;
+    if(e.composedPath().some(node=>node.tagName==='AUDIO-SIGNAL-METER'||node.tagName==='SELECT'||node.tagName==='BUTTON'))return;
     this.toggleFlip();
   }
 
@@ -1529,25 +1330,24 @@ export class DashboardDisplay extends HTMLElement {
     if (!delta || typeof delta !== 'object') return;
     updateTelemetryStatus(this, delta, ['fps', 'display_hz', 'display_volume']);
     const state = this.telemetrySnapshot;
-    if ('fps' in delta) this.targetValues.fps = delta.fps;
-    const measured = state.frametime_ms ?? state.frametime ?? state.gpu_frametime;
-    const measuredValid = Number.isFinite(measured) && measured >= 0;
-    const fpsValid = Number.isFinite(state.fps) && state.fps > 0;
-    this.frameTimeSource = measuredValid ? 'measured' : fpsValid ? 'derived' : 'unavailable';
-    this.targetValues.frametime_ms = measuredValid ? measured : fpsValid ? 1000 / state.fps : null;
+    const reading = displayReadings(state);
+    this.displayReading = reading;
+    this.targetValues.fps = reading.fps;
+    if(reading.fps==null || this.currentValues.fps==null)this.currentValues.fps=reading.fps;
+    if(this.dom.fps)this.dom.fps.title=reading.fps==null?'قراءة FPS غير متاحة':`قراءة المصدر: ${reading.fps} FPS`;
+    this.targetValues.display_hz = this.currentValues.display_hz = reading.hz;
+    this.frameTimeSource = reading.frameTimeSource;
+    this.targetValues.frametime_ms = this.currentValues.frametime_ms = reading.frameTime;
     this.dataset.frameTimeSource = this.frameTimeSource;
-    const sourceLabel = measuredValid ? 'مقاس' : fpsValid ? 'مشتق من FPS' : 'غير متاح';
-    if (this.dom.frametimeSource && this.dom.frametimeSource.textContent !== `زمن الإطار • ${sourceLabel}`) {
-      this.dom.frametimeSource.textContent = `زمن الإطار • ${sourceLabel}`;
-    }
+    const sourceLabel = this.frameTimeSource === 'measured' ? 'مقاس من المصدر' : this.frameTimeSource === 'derived' ? 'متوسط نظري من FPS' : 'غير متاح';
+    updateText(this.dom.frametimeSource, this.frameTimeSource === 'derived' ? 'زمن إطار نظري' : this.frameTimeSource === 'measured' ? 'زمن إطار مقاس' : 'زمن الإطار غير متاح');
     updateText(this.dom.backFrametimeSource, sourceLabel);
-    // A frame-time reading is never fabricated by interpolating independently of FPS.
-    this.currentValues.frametime_ms = this.targetValues.frametime_ms;
+    updateText(this.shadowRoot.getElementById('fps-source'), reading.fps == null ? 'لا توجد قراءة FPS موثوقة' : `المصدر: ${reading.source}`);
+    for (const [id, value] of Object.entries({'back-fps-source':reading.source || 'غير متاح','back-fps':reading.fps == null ? '—' : `${reading.fps} FPS`,'back-hz':reading.hz == null ? '—' : `${reading.hz} Hz`,'back-res':state.display_res || 'غير متاح'})) updateText(this.shadowRoot.getElementById(id),value);
 
-    if ('display_hz' in delta) this.targetValues.display_hz = delta.display_hz;
     if ('display_volume' in delta) this.targetValues.system_volume = delta.display_volume;
     const master = state.audio_master_volume;
-    this.targetValues.display_volume = master ?? this.targetValues.system_volume;
+    this.targetValues.display_volume = master ?? null;
     if ('display_res' in delta && this.dom.res) {
       this.targetValues.display_res = delta.display_res;
       this.dom.res.textContent = delta.display_res ?? '--';
@@ -1581,16 +1381,18 @@ export class DashboardDisplay extends HTMLElement {
     if (delta.audio_aux_muted !== undefined) this.targetValues.audio_aux_muted = delta.audio_aux_muted;
 
     this.renderMixerChannels();
+    this.updateQuickAudio();
+    this.updateBroadcastView();
     this.render();
   }
 
   updateSonarPill(connected) {
     if (!this.dom.sonarPill) return;
     if (connected) {
-      this.dom.sonarPill.textContent = 'Sonar ⚡';
+      this.dom.sonarPill.textContent = 'Sonar متصل';
       this.dom.sonarPill.className = 'sonar-status-pill connected';
     } else {
-      this.dom.sonarPill.textContent = 'Sonar ⚪';
+      this.dom.sonarPill.textContent = 'Sonar غير متاح';
       this.dom.sonarPill.className = 'sonar-status-pill';
     }
   }
@@ -1605,65 +1407,69 @@ export class DashboardDisplay extends HTMLElement {
       this.dom.micText.textContent = 'مكتوم 🔇';
     } else {
       this.dom.micBadge.className = 'mic-badge mic-live';
-      this.dom.micText.textContent = 'مباشر 🟢';
+      this.dom.micText.textContent = 'غير مكتوم 🟢';
     }
   }
 
+  updateQuickAudio() {
+    const state=this.telemetrySnapshot || {},sample=this.audioSample;
+    const valid=sample && performance.now()-(sample.receivedAt ?? -Infinity)<(sample.maxAgeMs || 300) && state.telemetry_status!=='stale';
+    const meta=state.sonar_source || state.telemetry_sources?.sonar;
+    const age=meta?.observed_at ? Math.max(0,Date.now()/1000-meta.observed_at):null;
+    const fresh=state.sonar_connected && !['stale','unavailable'].includes(meta?.status) && state.telemetry_status!=='stale' && (age==null || age<=2);
+    const micRoute=this.shadowRoot.querySelector('[data-quick-mic]')?.route || 'input';
+    for(const [id,route] of [['quick-output-device','monitoring'],['quick-input-device',micRoute]]) {
+      const data=valid?sample.routes?.[route]:null;
+      const fullLabel=data?.status==='live'?data.name:'مصدر الإشارة غير متاح';
+      const label=fullLabel.replace(/^(?:Desktop Microphone|Microphone|Speakers|Headphones|Headset)\s*\((.*)\)$/i,'$1');
+      const node=this.shadowRoot.getElementById(id);if(node){updateText(node,label);node.title=fullLabel;}
+    }
+    const micPath=state.sonar_mode==='stream'?'streaming':'classic',listenPath=state.sonar_mode==='stream'?'monitoring':'classic';
+    const mic=fresh?state.sonar_channels?.mic?.[micPath]:null,listen=fresh?state.sonar_channels?.master?.[listenPath]:null;
+    for(const [id,value] of [['quick-mic-gain',mic],['quick-master-gain',listen]])updateText(this.shadowRoot.getElementById(id),value?.volume==null?'—':`${Math.round(value.volume)}%`);
+    const controller=state.audio_broadcast;
+    const discordFresh=controller?.available && controller.discord_ready && Number.isFinite(controller.observed_at) && Math.abs(Date.now()/1000-controller.observed_at)<3;
+    const discordBlocked=discordFresh && (controller.discord_muted===true || controller.discord_deafened===true || controller.server_muted===true || controller.server_blocked===true);
+    const wrongInput=discordFresh && controller.stream_input_id && controller.discord_input_id!==controller.stream_input_id;
+    const micMuted=mic?.muted===true || discordBlocked;
+    const micKnown=typeof mic?.muted==='boolean';
+    const micText=!micKnown?'حالة المايك غير متاحة':wrongInput?'مدخل Discord خارج Sonar':micMuted?(mic?.muted?'مكتوم في Sonar':'الإرسال متوقف في Discord'):discordFresh?'غير مكتوم في Discord':'غير مكتوم في Sonar';
+    updateText(this.shadowRoot.getElementById('mic-overview-status'),micText);
+    const micTile=this.shadowRoot.getElementById('mic-overview');if(micTile)micTile.dataset.state=!micKnown||wrongInput?'unknown':micMuted?'muted':'live';
+    const listenSignal=valid?sample.routes?.monitoring:null;
+    const listenKnown=typeof listen?.muted==='boolean';
+    const listenText=!listenKnown?'حالة الاستماع غير متاحة':listen.muted?'الاستماع مكتوم':listenSignal?.status!=='live'?'قياس الإشارة غير متاح':listenSignal.peak>0.0001?'صوت يعمل الآن':'لا إشارة الآن';
+    updateText(this.shadowRoot.getElementById('listening-overview-status'),listenText);
+    const listenTile=this.shadowRoot.getElementById('listening-overview');if(listenTile)listenTile.dataset.state=!listenKnown?'unknown':listen.muted?'muted':listenSignal?.status==='live'?'live':'unknown';
+    this.updateSonarPill(fresh);
+    this.updateMicBadge(fresh?state.audio_mic_muted:null);
+  }
+
+  updateBroadcastView() {
+    const sample=this.audioSample || {},state=this.telemetrySnapshot || {};
+    const recent=sample.applicationsAvailable===true && performance.now()-(sample.receivedAt ?? -Infinity)<(sample.maxAgeMs || 300) && state.telemetry_status!=='stale';
+    const apps=recent?(sample.applications || []):[];
+    const view=broadcastView(state.audio_broadcast,apps,recent?sample.routes:{},Date.now()/1000,recent);
+    const programs=playingPrograms(apps),escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const signature=JSON.stringify(programs.map(a=>[a.name,a.executable,a.icon_url,a.excluded,a.in_program_bus]));
+    const list=this.shadowRoot.getElementById('playing-programs');
+    if(list && (signature!==this.programSignature || recent!==this.programRecent)){
+      list.innerHTML=programs.length?programs.map(app=>{
+        const icon=typeof app.icon_url==='string' && /^\/assets\/audio\/apps\/[a-f0-9]{24}\.png$/.test(app.icon_url)?app.icon_url:null;
+        const description=`${app.name} · ذروة الإشارة اللحظية من Windows${app.excluded?' · مستثنى من بث البرامج':''}`;
+        return `<span class="program-chip" data-excluded="${!!app.excluded}" title="${escape(description)}" aria-label="${escape(description)}">${icon?`<img class="program-logo" src="${icon}" alt="${escape(app.name)}" width="44" height="44"><audio-signal-meter application="${icon}" signal-only compact></audio-signal-meter>`:'<span class="logo-missing">شعار غير متاح</span>'}</span>`;
+      }).join(''):(recent?'لا يوجد صوت برامج الآن':'قياس البرامج غير متاح');
+      this.programSignature=signature;this.programRecent=recent;
+    }
+    const panel=this.shadowRoot.getElementById('broadcast-panel');if(!panel)return;
+    panel.dataset.state=view.code;updateText(this.shadowRoot.getElementById('broadcast-label'),view.label);updateText(this.shadowRoot.getElementById('broadcast-detail'),view.detail);
+    updateText(this.shadowRoot.getElementById('broadcast-percent'),view.volume==null?'—':`${view.volume}%`);
+    this.shadowRoot.getElementById('broadcast-fill').style.width=`${Math.max(0,Math.min(100,view.volume??0))}%`;
+    const rail=this.shadowRoot.querySelector('.broadcast-rail');if(view.volume==null)rail.removeAttribute('aria-valuenow');else rail.setAttribute('aria-valuenow',String(view.volume));
+  }
+
   renderMixerChannels() {
-    const updateChannel = (barEl, valEl, vol, isMuted) => {
-      if (!barEl) return;
-      const effectiveVol = (vol === null || vol === undefined) ? 0 : Math.round(vol);
-      if (valEl) {
-        valEl.textContent = (vol === null || vol === undefined) ? '--%' : `${effectiveVol}%`;
-      }
-      barEl.style.width = `${Math.min(100, Math.max(0, effectiveVol))}%`;
-
-      if (isMuted) {
-        barEl.classList.add('muted-fill');
-      } else {
-        barEl.classList.remove('muted-fill');
-      }
-    };
-
-    // Master
-    updateChannel(
-      this.dom.barMaster,
-      null,
-      this.targetValues.audio_master_volume ?? this.targetValues.display_volume,
-      this.targetValues.audio_master_muted
-    );
-
-    // Game
-    updateChannel(
-      this.dom.barGame,
-      this.dom.valGame,
-      this.targetValues.audio_game_volume,
-      this.targetValues.audio_game_muted
-    );
-
-    // Chat
-    updateChannel(
-      this.dom.barChat,
-      this.dom.valChat,
-      this.targetValues.audio_chat_volume,
-      this.targetValues.audio_chat_muted
-    );
-
-    // Media
-    updateChannel(
-      this.dom.barMedia,
-      this.dom.valMedia,
-      this.targetValues.audio_media_volume,
-      this.targetValues.audio_media_muted
-    );
-
-    // Aux
-    updateChannel(
-      this.dom.barAux,
-      this.dom.valAux,
-      this.targetValues.audio_aux_volume,
-      this.targetValues.audio_aux_muted
-    );
+    for(const target of this.shadowRoot?.querySelectorAll('[data-sonar-back-panel]') || [])renderSonarPanel(target,this.telemetrySnapshot || {},{detailed:true,liveInGrid:false});
   }
 
   tick(timestamp) {
@@ -1672,7 +1478,7 @@ export class DashboardDisplay extends HTMLElement {
 
     let needsRender = false;
 
-    for (const key of ['fps', 'display_hz', 'display_volume']) {
+    for (const key of ['fps','display_volume']) {
       const target = this.targetValues[key];
       let current = this.currentValues[key];
 

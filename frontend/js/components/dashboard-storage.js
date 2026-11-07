@@ -1,5 +1,5 @@
-import { animationAlpha, updateTelemetryStatus } from './component-utils.js?v=20261006.2';
-import { EventBus } from '../store/event_bus.js?v=20261006.2';
+import { animationAlpha, updateTelemetryStatus } from './component-utils.js?v=20261007.3';
+import { EventBus } from '../store/event_bus.js?v=20261007.3';
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -251,9 +251,9 @@ template.innerHTML = `
     </div>
   </div>
   <div class="card-badge">
-    <span class="badge-label">المساحة الحرة</span>
+    <span class="badge-label" data-storage-scope>المساحة الحرة · C + D</span>
     <span class="badge-value" id="storage_total_free_gb">--</span>
-    <span class="badge-unit">GB</span>
+    <span class="badge-unit">GiB</span>
   </div>
 </div>
 
@@ -266,8 +266,8 @@ template.innerHTML = `
         <span class="cap-val" id="drive_c_used_gb">--</span>
         <span class="cap-separator">/</span>
         <span class="cap-total" id="drive_c_total_gb">--</span>
-        <span class="cap-unit">GB</span>
-        <span class="cap-free-text">(حر: <bdi dir="ltr"><span id="drive_c_free_gb">--</span> GB</bdi>)</span>
+        <span class="cap-unit">GiB</span>
+        <span class="cap-free-text">(حر: <bdi dir="ltr"><span id="drive_c_free_gb">--</span> GiB</bdi>)</span>
       </div>
     </div>
     <div class="metric-row">
@@ -294,8 +294,8 @@ template.innerHTML = `
         <span class="cap-val" id="drive_d_used_gb">--</span>
         <span class="cap-separator">/</span>
         <span class="cap-total" id="drive_d_total_gb">--</span>
-        <span class="cap-unit">GB</span>
-        <span class="cap-free-text">(حر: <bdi dir="ltr"><span id="drive_d_free_gb">--</span> GB</bdi>)</span>
+        <span class="cap-unit">GiB</span>
+        <span class="cap-free-text">(حر: <bdi dir="ltr"><span id="drive_d_free_gb">--</span> GiB</bdi>)</span>
       </div>
     </div>
     <div class="metric-row">
@@ -373,7 +373,7 @@ export class DashboardStorage extends HTMLElement {
     this.previousTimestamp = null;
     this.events?.abort();
     this.events = new AbortController();
-    this.unsubscribe = EventBus.on('state-changed', this.onStateChange);
+    this.unsubscribe = EventBus.on('state-changed', this.onStateChange, {signal:this.events.signal});
     this.onStateChange(window.stateManager?.currentState || {});
 
     this.isRunning = true;
@@ -393,6 +393,8 @@ export class DashboardStorage extends HTMLElement {
   onStateChange(delta) {
     if (!delta || typeof delta !== 'object') return;
     updateTelemetryStatus(this, delta, Object.keys(this.targetValues));
+    const label=this.shadowRoot.querySelector('[data-storage-scope]');
+    if(label)label.textContent=`المساحة الحرة · ${this.telemetrySnapshot.storage_total_scope || 'غير متاح'}`;
     for (const key in this.targetValues) {
       if (delta[key] !== undefined) {
         this.targetValues[key] = delta[key];

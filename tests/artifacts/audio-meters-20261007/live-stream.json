@@ -1,0 +1,61 @@
+{
+  "audio_frames": 140,
+  "hardware_frames": 10,
+  "seconds": 5.039,
+  "interval_median_ms": 31.06,
+  "interval_p95_ms": 46.97,
+  "interval_max_ms": 178.14,
+  "legacy_hardware_only": true,
+  "ranges": {
+    "input": {
+      "min": 0.004763,
+      "max": 0.456895
+    },
+    "mic": {
+      "min": 0.0,
+      "max": 0.0
+    },
+    "monitoring": {
+      "min": 0.0,
+      "max": 0.213131
+    },
+    "streaming": {
+      "min": 1.5e-05,
+      "max": 0.502073
+    }
+  },
+  "last": {
+    "observed_at": 1791322861.9396362,
+    "source": "Windows Core Audio / endpoint peak",
+    "routes": {
+      "mic": {
+        "id": "{0.0.1.00000000}.{d3fe54cd-1452-4cc2-b727-cd4c59774918}",
+        "name": "SteelSeries Sonar - Microphone (SteelSeries Sonar Virtual Audio Device)",
+        "flow": "capture",
+        "peak": 0.0,
+        "status": "live"
+      },
+      "input": {
+        "id": "{0.0.1.00000000}.{d139c240-d79a-4d48-940b-7999df9ef389}",
+        "name": "Desktop Microphone (RØDE PodMic USB)",
+        "flow": "capture",
+        "peak": 0.212716,
+        "status": "live"
+      },
+      "monitoring": {
+        "id": "{0.0.0.00000000}.{14c91a8e-8aed-4a9f-be50-922b94879339}",
+        "name": "Headphones (Arctis Nova Pro Wireless)",
+        "flow": "render",
+        "peak": 0.0,
+        "status": "live"
+      },
+      "streaming": {
+        "id": "{0.0.0.00000000}.{79f06a76-0b9b-4740-9c00-073873822c0f}",
+        "name": "SteelSeries Sonar - Stream (SteelSeries Sonar Virtual Audio Device)",
+        "flow": "render",
+        "peak": 0.489889,
+        "status": "live"
+      }
+    }
+  }
+}

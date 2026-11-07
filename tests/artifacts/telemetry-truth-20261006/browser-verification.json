@@ -1,0 +1,54 @@
+{
+  "faces": [
+    {
+      "backHidden": "true",
+      "backInert": true,
+      "component": "DASHBOARD-CPU",
+      "frontHidden": "false"
+    },
+    {
+      "backHidden": "true",
+      "backInert": true,
+      "component": "DASHBOARD-GPU",
+      "frontHidden": "false"
+    },
+    {
+      "backHidden": "true",
+      "backInert": true,
+      "component": "DASHBOARD-DISPLAY",
+      "frontHidden": "false"
+    },
+    {
+      "backHidden": "true",
+      "backInert": true,
+      "component": "DASHBOARD-NETWORK",
+      "frontHidden": "false"
+    }
+  ],
+  "theme": "aurora",
+  "viewport": {
+    "height": 1080,
+    "width": 1920
+  },
+  "logs": [],
+  "audioFits": [
+    {
+      "height": 189,
+      "levels": 12,
+      "scroll": 189,
+      "theme": "folio"
+    },
+    {
+      "height": 223,
+      "levels": 12,
+      "scroll": 225,
+      "theme": "orbit"
+    },
+    {
+      "height": 128,
+      "levels": 12,
+      "scroll": 128,
+      "theme": "vector"
+    }
+  ]
+}

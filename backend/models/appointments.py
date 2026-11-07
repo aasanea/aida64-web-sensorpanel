@@ -14,11 +14,13 @@ class AppointmentsMetrics(BaseModel):
     next_appointment_seconds: Optional[int] = Field(default=None, description="Seconds remaining until next appointment")
     next_appointment_ongoing: Optional[bool] = Field(default=None, description="Whether next appointment is currently ongoing")
     today_appointments: Optional[list] = Field(default=None, description="Full list of today's appointments")
+    all_appointments: Optional[list] = Field(default=None, description="Full list of all scheduled appointments")
 
 class AppointmentCreateRequest(BaseModel):
     """Payload to create a new appointment."""
     title: str = Field(..., description="Appointment title in Arabic or English")
     time: str = Field(..., description="Time in HH:MM (24-hour) format")
+    date: Optional[str] = Field(default=None, description="Date in YYYY-MM-DD format (optional, omit for daily recurring)")
     category: str = Field(default="work", description="Category: work, personal, urgent, meeting")
     category_label: str = Field(default="عمل", description="Category label in Arabic")
     location: Optional[str] = Field(default="", description="Location or meeting platform")

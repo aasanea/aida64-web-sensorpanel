@@ -1,0 +1,3 @@
+riff.png: existing local app icon D:/ajazz/riff_256.png.
+rode-podmic-usb.webp: installed RODE Central original asset, assets/device_images/PodMicUsb.webp.
+Copied unchanged for this local dashboard.

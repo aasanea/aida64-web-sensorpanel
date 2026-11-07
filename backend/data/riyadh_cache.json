@@ -1,33 +1,87 @@
 {
-  "timestamp": 1791114996.1600437,
+  "timestamp": 1794078006.4633539,
   "data": {
-    "riyadh_temp": 38.2,
-    "riyadh_weather_desc": "مشمس",
-    "riyadh_weather_icon": "☀️",
-    "prayer_fajr": "4:28",
-    "prayer_sunrise": "5:46",
-    "prayer_dhuhr": "11:42",
-    "prayer_asr": "3:06",
-    "prayer_maghrib": "5:37",
-    "prayer_isha": "7:07",
-    "next_prayer_name": "العصر",
-    "next_prayer_time": "3:06",
-    "next_prayer_seconds": 563,
-    "prev_prayer_name": "الظهر",
-    "prev_prayer_time": "11:42",
-    "prev_prayer_seconds": 11676
+    "riyadh_temp": 27.8,
+    "riyadh_weather_desc": "صافي",
+    "riyadh_weather_icon": "🌙",
+    "prayer_fajr": "4:44",
+    "prayer_sunrise": "6:04",
+    "prayer_dhuhr": "11:37",
+    "prayer_asr": "2:47",
+    "prayer_maghrib": "5:10",
+    "prayer_isha": "6:40",
+    "next_prayer_name": "الفجر",
+    "next_prayer_time": "4:44",
+    "next_prayer_seconds": 24233,
+    "prev_prayer_name": "العشاء",
+    "prev_prayer_time": "6:40",
+    "prev_prayer_seconds": 12006
   },
   "raw_timings": {
-    "Fajr": "04:28",
-    "Sunrise": "05:46",
-    "Dhuhr": "11:42",
-    "Asr": "15:06",
-    "Sunset": "17:37",
-    "Maghrib": "17:37",
-    "Isha": "19:07",
-    "Imsak": "04:18",
-    "Midnight": "23:42",
-    "Firstthird": "21:40",
-    "Lastthird": "01:43"
+    "Fajr": "04:44",
+    "Sunrise": "06:04",
+    "Dhuhr": "11:37",
+    "Asr": "14:47",
+    "Sunset": "17:10",
+    "Maghrib": "17:10",
+    "Isha": "18:40",
+    "Imsak": "04:34",
+    "Midnight": "23:37",
+    "Firstthird": "21:28",
+    "Lastthird": "01:46"
+  },
+  "weather_observed_at": 1794077899.046828,
+  "schedule": {
+    "2026-11-06": {
+      "timings": {
+        "Fajr": "04:43",
+        "Sunrise": "06:03",
+        "Dhuhr": "11:37",
+        "Asr": "14:48",
+        "Sunset": "17:10",
+        "Maghrib": "17:10",
+        "Isha": "18:40",
+        "Imsak": "04:33",
+        "Midnight": "23:37",
+        "Firstthird": "21:28",
+        "Lastthird": "01:46"
+      },
+      "observed_at": 1794068076.5326393,
+      "cached": true
+    },
+    "2026-11-07": {
+      "timings": {
+        "Fajr": "04:44",
+        "Sunrise": "06:04",
+        "Dhuhr": "11:37",
+        "Asr": "14:47",
+        "Sunset": "17:10",
+        "Maghrib": "17:10",
+        "Isha": "18:40",
+        "Imsak": "04:34",
+        "Midnight": "23:37",
+        "Firstthird": "21:28",
+        "Lastthird": "01:46"
+      },
+      "observed_at": 1794077727.25031,
+      "cached": true
+    },
+    "2026-11-08": {
+      "timings": {
+        "Fajr": "04:44",
+        "Sunrise": "06:04",
+        "Dhuhr": "11:37",
+        "Asr": "14:47",
+        "Sunset": "17:09",
+        "Maghrib": "17:09",
+        "Isha": "18:39",
+        "Imsak": "04:34",
+        "Midnight": "23:37",
+        "Firstthird": "21:28",
+        "Lastthird": "01:46"
+      },
+      "observed_at": 1794077727.9969177,
+      "cached": true
+    }
   }
 }

@@ -1,12 +1,12 @@
-import { animationAlpha, connectFlipFaces, updateTelemetryStatus } from './component-utils.js?v=20261006.2';
-import { EventBus } from '../store/event_bus.js?v=20261006.2';
-import { GaugeEngine } from './gauge-styles-engine.js?v=20261006.2';
-import { GaugePicker } from './gauge-style-picker.js?v=20261006.2';
+import { animationAlpha, connectFlipFaces, updateTelemetryStatus } from './component-utils.js?v=20261007.3';
+import { EventBus } from '../store/event_bus.js?v=20261007.3';
+import { GaugeEngine } from './gauge-styles-engine.js?v=20261007.3';
+import { GaugePicker } from './gauge-style-picker.js?v=20261007.3';
 
 const template = document.createElement('template');
 template.innerHTML = `
 <style>
-  @import url('/css/gauge-styles.css?v=20261006.2');
+  @import url('/css/gauge-styles.css?v=20261007.3');
   /* Local Component Styles */
   :host {
     display: block;
@@ -670,7 +670,7 @@ template.innerHTML = `
           </div>
         </div>
 
-        <!-- Integrated VRAM Bar (GB Used / Total + Load %) -->
+        <!-- Integrated VRAM Bar (GiB Used / Total + Load %) -->
         <div class="metric-row">
           <div class="metric-info">
             <span class="arabic-label">ذاكرة الفيديو VRAM</span>
@@ -678,7 +678,7 @@ template.innerHTML = `
               <span class="metric-val" id="vram_used_gb">--</span>
               <span class="metric-sep">/</span>
               <span class="metric-val-total" id="vram_total_gb">--</span>
-              <span class="metric-unit">GB</span>
+              <span class="metric-unit">GiB</span>
               <span class="metric-pct-tag" id="vram_used_percent">--%</span>
             </div>
           </div>
@@ -868,7 +868,7 @@ template.innerHTML = `
 
     <!-- Back Face Hardware Footer -->
     <div class="card-footer-strip">
-      <span id="gpu_hardware_desc">NVIDIA GEFORCE RTX 4080 • AD103 GPU • 16GB GDDR6X 256-BIT • TELEMETRY MATRIX</span>
+      <span id="gpu_hardware_desc" data-inventory="gpu">هوية كرت الشاشة غير متاحة</span>
     </div>
   </div>
 </div>
@@ -1097,7 +1097,7 @@ export class DashboardGPU extends HTMLElement {
     if (!this.dom || !this.dom.gpu_hardware_desc) return;
     const fallback = this.getAttribute('hardware-desc') || 
                      this.getAttribute('gpu-name') || 
-                     'NVIDIA GEFORCE RTX 4080 • AD103 GPU • 16GB GDDR6X 256-BIT • TELEMETRY MATRIX';
+                     'هوية كرت الشاشة غير متاحة';
     const text = (typeof customDesc === 'string' && customDesc.trim().length > 0) ? customDesc.trim() : fallback;
     if (this.dom.gpu_hardware_desc.textContent !== text) {
       this.dom.gpu_hardware_desc.textContent = text;
@@ -1193,7 +1193,7 @@ export class DashboardGPU extends HTMLElement {
     // Front Face Mission-Critical Bars
     this.updateBar(this.dom.gpu_load, this.dom.gpu_load_bar, this.currentValues.gpu_load, 0, 100, 0);
     
-    // Integrated VRAM (GB used / total + load %)
+    // Integrated VRAM (GiB used / total + load %)
     this.updateText(this.dom.vram_used_gb, this.currentValues.vram_used_gb, 1);
     this.updateText(this.dom.vram_total_gb, this.currentValues.vram_total_gb, 1);
     this.updateTextWithSuffix(this.dom.vram_used_percent, this.currentValues.vram_used_percent, 0, '%');

@@ -1,5 +1,5 @@
-import { connectFlipFaces } from './component-utils.js?v=20261006.2';
-import { EventBus } from '../store/event_bus.js?v=20261006.2';
+import { connectFlipFaces } from './component-utils.js?v=20261007.3';
+import { EventBus } from '../store/event_bus.js?v=20261007.3';
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -1047,6 +1047,7 @@ export class DashboardMatches extends HTMLElement {
 
   connectedCallback() {
     this.events?.abort();
+    this.fetchController?.abort();
     this.events = new AbortController();
     connectFlipFaces(this);
     this._btnFlipStandings = this.shadowRoot.getElementById('btn-flip-standings');
@@ -1139,6 +1140,7 @@ export class DashboardMatches extends HTMLElement {
 
   disconnectedCallback() {
     this.events?.abort();
+    this.fetchController?.abort();
     this.flipObserver?.disconnect();
     if (this._pollTimer) {
       clearInterval(this._pollTimer);
@@ -1151,12 +1153,14 @@ export class DashboardMatches extends HTMLElement {
   }
 
   _tickLiveTimers() {
-    if (!this.shadowRoot) return;
+    if (!this.shadowRoot || this._cachedMatchesData?.source_meta?.status!=='live') return;
     const timerEls = this.shadowRoot.querySelectorAll('.live-timer');
     if (!timerEls.length) return;
 
     const now = Date.now();
     timerEls.forEach(el => {
+      const observed=this._cachedMatchesData?.source_meta?.observed_at;
+      if(!observed || now/1000-observed>120){this.markSaved(this._cachedMatchesData);this.dataset.telemetryStatus=this._cachedMatchesData.source_meta.status;this.dataset.telemetryLabel='بيانات قديمة';return;}
       if (el.dataset.isHalftime === 'true') return;
       if (el.dataset.autoProgress === 'false') return;
 
@@ -1180,31 +1184,41 @@ export class DashboardMatches extends HTMLElement {
   }
 
   async fetchData() {
+    this.fetchController?.abort();
+    const controller=new AbortController();this.fetchController=controller;
     try {
       const [matchesRes, standingsRes] = await Promise.all([
-        fetch('/api/matches/today').catch(() => null),
-        fetch('/api/matches/saudi-standings').catch(() => null)
+        fetch('/api/matches/today',{signal:controller.signal,cache:'no-store'}).catch(() => null),
+        fetch('/api/matches/saudi-standings',{signal:controller.signal,cache:'no-store'}).catch(() => null)
       ]);
 
+      if(controller.signal.aborted)return;
       if (matchesRes && matchesRes.ok) {
         const matchesData = await matchesRes.json();
         this._cachedMatchesData = matchesData;
         this.renderMatches(matchesData);
-      }
+      } else {this.markSaved(this._cachedMatchesData);if(this._cachedMatchesData)this.renderMatches(this._cachedMatchesData);else this._matchesContainer.textContent='المباريات غير متاحة';}
 
       if (standingsRes && standingsRes.ok) {
         const standingsData = await standingsRes.json();
         this._cachedStandingsData = standingsData;
         this.renderTournaments(standingsData);
-      }
+      } else {this.markSaved(this._cachedStandingsData);if(this._cachedStandingsData)this.renderTournaments(this._cachedStandingsData);}
     } catch (err) {
       console.warn('DashboardMatches fetch error:', err);
     }
   }
 
+  markSaved(data) {
+    if(data?.source_meta){const source=data.source_meta;const expired=Date.now()/1000-(source.observed_at || 0)>(source.max_age_seconds || 120);data.source_meta={...source,status:source.status==='unavailable'?'unavailable':source.status==='stale'||expired?'stale':'cached'};}
+  }
+
   renderMatches(data) {
     if (!this._matchesContainer) return;
 
+    this.dataset.telemetryStatus=data.source_meta?.status || 'unavailable';
+    this.dataset.telemetryLabel=data.source_meta?.status==='live'?'محدّث':data.source_meta?.status==='unavailable'?'غير متاح':data.source_meta?.status==='stale'?'بيانات قديمة':'نسخة محفوظة';
+    this.title=`365Scores · آخر تحديث ${data.last_update || 'غير متاح'} · وقت المباراة تقديري بين تحديثات المصدر`;
     const allMatches = data.matches || [];
     const saudiMatches = data.saudi_matches || (data.saudi_round?.matches) || allMatches.filter(m => m.is_saudi);
     const upcomingMatches = data.upcoming_matches || [];
@@ -1323,7 +1337,7 @@ export class DashboardMatches extends HTMLElement {
       let statusBadge = '';
 
       if (isLive) {
-        scoreHtml = `<div class="score-numbers live-score">${escapeHtml(m.home_score ?? 0)} - ${escapeHtml(m.away_score ?? 0)}</div>`;
+        scoreHtml = `<div class="score-numbers live-score">${escapeHtml(m.home_score == null || m.home_score<0 ? '—' : m.home_score)} - ${escapeHtml(m.away_score == null || m.away_score<0 ? '—' : m.away_score)}</div>`;
         const isHalftime = m.is_halftime || (m.status_text && (m.status_text.includes('استراحة') || m.status_text.includes('بين الشوطين')));
         const addedTime = m.added_time;
         const periodText = m.status_text ? escapeHtml(m.status_text) : (m.game_time && m.game_time > 45 ? 'الشوط الثاني' : 'الشوط الأول');
@@ -1331,7 +1345,8 @@ export class DashboardMatches extends HTMLElement {
         const baseMin = Number(m.game_time_minutes ?? m.game_time ?? (m.live_minute ? parseInt(m.live_minute, 10) : 0)) || 0;
         const baseSec = Number(m.game_time_seconds) || 0;
         const baseEpoch = m.game_time_epoch ? Math.round(Number(m.game_time_epoch) * 1000) : Date.now();
-        const autoProg = (m.auto_progress !== false && !isHalftime) ? 'true' : 'false';
+        const fresh=data.source_meta?.status==='live' && Date.now()/1000-(data.source_meta?.observed_at || 0)<120;
+        const autoProg = (fresh && m.auto_progress === true && m.game_time_epoch && !isHalftime) ? 'true' : 'false';
 
         // Calculate initial ticking clock
         const now = Date.now();
@@ -1392,7 +1407,7 @@ export class DashboardMatches extends HTMLElement {
           `;
         }
       } else if (isEnded) {
-        scoreHtml = `<div class="score-numbers">${escapeHtml(m.home_score ?? 0)} - ${escapeHtml(m.away_score ?? 0)}</div>`;
+        scoreHtml = `<div class="score-numbers">${escapeHtml(m.home_score == null || m.home_score<0 ? '—' : m.home_score)} - ${escapeHtml(m.away_score == null || m.away_score<0 ? '—' : m.away_score)}</div>`;
         statusBadge = `<div class="match-status-badge status-ended">${escapeHtml(m.status_text || 'انتهت')}</div>`;
       } else {
         const timeStr = escapeHtml(m.start_time_display || '--:--');

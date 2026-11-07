@@ -4,18 +4,24 @@ Provides REST endpoints (/health, /api/sensors) and real-time WebSocket streamin
 """
 
 import asyncio
+import json
 import os
 import sys
-
-# Ensure sys.stdout and sys.stderr are valid file-like streams even under pythonw.exe
-if sys.stdout is None:
-    sys.stdout = open(os.devnull, "w", encoding="utf-8")
-if sys.stderr is None:
-    sys.stderr = open(os.devnull, "w", encoding="utf-8")
 
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
+
+# Ensure sys.stdout and sys.stderr are valid file-like streams even under pythonw.exe
+# Redirect sys.stderr to a persistent log file so crashes and uncaught tracebacks are preserved
+log_dir = Path(__file__).resolve().parent.parent / "logs"
+log_dir.mkdir(parents=True, exist_ok=True)
+stderr_log_path = log_dir / "stderr.log"
+
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, "w", encoding="utf-8")
+if sys.stderr is None:
+    sys.stderr = open(stderr_log_path, "a", encoding="utf-8", buffering=1)
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,6 +33,8 @@ from services.weather_service import WeatherService
 from services.sonar_service import SonarService
 from services.matches_service import MatchesService
 from services.network_service import NetworkService
+from services.audio_meter_service import AudioMeterService
+from services.broadcast_service import BroadcastService
 from api.routes import router, build_aggregated_sensor_data
 from api.websocket import manager
 
@@ -52,6 +60,18 @@ logger.add(
 )
 
 broadcast_task: Optional[asyncio.Task] = None
+audio_broadcast_task: Optional[asyncio.Task] = None
+
+
+async def stream_audio_worker():
+    loop = asyncio.get_running_loop()
+    deadline = loop.time()
+    while True:
+        if manager.audio_subscribers:
+            await manager.broadcast_json({'type': 'audio-levels', 'data': AudioMeterService.get_instance().get_snapshot()}, audio_only=True)
+        # Absolute deadlines avoid accumulating Windows timer rounding and send time.
+        deadline = max(deadline + AudioMeterService.interval, loop.time())
+        await asyncio.sleep(max(0, deadline - loop.time()))
 
 # ---------------------------------------------------------
 # Background Streaming Worker
@@ -81,7 +101,7 @@ async def stream_sensors_worker() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifecycle manager for startup and graceful shutdown."""
-    global broadcast_task
+    global broadcast_task, audio_broadcast_task
     logger.info(
         f"Initializing AIDA64 Backend on {settings.host}:{settings.port} "
         f"(poll: {settings.poll_interval_ms}ms)"
@@ -90,13 +110,24 @@ async def lifespan(app: FastAPI):
     await weather_service.start()
     sonar_service = SonarService.get_instance()
     await sonar_service.start()
+    audio_service = AudioMeterService.get_instance()
+    await audio_service.start()
+    await BroadcastService.get_instance().start()
     matches_service = MatchesService.get_instance()
     await matches_service.start()
     network_service = NetworkService.get_instance()
     await network_service.start()
     broadcast_task = asyncio.create_task(stream_sensors_worker())
+    audio_broadcast_task = asyncio.create_task(stream_audio_worker())
     yield
     logger.info("Initiating graceful shutdown...")
+    audio_broadcast_task.cancel()
+    try:
+        await audio_broadcast_task
+    except asyncio.CancelledError:
+        pass
+    await BroadcastService.get_instance().stop()
+    await audio_service.stop()
     if broadcast_task:
         broadcast_task.cancel()
         try:
@@ -145,19 +176,24 @@ async def websocket_telemetry(websocket: WebSocket):
     )
     try:
         # Immediately push initial state upon connection
-        initial_data = build_aggregated_sensor_data(fallback_registry=settings.fallback_registry)
-        await websocket.send_json(initial_data.model_dump())
+        initial_data = await asyncio.to_thread(build_aggregated_sensor_data, fallback_registry=settings.fallback_registry)
+        await manager.send_json(websocket, initial_data.model_dump())
 
         while True:
             text = await websocket.receive_text()
             stripped = text.strip()
             if stripped.lower() == "ping":
-                await websocket.send_text("pong")
+                await manager.send_text(websocket, "pong")
             elif stripped.lower() == "pong":
                 pass
             else:
-                # Echo or ignore unexpected message
-                logger.debug(f"Received WS message: {stripped}")
+                # Typed peaks are opt-in so cached/legacy dashboards keep receiving hardware only.
+                try:
+                    message = json.loads(stripped)
+                    if isinstance(message, dict) and message.get('type') == 'subscribe' and message.get('stream') == 'audio-levels':
+                        manager.audio_subscribers.add(websocket)
+                except (ValueError, TypeError):
+                    pass
     except WebSocketDisconnect:
         await manager.disconnect(websocket)
     except Exception as e:

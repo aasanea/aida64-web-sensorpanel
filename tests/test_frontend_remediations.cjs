@@ -19,19 +19,25 @@ class Element extends EventTarget {
     this.content = { cloneNode: () => new Element() };
   }
   attachShadow() { return this.shadowRoot = new Element(); }
+  replaceChildren() { this.children=[]; }
+  append(element) { return this.appendChild(element); }
+  closest() { return null; }
   appendChild(element) { this.children.push(element); return element; }
   querySelector(selector) { if (!this.nodes.has(selector)) this.nodes.set(selector, new Element()); return this.nodes.get(selector); }
   querySelectorAll() { return []; }
   getElementById(id) { return this.querySelector(`#${id}`); }
   setAttribute(key, value) { this.attributes.set(key, String(value)); }
   getAttribute(key) { return this.attributes.get(key) ?? null; }
+  hasAttribute(key) { return this.attributes.has(key); }
+  removeAttribute(key) { this.attributes.delete(key); }
   contains(element) { return element === this || this.children.includes(element); }
   getTotalLength() { this.lengthReads = (this.lengthReads || 0) + 1; return 400; }
   focus() { this.focused = true; }
 }
 const context = vm.createContext({
-  console, EventTarget, AbortController, HTMLElement: Element,
-  document: { createElement: () => new Element(), createElementNS: () => new Element() },
+  console, Event, EventTarget, AbortController, HTMLElement: Element,
+  localStorage:{getItem:()=>null,setItem(){}},IntersectionObserver:class {observe(){} disconnect(){}},
+  document: {hidden:false,addEventListener(){}, createElement: () => new Element(), createElementNS: () => new Element() },
   window: { location: { protocol: 'http:', host: '127.0.0.1:8088' } },
   customElements: { define() {} }, MutationObserver: class { observe() {} disconnect() {} },
   performance: { now: () => now },
@@ -52,7 +58,7 @@ function load(relative) {
   vm.runInContext(`(() => { ${source}\nObject.assign(globalThis, { ${names.join(',')} }); })()`, context, { filename: relative });
 }
 load('store/event_bus.js'); load('store/state_manager.js'); load('components/component-utils.js');
-load('components/gauge-styles-engine.js');
+load('components/av-readings.js');load('components/audio-signal-meter.js');load('components/gauge-styles-engine.js');load('components/sonar-panel.js');load('components/broadcast-view.js');
 vm.runInContext("const GaugePicker = { getSavedStyle: () => 'tachometer' };", context);
 for (const name of ['cpu', 'gpu', 'ram', 'display', 'weather', 'appointments']) load(`components/dashboard-${name}.js`);
 let passed = 0;
@@ -87,12 +93,12 @@ test('Omitted fields and nonfinite numbers clear; silence becomes stale', `
 `);
 test('Master volume zero, missing FPS, and frame-time provenance', `
   const display = new DashboardDisplay();
-  display.onStateChange({ display_volume: 75, audio_master_volume: 0, fps: 100 });
+  display.onStateChange({ display_volume: 75, audio_master_volume: 0, fps: 100, fps_source: "AIDA64" });
   assert.equal(display.targetValues.display_volume, 0);
   assert.equal(display.currentValues.frametime_ms, 10); assert.equal(display.frameTimeSource, 'derived');
   display.onStateChange({ fps: 0 }); assert.equal(display.currentValues.frametime_ms, null);
   assert.equal(display.dom.frametime.textContent, '--'); assert.equal(display.frameTimeSource, 'unavailable');
-  display.onStateChange({ fps: null, audio_master_volume: null }); assert.equal(display.targetValues.display_volume, 75);
+  display.onStateChange({ fps: null, audio_master_volume: null }); assert.equal(display.targetValues.display_volume, null);
   display.onStateChange({ frametime_ms: 7.5 }); assert.equal(display.currentValues.frametime_ms, 7.5);
   assert.equal(display.frameTimeSource, 'measured');
   display.onStateChange({ frametime_ms: null }); assert.equal(display.currentValues.frametime_ms, null);
@@ -112,10 +118,12 @@ test('Derived RAM percentages recompute on deltas and never retain stale results
   ram.onStateChange({ ram_used_gb: null }); assert.equal(ram.targetValues.ram_used_percent, null);
   assert.equal(ram.dataset.percentSource, 'unavailable');
 `);
-test('Missing and shortened core streams clear individual readings', `
-  const cpu = new DashboardCPU(); cpu.cpuCores = [{ type:'P', id:1, load:70, temp:55 }]; cpu.renderCores();
-  assert.equal(cpu.coreDom.cells[0].load.textContent, '70%');
-  cpu.cpuCores = []; cpu.renderCores(); assert.equal(cpu.coreDom.cells[0].load.textContent, '--%');
+test('Core topology follows source IDs and removes shortened streams', `
+  const cpu = new DashboardCPU();
+  cpu.onStateChange({cpu_cores:[{type:'P',id:1,load:70,temp:55},{type:'E',id:3,load:0,temp:0}]});
+  assert.equal(cpu.coreDom.cells.length,2);assert.equal(cpu.coreDom.cells[0].load.textContent,'70%');
+  assert.equal(cpu.coreDom.cells[1].load.textContent,'0%');
+  cpu.onStateChange({cpu_cores:null});assert.equal(cpu.coreDom.cells.length,0);
 `);
 test('Missing temperature streams clear a held thermal alarm', `
   for (const Type of [DashboardCPU, DashboardGPU]) {
@@ -187,3 +195,115 @@ test('Stopping transport clears heartbeat, reconnect, and stale timers', `
   console.log('PASS An in-flight fallback response cannot repopulate stopped telemetry');
   console.log(`${passed} behavioral checks passed`);
 })().catch(error => { console.error(error); process.exitCode = 1; });
+
+test('Failed source clears only its fields while a healthy transport stays live', `
+  const manager=new StateManager();
+  const sources={aida:{status:'live'},sonar:{status:'unavailable'},weather:{status:'cached'}};
+  manager.processNewState({cpu_temp:40,audio_master_volume:55,riyadh_temp:30,telemetry_sources:sources,telemetry_fields:{cpu_temp:{source:'aida'},audio_master_volume:{source:'sonar'},riyadh_temp:{source:'weather'}}});
+  assert.equal(manager.currentState.cpu_temp,40);assert.equal(manager.currentState.audio_master_volume,null);
+  assert.equal(manager.currentState.riyadh_temp,30);assert.equal(manager.currentState.telemetry_status,'live');
+`);
+test('Sonar rendering preserves both independent stream paths and mute truth', `
+  const target=document.createElement('div');
+  renderSonarPanel(target,{sonar_connected:true,sonar_mode:'stream',sonar_channels:{master:{monitoring:{volume:0,muted:true},streaming:{volume:100,muted:false}},media:{monitoring:{volume:12,muted:false},streaming:{volume:30,muted:false}}}});
+  assert.ok(target.innerHTML.includes('0% 🔇'));assert.ok(target.innerHTML.includes('100%'));assert.ok(target.innerHTML.includes('30%'));
+  assert.ok(target.innerHTML.includes('استماع'));assert.ok(target.innerHTML.includes('بث'));
+  renderSonarPanel(target,{sonar_connected:false,display_volume:90});
+  assert.ok(target.innerHTML.includes('Sonar غير متاح'));assert.ok(!target.innerHTML.includes('90%'));
+`);
+
+
+test('Audio peaks have one delivery path and survive complete hardware snapshots', `
+  const manager=new StateManager();manager.stopped=false;
+  let audio=0,hardware=0;const off=EventBus.on('audio-levels',()=>audio++);const offHw=EventBus.on('state-changed',()=>hardware++);
+  const sample={observed_at:Date.now()/1000,routes:{input:{peak:0,status:'live'},streaming:{peak:NaN,status:'live'}}};
+  manager.processIncomingMessage(JSON.stringify({type:'audio-levels',data:sample}));
+  assert.equal(audio,1);assert.equal(hardware,0);assert.equal(manager.currentState.audio_levels.routes.input.peak,0);
+  assert.equal(manager.currentState.audio_levels.routes.streaming.peak,null);
+  manager.processNewState({cpu_temp:40});assert.equal(manager.currentState.audio_levels.routes.input.peak,0);
+  manager.processAudioLevels({...sample,observed_at:Date.now()/1000-1});assert.equal(manager.currentState.audio_levels.routes.input.peak,null);
+  manager.stop();assert.equal(manager.currentState.audio_levels,null);off();offHw();
+`);
+
+test('Meter silence, logarithmic scale, gain zero, stale reset and lifecycle cleanup', `
+  assert.equal(meterPosition(0),0);assert.equal(meterPosition(1),1);assert.ok(Math.abs(meterPosition(.001))<1e-9);
+  const meter=new AudioSignalMeter();meter.setAttribute('route','input');meter.isConnected=true;
+  const before=EventBus.events['audio-levels']?.length || 0;
+  meter.connectedCallback();assert.equal(EventBus.events['audio-levels'].length,before+1);
+  meter.state={telemetry_status:'live',sonar_mode:'stream',sonar_channels:{mic:{monitoring:{volume:0,muted:true}}}};meter.updateGain();assert.equal(meter.nodes.gain.textContent,'0% 🔇');
+  meter.sample={routes:{input:{peak:.1,status:'live',name:'Real mic'}},receivedAt:1000};meter.route='input';meter.draw(1016);
+  assert.ok(meter.level>0);assert.equal(meter.nodes.state.textContent,'حي');
+  meter.draw(1400);assert.equal(meter.level,0);assert.equal(meter.held,0);assert.equal(meter.nodes.state.textContent,'غير متاح');
+  meter.sample.receivedAt=1500;meter.sample.routes.input.peak=0;meter.draw(1500);assert.equal(meter.nodes.state.textContent,'صمت');
+  // Cancel every scheduled ID for this mock; draw() normally runs only from its one RAF.
+  for(const id of frames.keys())frames.delete(id);
+  meter.disconnectedCallback();assert.equal(EventBus.events['audio-levels'].length,before);assert.equal(meter.raf,0);
+`);
+
+test('A/V card rejects refresh-rate FPS fallback and invalid measurements', `
+  const fallback = displayReadings({fps:240,fps_source:'Display',display_hz:240});
+  assert.equal(fallback.fps,null); assert.equal(fallback.frameTime,null); assert.equal(fallback.hz,240);
+  for(const fps of [null,undefined,NaN,Infinity,-1,'240',true])assert.equal(displayReadings({fps,fps_source:'RTSS'}).fps,null);
+  const valid=displayReadings({fps:120,fps_source:'RTSS',display_hz:240});assert.equal(valid.fps,120);assert.equal(valid.frameTime,1000/120);
+  assert.equal(displayReadings({fps:0,fps_source:'AIDA64'}).fps,0);
+  assert.equal(displayReadings({fps:0,fps_source:'AIDA64'}).frameTime,null);
+  assert.equal(displayReadings({fps:120,fps_source:'RTSS',frametime_ms:7.3}).frameTime,7.3);
+  assert.equal(displayReadings({fps:120,fps_source:'RTSS',telemetry_status:'stale'}).fps,null);
+  assert.equal(displayReadings({fps:120,fps_source:'RTSS',frametime_ms:7.3,telemetry_sources:{aida:{status:'stale'}}}).frameTime,null);
+`);
+test('A/V keeps the actual FPS target and card body does not flip', `
+  const card=new DashboardDisplay();card.onStateChange({fps:120,fps_source:'RTSS',display_hz:240});
+  assert.equal(card.currentValues.fps,120);card.onStateChange({fps:60});assert.equal(card.targetValues.fps,60);assert.equal(card.currentValues.fps,120);
+  card.connectedCallback();card.dispatchEvent(new Event('click'));assert.equal(card.classList.contains('flipped'),false);
+  card.handleFlipBtnClick({stopPropagation(){}});assert.equal(card.classList.contains('flipped'),true);card.disconnectedCallback();
+`);
+
+test('FPS eases in both directions consistently across frame rates and clears stale data immediately', `
+  const run=hz=>{const card=new DashboardDisplay();card.onStateChange({fps:60,fps_source:'RTSS'});card.onStateChange({fps:180});card.isRunning=true;card.previousTimestamp=0;
+    let previous=60;
+    for(let i=1;i<=hz/2;i++){card.tick(i*1000/hz);assert.ok(card.currentValues.fps>=previous&&card.currentValues.fps<=180);previous=card.currentValues.fps;}
+    const high=card.currentValues.fps;assert.ok(high>170&&high<180);
+    card.onStateChange({fps:30});card.tick(500+1000/hz);assert.ok(card.currentValues.fps<high&&card.currentValues.fps>30);
+    card.onStateChange({fps:null});assert.equal(card.currentValues.fps,null);assert.equal(card.dom.fps.textContent,'--');
+    for(const id of frames.keys())frames.delete(id);return high;};
+  assert.ok(Math.abs(run(60)-run(240))<.0001);
+`);
+
+test('Each application meter reads its own peak, decays smoothly and releases subscriptions', `
+  const initial=EventBus.events['audio-levels']?.length || 0;
+  const chrome=new AudioSignalMeter(),riff=new AudioSignalMeter();
+  for(const [meter,key]of [[chrome,'chrome-icon'],[riff,'riff-icon']]){meter.isConnected=true;meter.setAttribute('application',key);meter.setAttribute('signal-only','');meter.connectedCallback();}
+  assert.equal(EventBus.events['audio-levels'].length,initial+2);
+  const sample={receivedAt:1000,applications:[{active:true,icon_url:'chrome-icon',peak:.5,name:'Chrome'},{active:true,icon_url:'riff-icon',peak:0,name:'Riff'}],routes:{monitoring:{status:'live',peak:1}}};
+  chrome.sample=riff.sample=sample;chrome.draw(1016);riff.draw(1016);
+  assert.ok(chrome.level>0);assert.equal(riff.level,0);
+  const before=chrome.level;sample.applications[0].peak=0;chrome.draw(1033);assert.ok(chrome.level>0&&chrome.level<before);
+  chrome.draw(1400);assert.equal(chrome.level,0);assert.equal(chrome.held,0);
+  chrome.disconnectedCallback();riff.disconnectedCallback();assert.equal(EventBus.events['audio-levels'].length,initial);
+  for(const id of frames.keys())frames.delete(id);
+`);
+
+test('A/V source expiry clears gain and microphone status without changing audio', `
+  const card=new DashboardDisplay();card.onStateChange({sonar_connected:true,sonar_mode:'stream',audio_mic_muted:false,sonar_source:{status:'live',observed_at:Date.now()/1000},sonar_channels:{master:{monitoring:{volume:23,muted:false}},mic:{monitoring:{volume:100,muted:false}}}});
+  assert.ok(card.shadowRoot.getElementById('quick-master-gain').textContent.includes('23%'));
+  card.onStateChange({sonar_source:{status:'stale',observed_at:Date.now()/1000}});
+  assert.equal(card.shadowRoot.getElementById('quick-master-gain').textContent,'—');
+  assert.equal(card.dom.micText.textContent,'غير متاح');
+`);
+
+test('Audio overview keeps microphone, listening, device identity and Discord states independent', `
+  const card=new DashboardDisplay();
+  card.audioSample={receivedAt:performance.now(),routes:{input:{status:'live',peak:.1,name:'Rode'},monitoring:{status:'live',peak:.2,name:'Bose'}}};
+  card.onStateChange({sonar_connected:true,sonar_mode:'stream',sonar_channels:{mic:{streaming:{volume:17,muted:false},monitoring:{volume:91,muted:true}},master:{monitoring:{volume:0,muted:true},streaming:{volume:100,muted:false}}},audio_broadcast:{available:true,discord_ready:true,observed_at:Date.now()/1000,discord_muted:false}});
+  assert.equal(card.shadowRoot.getElementById('quick-mic-gain').textContent,'17%');
+  assert.equal(card.shadowRoot.getElementById('quick-master-gain').textContent,'0%');
+  assert.equal(card.shadowRoot.getElementById('mic-overview').dataset.state,'live');
+  assert.equal(card.shadowRoot.getElementById('listening-overview').dataset.state,'muted');
+  assert.equal(card.shadowRoot.getElementById('quick-input-device').textContent,'Rode');
+  assert.equal(card.shadowRoot.getElementById('quick-output-device').textContent,'Bose');
+  card.onStateChange({audio_broadcast:{available:true,discord_ready:true,observed_at:Date.now()/1000,discord_deafened:true}});
+  assert.equal(card.shadowRoot.getElementById('mic-overview').dataset.state,'muted');
+  card.onStateChange({sonar_source:{status:'stale'}});
+  assert.equal(card.shadowRoot.getElementById('quick-mic-gain').textContent,'—');
+  assert.equal(card.shadowRoot.getElementById('mic-overview').dataset.state,'unknown');
+`);

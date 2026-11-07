@@ -15,7 +15,8 @@ import os
 import json
 import time
 import asyncio
-from datetime import datetime
+from services.telemetry_contract import source_meta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, List, Optional
 import httpx
 from loguru import logger
@@ -101,33 +102,6 @@ COMPETITION_NAMES = {
     5453: "تصفيات كأس العالم",
 }
 
-OFFICIAL_BROADCASTERS = {
-    649: "SSC 1 HD",
-    5501: "SSC 1 HD",
-    5502: "SSC Extra 1",
-    6164: "SSC 1 HD",
-    5452: "SSC 1 HD // الكأس",
-    5930: "beIN Sports // SSC HD",
-    6196: "beIN AFC // SSC HD",
-    7: "beIN Sports 1 HD",
-    11: "beIN Sports 1 HD",
-    17: "Starzplay // AD Sports",
-    25: "beIN Sports 5 HD",
-    35: "beIN Sports 4 HD",
-    572: "beIN Sports 1 HD",
-    573: "beIN Sports 1 HD",
-    6934: "beIN Sports 2 HD",
-    623: "beIN AFC // SSC HD",
-    7016: "beIN Sports 1 HD",
-    570: "beIN Sports HD",
-    13: "SSC 1 HD",
-    552: "beIN Sports 1 HD",
-    553: "beIN Sports 1 HD",
-    571: "AD Sports Premium 1",
-    575: "Dubai Sports",
-    574: "beIN Sports 4 HD",
-}
-
 ARABIC_MONTHS = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"]
 WEEKDAYS = ["الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت", "الأحد"]
 
@@ -137,27 +111,8 @@ DEFAULT_HEADERS = {
     "Accept-Language": "ar,en;q=0.9",
 }
 
-# Fallback Standings Table in case of network unavailability on first boot
-FALLBACK_ROSHN_STANDINGS = [
-    {"position": 1, "team_name": "الهلال", "team_id": 5457, "played": 7, "won": 6, "tied": 0, "lost": 1, "goals_for": 23, "goals_against": 5, "goal_diff": 18, "points": 18},
-    {"position": 2, "team_name": "الاتحاد", "team_id": 8593, "played": 7, "won": 5, "tied": 2, "lost": 0, "goals_for": 16, "goals_against": 6, "goal_diff": 10, "points": 17},
-    {"position": 3, "team_name": "النصر", "team_id": 7549, "played": 7, "won": 5, "tied": 1, "lost": 1, "goals_for": 18, "goals_against": 8, "goal_diff": 10, "points": 16},
-    {"position": 4, "team_name": "القادسية", "team_id": 8947, "played": 7, "won": 5, "tied": 1, "lost": 1, "goals_for": 14, "goals_against": 6, "goal_diff": 8, "points": 16},
-    {"position": 5, "team_name": "نيوم", "team_id": 55793, "played": 7, "won": 5, "tied": 0, "lost": 2, "goals_for": 15, "goals_against": 8, "goal_diff": 7, "points": 15},
-    {"position": 6, "team_name": "الشباب", "team_id": 8944, "played": 7, "won": 4, "tied": 1, "lost": 2, "goals_for": 12, "goals_against": 7, "goal_diff": 5, "points": 13},
-    {"position": 7, "team_name": "الأهلي", "team_id": 7548, "played": 7, "won": 4, "tied": 1, "lost": 2, "goals_for": 13, "goals_against": 9, "goal_diff": 4, "points": 13},
-    {"position": 8, "team_name": "التعاون", "team_id": 8949, "played": 7, "won": 3, "tied": 2, "lost": 2, "goals_for": 10, "goals_against": 8, "goal_diff": 2, "points": 11},
-    {"position": 9, "team_name": "الاتفاق", "team_id": 8943, "played": 7, "won": 3, "tied": 1, "lost": 3, "goals_for": 9, "goals_against": 10, "goal_diff": -1, "points": 10},
-    {"position": 10, "team_name": "الرائد", "team_id": 8950, "played": 7, "won": 2, "tied": 2, "lost": 3, "goals_for": 8, "goals_against": 10, "goal_diff": -2, "points": 8},
-    {"position": 11, "team_name": "الخليج", "team_id": 9660, "played": 7, "won": 2, "tied": 1, "lost": 4, "goals_for": 7, "goals_against": 11, "goal_diff": -4, "points": 7},
-    {"position": 12, "team_name": "ضمك", "team_id": 11571, "played": 7, "won": 2, "tied": 1, "lost": 4, "goals_for": 9, "goals_against": 14, "goal_diff": -5, "points": 7},
-    {"position": 13, "team_name": "العروبة", "team_id": 9662, "played": 7, "won": 2, "tied": 1, "lost": 4, "goals_for": 6, "goals_against": 13, "goal_diff": -7, "points": 7},
-    {"position": 14, "team_name": "الرياض", "team_id": 9661, "played": 7, "won": 2, "tied": 0, "lost": 5, "goals_for": 7, "goals_against": 14, "goal_diff": -7, "points": 6},
-    {"position": 15, "team_name": "الخلود", "team_id": 36195, "played": 7, "won": 1, "tied": 2, "lost": 4, "goals_for": 8, "goals_against": 14, "goal_diff": -6, "points": 5},
-    {"position": 16, "team_name": "الأخدود", "team_id": 36194, "played": 7, "won": 1, "tied": 1, "lost": 5, "goals_for": 6, "goals_against": 13, "goal_diff": -7, "points": 4},
-    {"position": 17, "team_name": "الوحدة", "team_id": 8945, "played": 7, "won": 1, "tied": 1, "lost": 5, "goals_for": 8, "goals_against": 19, "goal_diff": -11, "points": 4},
-    {"position": 18, "team_name": "الفتح", "team_id": 8946, "played": 7, "won": 1, "tied": 0, "lost": 6, "goals_for": 5, "goals_against": 15, "goal_diff": -10, "points": 3},
-]
+
+
 
 class MatchesService:
     _instance: Optional["MatchesService"] = None
@@ -171,7 +126,10 @@ class MatchesService:
         self._upcoming_matches: List[Dict[str, Any]] = []
         self._saudi_round_info: Dict[str, Any] = {"round_name": "الجولة الحالية", "matches": []}
         self._last_standings_update: Optional[str] = None
+        self._competition_updated = {}
+        self._startup_task = None
         self._last_matches_update: Optional[str] = None
+        self._matches_partial = False
         self._running: bool = False
         self._task: Optional[asyncio.Task] = None
         
@@ -196,12 +154,13 @@ class MatchesService:
                 logger.warning(f"Could not load standings cache: {e}")
 
         if not self._standings:
-            self._standings = list(FALLBACK_ROSHN_STANDINGS)
+            self._standings = []
 
         if os.path.exists(TOURNAMENTS_CACHE_FILE):
             try:
                 with open(TOURNAMENTS_CACHE_FILE, "r", encoding="utf-8") as f:
                     tdata = json.load(f)
+                    self._competition_updated = tdata.get("competition_updated", {})
                     self._afc_standings = tdata.get("afc_standings", [])
                     self._kings_cup_matches = tdata.get("kings_cup_matches", [])
             except Exception as e:
@@ -234,6 +193,7 @@ class MatchesService:
                     {
                         "afc_standings": self._afc_standings,
                         "kings_cup_matches": self._kings_cup_matches,
+                        "competition_updated": self._competition_updated,
                         "last_update": self._last_standings_update,
                     },
                     f,
@@ -261,13 +221,17 @@ class MatchesService:
         if self._running:
             return
         self._running = True
-        asyncio.create_task(self.refresh_all())
+        self._startup_task = asyncio.create_task(self.refresh_all())
         self._task = asyncio.create_task(self._poll_loop())
         logger.info("MatchesService background poller started.")
 
     async def stop(self) -> None:
         """Stops the background poller."""
         self._running = False
+        if self._startup_task:
+            self._startup_task.cancel()
+            await asyncio.gather(self._startup_task, return_exceptions=True)
+            self._startup_task = None
         if self._task:
             self._task.cancel()
             try:
@@ -318,6 +282,8 @@ class MatchesService:
                     s_list = rdata.get("standings", [])
                     if s_list:
                         self._standings = self._parse_standings_rows(s_list[0].get("rows", []))
+                        self._competition_updated["roshn"] = datetime.now().astimezone().isoformat()
+                        self._last_standings_update = self._competition_updated["roshn"]
 
                 # Process AFC Champions League Elite Standings
                 if isinstance(afc_resp, httpx.Response) and afc_resp.status_code == 200:
@@ -325,17 +291,18 @@ class MatchesService:
                     as_list = adata.get("standings", [])
                     if as_list:
                         self._afc_standings = self._parse_standings_rows(as_list[0].get("rows", []))
+                        self._competition_updated["afc"] = datetime.now().astimezone().isoformat()
 
                 # Process King's Cup Games / Bracket
                 if isinstance(king_resp, httpx.Response) and king_resp.status_code == 200:
                     kdata = king_resp.json()
+                    self._competition_updated["king"] = datetime.now().astimezone().isoformat()
                     kgames = kdata.get("games", [])
                     self._kings_cup_matches = [
                         parsed for g in kgames
                         if (parsed := self._parse_game(g, is_saudi=True, comp_name="كأس خادم الحرمين الشريفين"))
                     ]
 
-                self._last_standings_update = datetime.now().isoformat()
                 self._save_cache()
                 logger.info(f"Updated Tournaments: Roshn ({len(self._standings)}), AFC ({len(self._afc_standings)}), King's Cup ({len(self._kings_cup_matches)})")
         except Exception as e:
@@ -388,6 +355,11 @@ class MatchesService:
                 requests = [client.get(urls[k]) for k in keys]
                 responses = await asyncio.gather(*requests, return_exceptions=True)
                 resp_map = dict(zip(keys, responses))
+                successes=[resp for resp in responses if isinstance(resp,httpx.Response) and resp.status_code==200]
+                if not successes:
+                    self._matches_partial = True
+                    return
+                self._matches_partial = len(successes)!=len(responses)
 
                 def parse_comp_games(resp, cid: int, comp_name: str, is_saudi: bool = False) -> List[Dict[str, Any]]:
                     games = []
@@ -580,7 +552,9 @@ class MatchesService:
             game_time_status = g.get("gameTimeStatus", 0)
             
             is_live = game_time_status in [1, 2, 3] or "شوط" in status_text or "مباشر" in status_text
-            is_ended = "انتهت" in status_text or game_time_status == 4
+            is_ended = any(text in status_text for text in ("انتهت", "بعد ركلات الترجيح", "بعد وقت إضافي")) or game_time_status == 4
+            if is_ended:
+                is_live = False
 
             home_score = home.get("score")
             away_score = away.get("score")
@@ -597,7 +571,7 @@ class MatchesService:
             weekday_name = ""
             if start_time:
                 try:
-                    dt = datetime.fromisoformat(start_time.replace("Z", "+00:00"))
+                    dt = datetime.fromisoformat(start_time.replace("Z", "+00:00")).astimezone(timezone(timedelta(hours=3)))
                     start_time_str = dt.strftime("%H:%M")
                     date_key = dt.strftime("%Y-%m-%d")
                     weekday_name = WEEKDAYS[dt.weekday()]
@@ -652,22 +626,6 @@ class MatchesService:
                         live_minute = f"{game_time}+{added_time}'"
                     else:
                         live_minute = f"{game_time}'"
-                elif start_time:
-                    try:
-                        dt_start = datetime.fromisoformat(start_time.replace("Z", "+00:00"))
-                        now_tz = datetime.now().astimezone()
-                        elapsed_min = int((now_tz - dt_start.astimezone()).total_seconds() / 60)
-                        if 0 < elapsed_min <= 47:
-                            live_minute = f"{min(45, elapsed_min)}'"
-                        elif 47 < elapsed_min <= 62:
-                            live_minute = "HT"
-                            is_halftime = True
-                        elif 62 < elapsed_min <= 115:
-                            second_half_min = 45 + (elapsed_min - 62)
-                            live_minute = f"{min(90, second_half_min)}'"
-                    except Exception:
-                        pass
-
             is_saudi_nt = (home_id == SAUDI_NT_ID or away_id == SAUDI_NT_ID)
             is_roshn = (c_id == SAUDI_LEAGUE_ID)
             is_s = (
@@ -684,7 +642,7 @@ class MatchesService:
                 final_comp_name = COMPETITION_NAMES.get(c_id, g.get("competitionDisplayName", "المنتخب السعودي" if is_saudi_nt else ("دوري روشن" if is_roshn else "مباراة")))
 
             # Determine broadcasting channel
-            channel = OFFICIAL_BROADCASTERS.get(c_id, "SSC 1 HD // الكأس" if is_saudi_nt else ("SSC 1 HD" if is_s else "beIN Sports HD"))
+            channel = None  # Only an actual API tvNetworks entry is a measured broadcaster.
             tv_networks = g.get("tvNetworks") or []
             if tv_networks and isinstance(tv_networks, list) and len(tv_networks) > 0:
                 net_name = tv_networks[0].get("name")
@@ -738,23 +696,34 @@ class MatchesService:
             logger.debug(f"Error parsing game {g.get('id')}: {e}")
             return None
 
+    def _freshness(self, timestamp, max_age):
+        try:
+            observed = datetime.fromisoformat(timestamp).timestamp() if timestamp else None
+        except (ValueError, TypeError):
+            observed = None
+        return source_meta("365Scores API", observed, max_age, cached=bool(observed and time.time()-observed > 90))
+
     def get_standings(self) -> Dict[str, Any]:
         """Returns Multi-Tournament Standings Snapshot (Roshn, AFC Elite, King's Cup)."""
         return {
+            "source_meta": self._freshness(self._last_standings_update, 900),
             "competition": "دوري روشن السعودي",
             "competition_id": SAUDI_LEAGUE_ID,
             "total_teams": len(self._standings),
-            "last_update": self._last_standings_update or datetime.now().isoformat(),
+            "last_update": self._last_standings_update,
             "standings": self._standings,
             "roshn": {
+                "source_meta": self._freshness(self._competition_updated.get("roshn", self._last_standings_update), 900),
                 "name": "دوري روشن السعودي",
                 "standings": self._standings,
             },
             "afc": {
+                "source_meta": self._freshness(self._competition_updated.get("afc"), 900),
                 "name": "دوري أبطال آسيا للنخبة",
                 "standings": self._afc_standings[:16] if self._afc_standings else [],
             },
             "king": {
+                "source_meta": self._freshness(self._competition_updated.get("king"), 900),
                 "name": "كأس خادم الحرمين الشريفين",
                 "matches": self._kings_cup_matches[:16] if self._kings_cup_matches else [],
             }
@@ -764,8 +733,10 @@ class MatchesService:
         """Returns Today's Matches, Upcoming Fixtures, and Saudi Round Snapshot."""
         live_count = sum(1 for m in self._matches if m.get("is_live"))
         return {
+            "source_meta": {**self._freshness(self._last_matches_update, 120), **({"status":"cached"} if self._matches_partial and self._freshness(self._last_matches_update, 120)["status"] == "live" else {})},
+            "partial": self._matches_partial,
             "live_count": live_count,
-            "last_update": self._last_matches_update or datetime.now().isoformat(),
+            "last_update": self._last_matches_update,
             "matches": self._matches,
             "saudi_matches": self._saudi_matches,
             "upcoming_matches": self._upcoming_matches,

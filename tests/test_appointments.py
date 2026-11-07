@@ -81,3 +81,52 @@ def test_api_add_and_delete_appointment(client):
     assert del_resp.status_code == 200
     del_data = del_resp.json()
     assert del_data["status"] == "deleted"
+
+def test_api_add_appointment_with_specific_date(client):
+    from datetime import datetime, timezone, timedelta
+    now = datetime.now(timezone(timedelta(hours=3)))
+    today_str = now.strftime("%Y-%m-%d")
+    future_str = "2099-12-31"
+
+    # 1. Add appointment for today
+    payload_today = {
+        "title": "موعد مؤرخ لليوم",
+        "time": "23:58",
+        "date": today_str,
+        "category": "work",
+        "category_label": "عمل",
+        "location": "الرياض",
+    }
+    resp1 = client.post("/api/appointments", json=payload_today)
+    assert resp1.status_code == 200
+    apt1_id = resp1.json()["appointment"]["id"]
+
+    # 2. Add appointment for a future date
+    payload_future = {
+        "title": "موعد مستقبلي محدد",
+        "time": "10:00",
+        "date": future_str,
+        "category": "health",
+        "category_label": "صحة",
+        "location": "المستشفى",
+    }
+    resp2 = client.post("/api/appointments", json=payload_future)
+    assert resp2.status_code == 200
+    apt2_id = resp2.json()["appointment"]["id"]
+
+    # 3. Verify get_appointments
+    get_resp = client.get("/api/appointments")
+    assert get_resp.status_code == 200
+    data = get_resp.json()
+    today_ids = [a["id"] for a in data["today_appointments"]]
+    all_ids = [a["id"] for a in data.get("all_appointments", [])]
+
+    assert apt1_id in today_ids, "Today's dated appointment must appear in today_appointments"
+    assert apt2_id not in today_ids, "Future dated appointment must NOT appear in today_appointments"
+    assert apt1_id in all_ids, "Today's appointment must appear in all_appointments"
+    assert apt2_id in all_ids, "Future appointment must appear in all_appointments"
+
+    # Clean up
+    client.delete(f"/api/appointments/{apt1_id}")
+    client.delete(f"/api/appointments/{apt2_id}")
+

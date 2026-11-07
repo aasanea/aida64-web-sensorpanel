@@ -1,0 +1,406 @@
+{
+  "status": "complete",
+  "viewport": "1920x1080",
+  "checks": [
+    {
+      "name": "Native bootstrap initialized",
+      "passed": true
+    },
+    {
+      "name": "Zero master volume is displayed",
+      "passed": true
+    },
+    {
+      "name": "Frame time is derived and labelled",
+      "passed": true
+    },
+    {
+      "name": "Zero FPS clears derived frame time",
+      "passed": true
+    },
+    {
+      "name": "Measured frame time has explicit provenance",
+      "passed": true
+    },
+    {
+      "name": "Missing CPU sensor clears the gauge",
+      "passed": true
+    },
+    {
+      "name": "Stale streams are labelled",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 1 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 2 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 3 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 4 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 5 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 6 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 7 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 8 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 9 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 10 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 11 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 12 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 13 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 14 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 15 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 16 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 17 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 18 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 19 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 20 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu remount preserves subscription count",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 1 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 2 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 3 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 4 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 5 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 6 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 7 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 8 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 9 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 10 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 11 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 12 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 13 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 14 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 15 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 16 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 17 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 18 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 19 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 20 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu remount preserves subscription count",
+      "passed": true
+    },
+    {
+      "name": "DASHBOARD-CPU starts with inaccessible back",
+      "passed": true
+    },
+    {
+      "name": "DASHBOARD-CPU flip hides front and moves focus",
+      "passed": true
+    },
+    {
+      "name": "DASHBOARD-GPU starts with inaccessible back",
+      "passed": true
+    },
+    {
+      "name": "DASHBOARD-GPU flip hides front and moves focus",
+      "passed": true
+    },
+    {
+      "name": "DASHBOARD-MATCHES starts with inaccessible back",
+      "passed": true
+    },
+    {
+      "name": "DASHBOARD-MATCHES flip hides front and moves focus",
+      "passed": true
+    },
+    {
+      "name": "DASHBOARD-DISPLAY starts with inaccessible back",
+      "passed": true
+    },
+    {
+      "name": "DASHBOARD-DISPLAY flip hides front and moves focus",
+      "passed": true
+    },
+    {
+      "name": "DASHBOARD-NETWORK starts with inaccessible back",
+      "passed": true
+    },
+    {
+      "name": "DASHBOARD-NETWORK flip hides front and moves focus",
+      "passed": true
+    },
+    {
+      "name": "Countdown text mutates at most once per second",
+      "passed": true
+    },
+    {
+      "name": "default semantic contrast >=4.5:1",
+      "passed": true
+    },
+    {
+      "name": "oled semantic contrast >=4.5:1",
+      "passed": true
+    },
+    {
+      "name": "cyberpunk semantic contrast >=4.5:1",
+      "passed": true
+    },
+    {
+      "name": "emerald semantic contrast >=4.5:1",
+      "passed": true
+    },
+    {
+      "name": "aurora semantic contrast >=4.5:1",
+      "passed": true
+    },
+    {
+      "name": "f1-pitwall semantic contrast >=4.5:1",
+      "passed": true
+    },
+    {
+      "name": "neo-tactile semantic contrast >=4.5:1",
+      "passed": true
+    },
+    {
+      "name": "No runtime exceptions",
+      "passed": true
+    }
+  ],
+  "timings": [
+    {
+      "name": "Live hardware stream",
+      "seconds": 30,
+      "frames": 5376,
+      "fps": 179.18,
+      "p95_ms": 12.4,
+      "max_ms": 25.1,
+      "intervals_over_25ms": 1,
+      "long_tasks": 0,
+      "long_animation_frames": []
+    },
+    {
+      "name": "default animated telemetry",
+      "seconds": 5,
+      "frames": 779,
+      "fps": 155.68,
+      "p95_ms": 12.5,
+      "max_ms": 16.8,
+      "intervals_over_25ms": 0,
+      "long_tasks": 0,
+      "long_animation_frames": []
+    },
+    {
+      "name": "oled animated telemetry",
+      "seconds": 5,
+      "frames": 912,
+      "fps": 182.25,
+      "p95_ms": 12.5,
+      "max_ms": 37.6,
+      "intervals_over_25ms": 6,
+      "long_tasks": 0,
+      "long_animation_frames": []
+    },
+    {
+      "name": "cyberpunk animated telemetry",
+      "seconds": 5,
+      "frames": 790,
+      "fps": 157.87,
+      "p95_ms": 12.5,
+      "max_ms": 41.7,
+      "intervals_over_25ms": 5,
+      "long_tasks": 0,
+      "long_animation_frames": []
+    },
+    {
+      "name": "emerald animated telemetry",
+      "seconds": 5,
+      "frames": 739,
+      "fps": 147.68,
+      "p95_ms": 12.5,
+      "max_ms": 41.6,
+      "intervals_over_25ms": 4,
+      "long_tasks": 0,
+      "long_animation_frames": []
+    },
+    {
+      "name": "aurora animated telemetry",
+      "seconds": 5,
+      "frames": 699,
+      "fps": 139.69,
+      "p95_ms": 12.5,
+      "max_ms": 29.2,
+      "intervals_over_25ms": 4,
+      "long_tasks": 0,
+      "long_animation_frames": []
+    },
+    {
+      "name": "f1-pitwall animated telemetry",
+      "seconds": 5,
+      "frames": 837,
+      "fps": 167.27,
+      "p95_ms": 12.4,
+      "max_ms": 33.3,
+      "intervals_over_25ms": 4,
+      "long_tasks": 0,
+      "long_animation_frames": []
+    },
+    {
+      "name": "neo-tactile animated telemetry",
+      "seconds": 5.01,
+      "frames": 876,
+      "fps": 174.77,
+      "p95_ms": 12.4,
+      "max_ms": 41.6,
+      "intervals_over_25ms": 7,
+      "long_tasks": 0,
+      "long_animation_frames": []
+    }
+  ],
+  "errors": [],
+  "contrast": {
+    "default": {
+      "normal": 12.26,
+      "warning": 14.27,
+      "critical": 9.36
+    },
+    "oled": {
+      "normal": 12.26,
+      "warning": 14.27,
+      "critical": 9.36
+    },
+    "cyberpunk": {
+      "normal": 12.26,
+      "warning": 14.27,
+      "critical": 9.36
+    },
+    "emerald": {
+      "normal": 12.26,
+      "warning": 14.27,
+      "critical": 9.36
+    },
+    "aurora": {
+      "normal": 12.26,
+      "warning": 14.27,
+      "critical": 9.36
+    },
+    "f1-pitwall": {
+      "normal": 12.26,
+      "warning": 14.27,
+      "critical": 9.36
+    },
+    "neo-tactile": {
+      "normal": 6.27,
+      "warning": 6.84,
+      "critical": 7.28
+    }
+  }
+}

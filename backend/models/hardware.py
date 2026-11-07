@@ -1,5 +1,5 @@
 """Hardware metrics models."""
-from typing import Optional
+from typing import Optional, Any
 from pydantic import BaseModel, Field
 
 class HardwareMetrics(BaseModel):
@@ -10,8 +10,8 @@ class HardwareMetrics(BaseModel):
     cpu_power: Optional[float] = Field(default=None, description="CPU Package Power in Watts")
     cpu_voltage: Optional[float] = Field(default=None, description="CPU Voltage in Volts")
     cpu_fan_rpm: Optional[float] = Field(default=None, description="CPU Fan Speed in RPM")
-    cpu_hotspot_temp: Optional[float] = Field(default=None, description="CPU Hotspot/Package Temperature in °C")
-    cpu_cores: Optional[list[dict]] = Field(default=None, description="20-Core Hybrid Telemetry (Arrow Lake: 8 P-Cores + 12 E-Cores)")
+    cpu_hotspot_temp: Optional[float] = Field(default=None, description="CPU Package Temperature in °C")
+    cpu_cores: Optional[list[dict]] = Field(default=None, description="Detected core IDs; P/E classification from Windows topology, None when unknown")
 
     # GPU Metrics
     gpu_temp: Optional[float] = Field(default=None, description="GPU Core Temperature in °C")
@@ -24,15 +24,15 @@ class HardwareMetrics(BaseModel):
 
     # RAM Metrics
     ram_used_percent: Optional[float] = Field(default=None, description="System RAM Used %")
-    ram_used_gb: Optional[float] = Field(default=None, description="System RAM Used in GB")
-    ram_total_gb: Optional[float] = Field(default=None, description="System RAM Total in GB")
+    ram_used_gb: Optional[float] = Field(default=None, description="System RAM Used in GiB")
+    ram_total_gb: Optional[float] = Field(default=None, description="System RAM Total in GiB")
     ram_speed_mhz: Optional[float] = Field(default=None, description="RAM Clock Speed in MHz")
     ram_temp: Optional[float] = Field(default=None, description="RAM Temperature in °C")
 
     # VRAM Metrics
     vram_used_percent: Optional[float] = Field(default=None, description="GPU VRAM Used %")
-    vram_used_gb: Optional[float] = Field(default=None, description="GPU VRAM Used in GB")
-    vram_total_gb: Optional[float] = Field(default=None, description="GPU VRAM Total in GB")
+    vram_used_gb: Optional[float] = Field(default=None, description="GPU VRAM Used in GiB")
+    vram_total_gb: Optional[float] = Field(default=None, description="GPU VRAM Total in GiB")
     vram_speed_mhz: Optional[float] = Field(default=None, description="VRAM Memory Clock in MHz")
     vram_temp: Optional[float] = Field(default=None, description="VRAM Temperature in °C")
 
@@ -45,33 +45,33 @@ class HardwareMetrics(BaseModel):
 
     # Storage Metrics (Drives C & D)
     drive_c_used_percent: Optional[float] = Field(default=None, description="Drive C: Utilization %")
-    drive_c_free_gb: Optional[float] = Field(default=None, description="Drive C: Free Space in GB")
-    drive_c_used_gb: Optional[float] = Field(default=None, description="Drive C: Used Space in GB")
-    drive_c_total_gb: Optional[float] = Field(default=None, description="Drive C: Total Space in GB")
+    drive_c_free_gb: Optional[float] = Field(default=None, description="Drive C: Free Space in GiB")
+    drive_c_used_gb: Optional[float] = Field(default=None, description="Drive C: Used Space in GiB")
+    drive_c_total_gb: Optional[float] = Field(default=None, description="Drive C: Total Space in GiB")
     drive_d_used_percent: Optional[float] = Field(default=None, description="Drive D: Utilization %")
-    drive_d_free_gb: Optional[float] = Field(default=None, description="Drive D: Free Space in GB")
-    drive_d_used_gb: Optional[float] = Field(default=None, description="Drive D: Used Space in GB")
-    drive_d_total_gb: Optional[float] = Field(default=None, description="Drive D: Total Space in GB")
-    storage_total_free_gb: Optional[float] = Field(default=None, description="Total Free Storage across drives in GB")
+    drive_d_free_gb: Optional[float] = Field(default=None, description="Drive D: Free Space in GiB")
+    drive_d_used_gb: Optional[float] = Field(default=None, description="Drive D: Used Space in GiB")
+    drive_d_total_gb: Optional[float] = Field(default=None, description="Drive D: Total Space in GiB")
+    storage_total_free_gb: Optional[float] = Field(default=None, description="Total Free Storage across drives in GiB")
 
     # Network Metrics
     network_download_mbps: Optional[float] = Field(default=None, description="Active NIC Download Rate in Mbps")
     network_upload_mbps: Optional[float] = Field(default=None, description="Active NIC Upload Rate in Mbps")
-    network_top_processes: Optional[list[dict]] = Field(default=None, description="Top 5 bandwidth-consuming processes")
+    network_top_processes: Optional[list[dict]] = Field(default=None, description="Top 5 processes by measured established connection count")
     network_active_conns: Optional[int] = Field(default=None, description="Total active internet connections")
     network_local_ip: Optional[str] = Field(default=None, description="Primary Local IP")
     network_ext_ip: Optional[str] = Field(default=None, description="External / Public IP")
     network_link_speed_mbps: Optional[float] = Field(default=None, description="Active NIC Link Speed (e.g. 1000 Mbps)")
-    network_total_dl_gb: Optional[float] = Field(default=None, description="Session Total Download in GB")
-    network_total_ul_gb: Optional[float] = Field(default=None, description="Session Total Upload in GB")
-    network_ping_ms: Optional[float] = Field(default=None, description="Network Ping Latency in ms")
+    network_total_dl_gb: Optional[float] = Field(default=None, description="Session Total Download in GiB")
+    network_total_ul_gb: Optional[float] = Field(default=None, description="Session Total Upload in GiB")
+    network_ping_ms: Optional[float] = Field(default=None, description="TCP connection latency to DNS endpoint in ms")
 
     # System & Header Telemetry
-    fps: Optional[float] = Field(default=None, description="FPS / Refresh Counter")
+    fps: Optional[float] = Field(default=None, description="Real-time display / engine FPS from AIDA64 or RTSS")
     total_power: Optional[float] = Field(default=None, description="Total System Power in Watts")
     max_temp: Optional[float] = Field(default=None, description="Maximum Temperature across all nodes in °C")
     display_hz: Optional[float] = Field(default=None, description="Display Refresh Rate in Hz")
-    display_volume: Optional[float] = Field(default=None, description="Master Volume in %")
+    display_volume: Optional[float] = Field(default=None, description="Windows system output volume in %")
     display_res: Optional[str] = Field(default=None, description="Display Resolution WxH")
     date_gregorian: Optional[str] = Field(default=None, description="Gregorian Date string")
     date_hijri: Optional[str] = Field(default=None, description="Hijri Date string")
@@ -91,3 +91,19 @@ class HardwareMetrics(BaseModel):
     audio_aux_volume: Optional[float] = Field(default=None, description="Sonar Aux Volume %")
     audio_aux_muted: Optional[bool] = Field(default=None, description="Sonar Aux Muted")
 
+
+    telemetry_sources: dict[str, Any] = Field(default_factory=dict)
+    telemetry_fields: dict[str, Any] = Field(default_factory=dict)
+    hardware_inventory: Optional[dict] = None
+    sonar_mode: Optional[str] = None
+    sonar_channels: Optional[dict] = None
+    sonar_profiles: Optional[dict] = None
+    sonar_source: Optional[dict] = None
+    audio_broadcast: Optional[dict] = None
+    network_source: Optional[dict] = None
+    network_interface: Optional[str] = None
+    network_process_measurement: Optional[str] = None
+    cpu_gpu_power: Optional[float] = None
+    storage_total_scope: Optional[str] = None
+    nvme_sensor_name: Optional[str] = None
+    fps_source: Optional[str] = None

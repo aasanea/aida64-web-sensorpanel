@@ -1,0 +1,1108 @@
+{
+  "appointments_count": 3,
+  "appointments_remaining": 0,
+  "next_appointment_title": null,
+  "next_appointment_time": null,
+  "next_appointment_category": null,
+  "next_appointment_category_label": null,
+  "next_appointment_location": null,
+  "next_appointment_seconds": null,
+  "next_appointment_ongoing": false,
+  "today_appointments": [
+    {
+      "id": "apt_1",
+      "title": "مراجعة تقارير السيرفرات والشبكة",
+      "time": "09:30",
+      "time_12h": "9:30 ص",
+      "category": "work",
+      "category_label": "عمل",
+      "location": "المكتب التقني",
+      "status": "completed",
+      "status_label": "منقضي",
+      "seconds_until": -40805
+    },
+    {
+      "id": "apt_2",
+      "title": "جلسة تطوير برمجيات وهندسة عتاد",
+      "time": "14:00",
+      "time_12h": "2:00 م",
+      "category": "work",
+      "category_label": "عمل",
+      "location": "معمل الابتكار",
+      "status": "completed",
+      "status_label": "منقضي",
+      "seconds_until": -24605
+    },
+    {
+      "id": "apt_3",
+      "title": "تمرين رياضي مسائي",
+      "time": "18:30",
+      "time_12h": "6:30 م",
+      "category": "personal",
+      "category_label": "شخصي",
+      "location": "الصالة الرياضية",
+      "status": "completed",
+      "status_label": "منقضي",
+      "seconds_until": -8405
+    }
+  ],
+  "riyadh_temp": 34.7,
+  "riyadh_weather_desc": "صافي",
+  "riyadh_weather_icon": "🌙",
+  "prayer_fajr": "4:29",
+  "prayer_sunrise": "5:47",
+  "prayer_dhuhr": "11:41",
+  "prayer_asr": "3:04",
+  "prayer_maghrib": "5:35",
+  "prayer_isha": "7:05",
+  "next_prayer_name": "الفجر",
+  "next_prayer_time": "4:30",
+  "next_prayer_seconds": 27594,
+  "prev_prayer_name": "العشاء",
+  "prev_prayer_time": "7:05",
+  "prev_prayer_seconds": 6305,
+  "weather_source": {
+    "source": "Open-Meteo / Riyadh",
+    "observed_at": 1791308287.43168,
+    "max_age_seconds": 3600,
+    "status": "cached"
+  },
+  "prayer_source": {
+    "source": "Aladhan / Umm Al-Qura / Riyadh",
+    "observed_at": 1791308821.810045,
+    "max_age_seconds": 86400,
+    "status": "live"
+  },
+  "prayer_date": "2026-10-06",
+  "cpu_temp": 48.0,
+  "cpu_load": 44.0,
+  "cpu_clock": 5200.0,
+  "cpu_power": 78.08,
+  "cpu_voltage": 1.368,
+  "cpu_fan_rpm": 2096.0,
+  "cpu_hotspot_temp": 49.0,
+  "cpu_cores": [
+    {
+      "id": 1,
+      "type": "P",
+      "load": 51.0,
+      "temp": 40.0
+    },
+    {
+      "id": 2,
+      "type": "P",
+      "load": 80.0,
+      "temp": 44.0
+    },
+    {
+      "id": 3,
+      "type": "E",
+      "load": 13.0,
+      "temp": 40.0
+    },
+    {
+      "id": 4,
+      "type": "E",
+      "load": 12.0,
+      "temp": 40.0
+    },
+    {
+      "id": 5,
+      "type": "E",
+      "load": 13.0,
+      "temp": 40.0
+    },
+    {
+      "id": 6,
+      "type": "E",
+      "load": 7.0,
+      "temp": 42.0
+    },
+    {
+      "id": 7,
+      "type": "P",
+      "load": 54.0,
+      "temp": 48.0
+    },
+    {
+      "id": 8,
+      "type": "P",
+      "load": 42.0,
+      "temp": 46.0
+    },
+    {
+      "id": 9,
+      "type": "P",
+      "load": 45.0,
+      "temp": 42.0
+    },
+    {
+      "id": 10,
+      "type": "P",
+      "load": 84.0,
+      "temp": 50.0
+    },
+    {
+      "id": 11,
+      "type": "E",
+      "load": 2.0,
+      "temp": 42.0
+    },
+    {
+      "id": 12,
+      "type": "E",
+      "load": 8.0,
+      "temp": 42.0
+    },
+    {
+      "id": 13,
+      "type": "E",
+      "load": 6.0,
+      "temp": 42.0
+    },
+    {
+      "id": 14,
+      "type": "E",
+      "load": 2.0,
+      "temp": 42.0
+    },
+    {
+      "id": 15,
+      "type": "E",
+      "load": 27.0,
+      "temp": 44.0
+    },
+    {
+      "id": 16,
+      "type": "E",
+      "load": 30.0,
+      "temp": 44.0
+    },
+    {
+      "id": 17,
+      "type": "E",
+      "load": 27.0,
+      "temp": 44.0
+    },
+    {
+      "id": 18,
+      "type": "E",
+      "load": 25.0,
+      "temp": 44.0
+    },
+    {
+      "id": 19,
+      "type": "P",
+      "load": 36.0,
+      "temp": 46.0
+    },
+    {
+      "id": 20,
+      "type": "P",
+      "load": 48.0,
+      "temp": 46.0
+    }
+  ],
+  "gpu_temp": 52.0,
+  "gpu_load": 25.0,
+  "gpu_clock": 2752.0,
+  "gpu_power": 80.63,
+  "gpu_voltage_mv": 1055.0,
+  "gpu_fan_rpm": 0.0,
+  "gpu_hotspot_temp": 57.0,
+  "ram_used_percent": 46.0,
+  "ram_used_gb": 14.6,
+  "ram_total_gb": 31.72,
+  "ram_speed_mhz": 3000.0,
+  "ram_temp": 43.0,
+  "vram_used_percent": 36.0,
+  "vram_used_gb": 5.73,
+  "vram_total_gb": 15.92,
+  "vram_speed_mhz": 15001.0,
+  "vram_temp": 62.0,
+  "motherboard_temp": 27.0,
+  "vrm_temp": 40.0,
+  "pch_temp": 34.0,
+  "nvme_temp": 43.0,
+  "pump_rpm": null,
+  "drive_c_used_percent": 29.0,
+  "drive_c_free_gb": 1344.0,
+  "drive_c_used_gb": 557.0,
+  "drive_c_total_gb": 1901.0,
+  "drive_d_used_percent": 8.0,
+  "drive_d_free_gb": 1673.0,
+  "drive_d_used_gb": 150.0,
+  "drive_d_total_gb": 1823.0,
+  "storage_total_free_gb": 3017.0,
+  "network_download_mbps": 0.101,
+  "network_upload_mbps": 0.072,
+  "network_top_processes": [
+    {
+      "name": "infatica_agent",
+      "raw_name": "infatica_agent.exe",
+      "icon": "🌐",
+      "connections": 23,
+      "dl_kbps": null,
+      "ul_kbps": null,
+      "total_kbps": null,
+      "measurement": "connections_only"
+    },
+    {
+      "name": "ChatGPT",
+      "raw_name": "ChatGPT.exe",
+      "icon": "🤖",
+      "connections": 22,
+      "dl_kbps": null,
+      "ul_kbps": null,
+      "total_kbps": null,
+      "measurement": "connections_only"
+    },
+    {
+      "name": "Comet Browser",
+      "raw_name": "comet.exe",
+      "icon": "☄️",
+      "connections": 12,
+      "dl_kbps": null,
+      "ul_kbps": null,
+      "total_kbps": null,
+      "measurement": "connections_only"
+    },
+    {
+      "name": "Thunderbird Mail",
+      "raw_name": "thunderbird.exe",
+      "icon": "✉️",
+      "connections": 7,
+      "dl_kbps": null,
+      "ul_kbps": null,
+      "total_kbps": null,
+      "measurement": "connections_only"
+    },
+    {
+      "name": "Code AI Assistant",
+      "raw_name": "language_server.exe",
+      "icon": "⚡",
+      "connections": 5,
+      "dl_kbps": null,
+      "ul_kbps": null,
+      "total_kbps": null,
+      "measurement": "connections_only"
+    }
+  ],
+  "network_active_conns": 101,
+  "network_local_ip": "192.168.3.22",
+  "network_ext_ip": null,
+  "network_link_speed_mbps": 1000.0,
+  "network_total_dl_gb": 0.006,
+  "network_total_ul_gb": 0.002,
+  "network_ping_ms": 91.0,
+  "fps": 0.0,
+  "total_power": null,
+  "max_temp": 62.0,
+  "display_hz": 240.0,
+  "display_volume": 100.0,
+  "display_res": "3840 x 2160",
+  "date_gregorian": "2026/10/06",
+  "date_hijri": "1448/04/25",
+  "sonar_connected": true,
+  "audio_mic_muted": false,
+  "audio_mic_volume": 100.0,
+  "audio_master_volume": 12.0,
+  "audio_master_muted": false,
+  "audio_game_volume": 12.0,
+  "audio_game_muted": false,
+  "audio_chat_volume": 12.0,
+  "audio_chat_muted": false,
+  "audio_media_volume": 12.0,
+  "audio_media_muted": false,
+  "audio_aux_volume": 12.0,
+  "audio_aux_muted": false,
+  "telemetry_sources": {
+    "aida": {
+      "source": "AIDA64 shared memory / registry",
+      "observed_at": 1791309005.8930933,
+      "max_age_seconds": 5,
+      "status": "live"
+    },
+    "inventory": {
+      "source": "Windows CIM / topology",
+      "observed_at": 1791309004.6347413,
+      "max_age_seconds": 180,
+      "status": "live"
+    },
+    "sonar": {
+      "source": "SteelSeries Sonar",
+      "observed_at": 1791309005.6607594,
+      "max_age_seconds": 2,
+      "status": "live"
+    },
+    "network": {
+      "source": "Windows selected route / psutil",
+      "observed_at": 1791309005.392096,
+      "max_age_seconds": 5,
+      "status": "live"
+    },
+    "weather": {
+      "source": "Open-Meteo / Riyadh",
+      "observed_at": 1791308287.43168,
+      "max_age_seconds": 3600,
+      "status": "cached"
+    },
+    "prayer": {
+      "source": "Aladhan / Umm Al-Qura / Riyadh",
+      "observed_at": 1791308821.810045,
+      "max_age_seconds": 86400,
+      "status": "live"
+    },
+    "appointments": {
+      "source": "Local appointment schedule / Riyadh",
+      "observed_at": 1791309005.893326,
+      "max_age_seconds": 5,
+      "status": "live"
+    }
+  },
+  "telemetry_fields": {
+    "cpu_temp": {
+      "source": "aida",
+      "unit": "°C",
+      "kind": "measured"
+    },
+    "cpu_load": {
+      "source": "aida",
+      "unit": "%",
+      "kind": "measured"
+    },
+    "cpu_clock": {
+      "source": "aida",
+      "unit": "MHz",
+      "kind": "measured"
+    },
+    "cpu_power": {
+      "source": "aida",
+      "unit": "W",
+      "kind": "measured"
+    },
+    "cpu_voltage": {
+      "source": "aida",
+      "unit": "",
+      "kind": "measured"
+    },
+    "cpu_fan_rpm": {
+      "source": "aida",
+      "unit": "RPM",
+      "kind": "measured"
+    },
+    "cpu_hotspot_temp": {
+      "source": "aida",
+      "unit": "°C",
+      "kind": "measured",
+      "inputs": [
+        "TCPUPKG"
+      ]
+    },
+    "cpu_cores": {
+      "source": "aida",
+      "unit": "",
+      "kind": "measured"
+    },
+    "gpu_temp": {
+      "source": "aida",
+      "unit": "°C",
+      "kind": "measured"
+    },
+    "gpu_load": {
+      "source": "aida",
+      "unit": "%",
+      "kind": "measured"
+    },
+    "gpu_clock": {
+      "source": "aida",
+      "unit": "MHz",
+      "kind": "measured"
+    },
+    "gpu_power": {
+      "source": "aida",
+      "unit": "W",
+      "kind": "measured"
+    },
+    "gpu_voltage_mv": {
+      "source": "aida",
+      "unit": "mV",
+      "kind": "derived",
+      "inputs": [
+        "VGPU1"
+      ]
+    },
+    "gpu_fan_rpm": {
+      "source": "aida",
+      "unit": "RPM",
+      "kind": "measured"
+    },
+    "gpu_hotspot_temp": {
+      "source": "aida",
+      "unit": "°C",
+      "kind": "measured"
+    },
+    "ram_used_percent": {
+      "source": "aida",
+      "unit": "%",
+      "kind": "measured"
+    },
+    "ram_used_gb": {
+      "source": "aida",
+      "unit": "GiB",
+      "kind": "derived",
+      "inputs": [
+        "SUSEDMEM"
+      ]
+    },
+    "ram_total_gb": {
+      "source": "aida",
+      "unit": "GiB",
+      "kind": "derived",
+      "inputs": [
+        "SUSEDMEM",
+        "SFREEMEM"
+      ]
+    },
+    "ram_speed_mhz": {
+      "source": "aida",
+      "unit": "MHz",
+      "kind": "measured"
+    },
+    "ram_temp": {
+      "source": "aida",
+      "unit": "°C",
+      "kind": "measured"
+    },
+    "vram_used_percent": {
+      "source": "aida",
+      "unit": "%",
+      "kind": "measured"
+    },
+    "vram_used_gb": {
+      "source": "aida",
+      "unit": "GiB",
+      "kind": "derived",
+      "inputs": [
+        "SUSEDVMEM"
+      ]
+    },
+    "vram_total_gb": {
+      "source": "aida",
+      "unit": "GiB",
+      "kind": "derived",
+      "inputs": [
+        "SUSEDVMEM",
+        "SFREEVMEM"
+      ]
+    },
+    "vram_speed_mhz": {
+      "source": "aida",
+      "unit": "MHz",
+      "kind": "measured"
+    },
+    "vram_temp": {
+      "source": "aida",
+      "unit": "°C",
+      "kind": "measured"
+    },
+    "motherboard_temp": {
+      "source": "aida",
+      "unit": "°C",
+      "kind": "measured"
+    },
+    "vrm_temp": {
+      "source": "aida",
+      "unit": "°C",
+      "kind": "measured"
+    },
+    "pch_temp": {
+      "source": "aida",
+      "unit": "°C",
+      "kind": "measured"
+    },
+    "nvme_temp": {
+      "source": "aida",
+      "unit": "°C",
+      "kind": "measured"
+    },
+    "pump_rpm": {
+      "source": "aida",
+      "unit": "RPM",
+      "kind": "measured"
+    },
+    "drive_c_used_percent": {
+      "source": "aida",
+      "unit": "%",
+      "kind": "measured"
+    },
+    "drive_c_free_gb": {
+      "source": "aida",
+      "unit": "GiB",
+      "kind": "measured"
+    },
+    "drive_c_used_gb": {
+      "source": "aida",
+      "unit": "GiB",
+      "kind": "measured"
+    },
+    "drive_c_total_gb": {
+      "source": "aida",
+      "unit": "GiB",
+      "kind": "derived",
+      "inputs": [
+        "drive_c_used_gb",
+        "drive_c_free_gb"
+      ]
+    },
+    "drive_d_used_percent": {
+      "source": "aida",
+      "unit": "%",
+      "kind": "measured"
+    },
+    "drive_d_free_gb": {
+      "source": "aida",
+      "unit": "GiB",
+      "kind": "measured"
+    },
+    "drive_d_used_gb": {
+      "source": "aida",
+      "unit": "GiB",
+      "kind": "measured"
+    },
+    "drive_d_total_gb": {
+      "source": "aida",
+      "unit": "GiB",
+      "kind": "derived",
+      "inputs": [
+        "drive_d_used_gb",
+        "drive_d_free_gb"
+      ]
+    },
+    "storage_total_free_gb": {
+      "source": "aida",
+      "unit": "GiB",
+      "kind": "derived",
+      "inputs": [
+        "drive_c_free_gb",
+        "drive_d_free_gb"
+      ]
+    },
+    "network_download_mbps": {
+      "source": "network",
+      "unit": "Mbps",
+      "kind": "measured"
+    },
+    "network_upload_mbps": {
+      "source": "network",
+      "unit": "Mbps",
+      "kind": "measured"
+    },
+    "network_top_processes": {
+      "source": "network",
+      "unit": "",
+      "kind": "measured"
+    },
+    "network_active_conns": {
+      "source": "network",
+      "unit": "",
+      "kind": "measured"
+    },
+    "network_local_ip": {
+      "source": "network",
+      "unit": "",
+      "kind": "measured"
+    },
+    "network_ext_ip": {
+      "source": "network",
+      "unit": "",
+      "kind": "measured"
+    },
+    "network_link_speed_mbps": {
+      "source": "network",
+      "unit": "Mbps",
+      "kind": "measured"
+    },
+    "network_total_dl_gb": {
+      "source": "network",
+      "unit": "GiB",
+      "kind": "measured"
+    },
+    "network_total_ul_gb": {
+      "source": "network",
+      "unit": "GiB",
+      "kind": "measured"
+    },
+    "network_ping_ms": {
+      "source": "network",
+      "unit": "ms",
+      "kind": "measured"
+    },
+    "fps": {
+      "source": "aida",
+      "unit": "FPS",
+      "kind": "measured",
+      "inputs": [
+        "SRTSSFPS"
+      ]
+    },
+    "total_power": {
+      "source": "aida",
+      "unit": "W",
+      "kind": "measured"
+    },
+    "max_temp": {
+      "source": "aida",
+      "unit": "°C",
+      "kind": "derived"
+    },
+    "display_hz": {
+      "source": "aida",
+      "unit": "Hz",
+      "kind": "measured",
+      "inputs": [
+        "SVREFRATE"
+      ]
+    },
+    "display_volume": {
+      "source": "aida",
+      "unit": "%",
+      "kind": "measured"
+    },
+    "display_res": {
+      "source": "aida",
+      "unit": "",
+      "kind": "measured",
+      "inputs": [
+        "SDESKRES"
+      ]
+    },
+    "date_gregorian": {
+      "source": "aida",
+      "unit": "",
+      "kind": "measured"
+    },
+    "date_hijri": {
+      "source": "aida",
+      "unit": "",
+      "kind": "measured"
+    },
+    "sonar_connected": {
+      "source": "sonar",
+      "unit": "",
+      "kind": "measured"
+    },
+    "audio_mic_muted": {
+      "source": "sonar",
+      "unit": "",
+      "kind": "measured"
+    },
+    "audio_mic_volume": {
+      "source": "sonar",
+      "unit": "%",
+      "kind": "measured"
+    },
+    "audio_master_volume": {
+      "source": "sonar",
+      "unit": "%",
+      "kind": "measured"
+    },
+    "audio_master_muted": {
+      "source": "sonar",
+      "unit": "",
+      "kind": "measured"
+    },
+    "audio_game_volume": {
+      "source": "sonar",
+      "unit": "%",
+      "kind": "measured"
+    },
+    "audio_game_muted": {
+      "source": "sonar",
+      "unit": "",
+      "kind": "measured"
+    },
+    "audio_chat_volume": {
+      "source": "sonar",
+      "unit": "%",
+      "kind": "measured"
+    },
+    "audio_chat_muted": {
+      "source": "sonar",
+      "unit": "",
+      "kind": "measured"
+    },
+    "audio_media_volume": {
+      "source": "sonar",
+      "unit": "%",
+      "kind": "measured"
+    },
+    "audio_media_muted": {
+      "source": "sonar",
+      "unit": "",
+      "kind": "measured"
+    },
+    "audio_aux_volume": {
+      "source": "sonar",
+      "unit": "%",
+      "kind": "measured"
+    },
+    "audio_aux_muted": {
+      "source": "sonar",
+      "unit": "",
+      "kind": "measured"
+    },
+    "hardware_inventory": {
+      "source": "inventory",
+      "unit": "",
+      "kind": "measured"
+    },
+    "sonar_mode": {
+      "source": "sonar",
+      "unit": "",
+      "kind": "measured"
+    },
+    "sonar_channels": {
+      "source": "sonar",
+      "unit": "",
+      "kind": "measured"
+    },
+    "sonar_profiles": {
+      "source": "sonar",
+      "unit": "",
+      "kind": "measured"
+    },
+    "network_interface": {
+      "source": "network",
+      "unit": "",
+      "kind": "measured"
+    },
+    "network_process_measurement": {
+      "source": "network",
+      "unit": "",
+      "kind": "measured"
+    },
+    "cpu_gpu_power": {
+      "source": "aida",
+      "unit": "W",
+      "kind": "derived",
+      "inputs": [
+        "cpu_power",
+        "gpu_power"
+      ]
+    },
+    "storage_total_scope": {
+      "source": "aida",
+      "unit": "",
+      "kind": "measured"
+    },
+    "nvme_sensor_name": {
+      "source": "aida",
+      "unit": "",
+      "kind": "measured"
+    },
+    "riyadh_temp": {
+      "source": "weather",
+      "unit": "°C",
+      "kind": "measured"
+    },
+    "riyadh_weather_desc": {
+      "source": "weather",
+      "unit": "",
+      "kind": "measured"
+    },
+    "riyadh_weather_icon": {
+      "source": "weather",
+      "unit": "",
+      "kind": "measured"
+    },
+    "prayer_fajr": {
+      "source": "prayer",
+      "unit": "",
+      "kind": "measured"
+    },
+    "prayer_sunrise": {
+      "source": "prayer",
+      "unit": "",
+      "kind": "measured"
+    },
+    "prayer_dhuhr": {
+      "source": "prayer",
+      "unit": "",
+      "kind": "measured"
+    },
+    "prayer_asr": {
+      "source": "prayer",
+      "unit": "",
+      "kind": "measured"
+    },
+    "prayer_maghrib": {
+      "source": "prayer",
+      "unit": "",
+      "kind": "measured"
+    },
+    "prayer_isha": {
+      "source": "prayer",
+      "unit": "",
+      "kind": "measured"
+    },
+    "next_prayer_name": {
+      "source": "prayer",
+      "unit": "",
+      "kind": "measured"
+    },
+    "next_prayer_time": {
+      "source": "prayer",
+      "unit": "",
+      "kind": "measured"
+    },
+    "next_prayer_seconds": {
+      "source": "prayer",
+      "unit": "",
+      "kind": "derived"
+    },
+    "prev_prayer_name": {
+      "source": "prayer",
+      "unit": "",
+      "kind": "measured"
+    },
+    "prev_prayer_time": {
+      "source": "prayer",
+      "unit": "",
+      "kind": "measured"
+    },
+    "prev_prayer_seconds": {
+      "source": "prayer",
+      "unit": "",
+      "kind": "derived"
+    },
+    "prayer_date": {
+      "source": "prayer",
+      "unit": "",
+      "kind": "measured"
+    },
+    "appointments_count": {
+      "source": "appointments",
+      "unit": "",
+      "kind": "derived"
+    },
+    "appointments_remaining": {
+      "source": "appointments",
+      "unit": "",
+      "kind": "derived"
+    },
+    "next_appointment_title": {
+      "source": "appointments",
+      "unit": "",
+      "kind": "configured"
+    },
+    "next_appointment_time": {
+      "source": "appointments",
+      "unit": "",
+      "kind": "configured"
+    },
+    "next_appointment_category": {
+      "source": "appointments",
+      "unit": "",
+      "kind": "configured"
+    },
+    "next_appointment_category_label": {
+      "source": "appointments",
+      "unit": "",
+      "kind": "configured"
+    },
+    "next_appointment_location": {
+      "source": "appointments",
+      "unit": "",
+      "kind": "configured"
+    },
+    "next_appointment_seconds": {
+      "source": "appointments",
+      "unit": "",
+      "kind": "derived"
+    },
+    "next_appointment_ongoing": {
+      "source": "appointments",
+      "unit": "",
+      "kind": "configured"
+    },
+    "today_appointments": {
+      "source": "appointments",
+      "unit": "",
+      "kind": "configured"
+    }
+  },
+  "hardware_inventory": {
+    "volumes": {
+      "D": 0,
+      "C": 0
+    },
+    "gpu": [
+      {
+        "Name": "NVIDIA GeForce RTX 5080",
+        "PNPDeviceID": "PCI\\VEN_10DE&DEV_2C02&SUBSYS_176219DA&REV_A1\\45506F33E02DB04800"
+      }
+    ],
+    "disks": [
+      {
+        "Number": 0,
+        "FriendlyName": "Samsung SSD 990 EVO Plus 4TB",
+        "BusType": "NVMe"
+      },
+      {
+        "Number": 2,
+        "FriendlyName": "ASMT ASM225",
+        "BusType": "USB"
+      }
+    ],
+    "memory": [
+      {
+        "Capacity": 17179869184,
+        "ConfiguredClockSpeed": 6000,
+        "Manufacturer": "Corsair",
+        "PartNumber": "CMH32GX5M2E6000C36  "
+      },
+      {
+        "Capacity": 17179869184,
+        "ConfiguredClockSpeed": 6000,
+        "Manufacturer": "Corsair",
+        "PartNumber": "CMH32GX5M2E6000C36  "
+      }
+    ],
+    "displays": [
+      {
+        "Width": 3840,
+        "Primary": true,
+        "Name": "\\\\.\\DISPLAY1",
+        "Height": 2160
+      },
+      {
+        "Width": 1920,
+        "Primary": false,
+        "Name": "\\\\.\\DISPLAY2",
+        "Height": 1080
+      },
+      {
+        "Width": 1920,
+        "Primary": false,
+        "Name": "\\\\.\\DISPLAY3",
+        "Height": 1200
+      },
+      {
+        "Width": 1080,
+        "Primary": false,
+        "Name": "\\\\.\\DISPLAY4",
+        "Height": 1920
+      }
+    ],
+    "cpu": {
+      "Name": "Intel(R) Core(TM) Ultra 7 265KF",
+      "NumberOfCores": 20,
+      "NumberOfLogicalProcessors": 20
+    },
+    "topology": {
+      "1": "P",
+      "2": "P",
+      "3": "E",
+      "4": "E",
+      "5": "E",
+      "6": "E",
+      "7": "P",
+      "8": "P",
+      "9": "P",
+      "10": "P",
+      "11": "E",
+      "12": "E",
+      "13": "E",
+      "14": "E",
+      "15": "E",
+      "16": "E",
+      "17": "E",
+      "18": "E",
+      "19": "P",
+      "20": "P"
+    }
+  },
+  "sonar_mode": "stream",
+  "sonar_channels": {
+    "master": {
+      "monitoring": {
+        "volume": 12.0,
+        "muted": false
+      },
+      "streaming": {
+        "volume": 100.0,
+        "muted": false
+      }
+    },
+    "game": {
+      "monitoring": {
+        "volume": 12.0,
+        "muted": false
+      },
+      "streaming": {
+        "volume": 100.0,
+        "muted": false
+      }
+    },
+    "chat": {
+      "monitoring": {
+        "volume": 12.0,
+        "muted": false
+      },
+      "streaming": {
+        "volume": 100.0,
+        "muted": false
+      }
+    },
+    "media": {
+      "monitoring": {
+        "volume": 12.0,
+        "muted": false
+      },
+      "streaming": {
+        "volume": 30.0,
+        "muted": false
+      }
+    },
+    "aux": {
+      "monitoring": {
+        "volume": 12.0,
+        "muted": false
+      },
+      "streaming": {
+        "volume": 100.0,
+        "muted": false
+      }
+    },
+    "mic": {
+      "monitoring": {
+        "volume": 100.0,
+        "muted": false
+      },
+      "streaming": {
+        "volume": 100.0,
+        "muted": false
+      }
+    }
+  },
+  "sonar_profiles": null,
+  "sonar_source": {
+    "source": "SteelSeries Sonar",
+    "observed_at": 1791309005.6607594,
+    "max_age_seconds": 2,
+    "status": "live"
+  },
+  "network_source": {
+    "source": "Windows selected route / psutil",
+    "observed_at": 1791309005.392096,
+    "max_age_seconds": 5,
+    "status": "live"
+  },
+  "network_interface": "Ethernet",
+  "network_process_measurement": "connections_only",
+  "cpu_gpu_power": 158.7,
+  "storage_total_scope": "C + D",
+  "nvme_sensor_name": "Samsung SSD 990 EVO Plus 4TB",
+  "fps_source": "RTSS"
+}

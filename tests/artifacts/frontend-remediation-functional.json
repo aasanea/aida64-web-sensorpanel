@@ -1,0 +1,357 @@
+{
+  "status": "complete",
+  "viewport": "1920x1080",
+  "checks": [
+    {
+      "name": "Native bootstrap initialized",
+      "passed": true
+    },
+    {
+      "name": "Zero master volume is displayed",
+      "passed": true
+    },
+    {
+      "name": "Frame time is derived and labelled",
+      "passed": true
+    },
+    {
+      "name": "Zero FPS clears derived frame time",
+      "passed": true
+    },
+    {
+      "name": "Measured frame time has explicit provenance",
+      "passed": true
+    },
+    {
+      "name": "Missing CPU sensor clears the gauge",
+      "passed": true
+    },
+    {
+      "name": "Stale streams are labelled",
+      "passed": true
+    },
+    {
+      "name": "tachometer renders CPU and GPU gauges",
+      "passed": true
+    },
+    {
+      "name": "turbine renders CPU and GPU gauges",
+      "passed": true
+    },
+    {
+      "name": "hexa-matrix renders CPU and GPU gauges",
+      "passed": true
+    },
+    {
+      "name": "liquid-mercury renders CPU and GPU gauges",
+      "passed": true
+    },
+    {
+      "name": "tactical-radar renders CPU and GPU gauges",
+      "passed": true
+    },
+    {
+      "name": "holo-minimal renders CPU and GPU gauges",
+      "passed": true
+    },
+    {
+      "name": "arc-reactor renders CPU and GPU gauges",
+      "passed": true
+    },
+    {
+      "name": "retro-nixie renders CPU and GPU gauges",
+      "passed": true
+    },
+    {
+      "name": "dual-split renders CPU and GPU gauges",
+      "passed": true
+    },
+    {
+      "name": "prism-glass renders CPU and GPU gauges",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 1 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 2 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 3 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 4 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 5 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 6 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 7 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 8 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 9 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 10 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 11 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 12 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 13 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 14 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 15 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 16 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 17 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 18 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 19 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu disconnect 20 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-cpu remount preserves subscription count",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 1 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 2 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 3 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 4 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 5 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 6 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 7 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 8 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 9 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 10 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 11 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 12 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 13 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 14 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 15 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 16 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 17 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 18 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 19 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu disconnect 20 cancels resources",
+      "passed": true
+    },
+    {
+      "name": "dashboard-gpu remount preserves subscription count",
+      "passed": true
+    },
+    {
+      "name": "DASHBOARD-CPU starts with inaccessible back",
+      "passed": true
+    },
+    {
+      "name": "DASHBOARD-CPU flip hides front and moves focus",
+      "passed": true
+    },
+    {
+      "name": "DASHBOARD-GPU starts with inaccessible back",
+      "passed": true
+    },
+    {
+      "name": "DASHBOARD-GPU flip hides front and moves focus",
+      "passed": true
+    },
+    {
+      "name": "DASHBOARD-MATCHES starts with inaccessible back",
+      "passed": true
+    },
+    {
+      "name": "DASHBOARD-MATCHES flip hides front and moves focus",
+      "passed": true
+    },
+    {
+      "name": "DASHBOARD-DISPLAY starts with inaccessible back",
+      "passed": true
+    },
+    {
+      "name": "DASHBOARD-DISPLAY flip hides front and moves focus",
+      "passed": true
+    },
+    {
+      "name": "DASHBOARD-NETWORK starts with inaccessible back",
+      "passed": true
+    },
+    {
+      "name": "DASHBOARD-NETWORK flip hides front and moves focus",
+      "passed": true
+    },
+    {
+      "name": "Countdown text mutates at most once per second",
+      "passed": true
+    },
+    {
+      "name": "default semantic contrast >=4.5:1",
+      "passed": true
+    },
+    {
+      "name": "oled semantic contrast >=4.5:1",
+      "passed": true
+    },
+    {
+      "name": "cyberpunk semantic contrast >=4.5:1",
+      "passed": true
+    },
+    {
+      "name": "emerald semantic contrast >=4.5:1",
+      "passed": true
+    },
+    {
+      "name": "aurora semantic contrast >=4.5:1",
+      "passed": true
+    },
+    {
+      "name": "f1-pitwall semantic contrast >=4.5:1",
+      "passed": true
+    },
+    {
+      "name": "neo-tactile semantic contrast >=4.5:1",
+      "passed": true
+    },
+    {
+      "name": "No runtime exceptions",
+      "passed": true
+    }
+  ],
+  "timings": [],
+  "errors": [],
+  "contrast": {
+    "default": {
+      "normal": 12.26,
+      "warning": 14.27,
+      "critical": 9.36
+    },
+    "oled": {
+      "normal": 12.26,
+      "warning": 14.27,
+      "critical": 9.36
+    },
+    "cyberpunk": {
+      "normal": 12.26,
+      "warning": 14.27,
+      "critical": 9.36
+    },
+    "emerald": {
+      "normal": 12.26,
+      "warning": 14.27,
+      "critical": 9.36
+    },
+    "aurora": {
+      "normal": 12.26,
+      "warning": 14.27,
+      "critical": 9.36
+    },
+    "f1-pitwall": {
+      "normal": 12.26,
+      "warning": 14.27,
+      "critical": 9.36
+    },
+    "neo-tactile": {
+      "normal": 6.27,
+      "warning": 6.84,
+      "critical": 7.28
+    }
+  }
+}

@@ -60,7 +60,7 @@ def test_shared_memory_handle_cleanliness():
     GetProcessHandleCount(proc, ctypes.byref(initial_handles))
 
     for _ in range(100):
-        aida_reader.get_sensor_data()
+        aida_reader.read_aida_sensors()
 
     final_handles = wintypes.DWORD()
     GetProcessHandleCount(proc, ctypes.byref(final_handles))

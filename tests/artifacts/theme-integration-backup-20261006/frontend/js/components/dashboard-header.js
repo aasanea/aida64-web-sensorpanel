@@ -1,0 +1,1534 @@
+import { EventBus } from '../store/event_bus.js?v=20261006.10';
+
+const THEMES = [
+  { id: 'default', name: 'Cyan Glass', nameAr: 'زجاج سيان', icon: '🌊', color: '#22D3EE' },
+  { id: 'oled', name: 'OLED Black', nameAr: 'أوليد أسود', icon: '🖤', color: '#38BDF8' },
+  { id: 'cyberpunk', name: 'Cyberpunk', nameAr: 'سايبر بانك', icon: '⚡', color: '#FFE600' },
+  { id: 'emerald', name: 'Emerald', nameAr: 'زمردي أخضر', icon: '🍃', color: '#00FF66' },
+  { id: 'aurora', name: 'Aurora', nameAr: 'أورورا الشفق', icon: '🌌', color: '#00FFC2' },
+  { id: 'f1-pitwall', name: 'F1 Pitwall', nameAr: 'فورمولا 1', icon: '🏎️', color: '#FF3344' },
+  { id: 'neo-tactile', name: 'Neo-Tactile', nameAr: 'سيراميك تكتيكي', icon: '🏺', color: '#C8754E' }
+];
+
+const template = document.createElement('template');
+template.innerHTML = `
+<style>
+  :host {
+    position: relative;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 14px;
+    background: var(--glass-bg, rgba(255, 255, 255, 0.02));
+    backdrop-filter: var(--glass-blur, blur(16px));
+    -webkit-backdrop-filter: var(--glass-blur, blur(16px));
+    border: var(--glass-border, 1px solid rgba(255, 255, 255, 0.06));
+    border-radius: 14px;
+    box-shadow: var(--glass-shadow, inset 0 1px 0 rgba(255, 255, 255, 0.1));
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    flex-shrink: 0;
+    gap: 16px;
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .header-right-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  /* Prominent Enlarged Date Badge */
+  .date-group-badge {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(34, 211, 238, 0.25);
+    border-radius: 16px;
+    font-family: var(--font-numbers, 'Rajdhani', sans-serif);
+    font-size: 20px;
+    color: var(--text-pure-white, #FFFFFF);
+    letter-spacing: 0.5px;
+    box-shadow: 0 0 15px rgba(34, 211, 238, 0.1);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .date-icon {
+    font-size: 19px;
+  }
+
+  .date-sep {
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 15px;
+  }
+
+  .date-hijri {
+    color: var(--neon-cyan, #22D3EE);
+    font-size: 20px;
+    font-weight: 800;
+    text-shadow: 0 0 10px rgba(34, 211, 238, 0.4);
+  }
+
+  .date-greg {
+    color: var(--text-pure-white, #FFFFFF);
+    font-size: 18px;
+    font-weight: 700;
+    opacity: 0.95;
+  }
+
+  /* Weekdays Strip (7 Days of the Week) */
+  .weekdays-strip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px 6px;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+    overflow: visible;
+  }
+
+  .weekday-pill {
+    position: relative;
+    font-family: var(--font-arabic, 'Cairo', sans-serif);
+    font-size: 11.5px;
+    font-weight: 600;
+    color: rgba(248, 250, 255, 0.36);
+    padding: 3px 6px;
+    border-radius: 8px;
+    border: 1.5px solid transparent;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    white-space: nowrap;
+    user-select: none;
+    line-height: 1.2;
+  }
+
+  /* Active Day: Magnifying Lens Aesthetic (عدسة مكبرة متوهجة) */
+  .weekday-pill.active-day {
+    position: relative;
+    z-index: 5;
+    font-size: 16.5px;
+    font-weight: 800;
+    color: #FFFFFF;
+    padding: 5px 14px;
+    margin: 0 5px;
+    border-radius: 13px;
+    background: radial-gradient(ellipse at 50% 20%, rgba(255, 255, 255, 0.32) 0%, rgba(34, 211, 238, 0.3) 40%, rgba(124, 92, 255, 0.22) 100%);
+    border: 2px solid var(--neon-cyan, #22D3EE);
+    box-shadow: 
+      0 0 18px rgba(34, 211, 238, 0.55),
+      0 4px 12px rgba(0, 0, 0, 0.4),
+      inset 0 2px 4px rgba(255, 255, 255, 0.6),
+      inset 0 -1px 3px rgba(0, 0, 0, 0.4);
+    text-shadow: 
+      0 0 10px rgba(34, 211, 238, 0.8),
+      0 2px 4px rgba(0, 0, 0, 0.6);
+    transform: scale(1.15) translateY(-1px);
+    letter-spacing: 0.5px;
+  }
+
+  /* 12-Hour System Clock (Guaranteed Non-Wrapping Single Line & Absolute Dead-Center Anchor) */
+  .clock-display {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-numbers, 'Rajdhani', sans-serif);
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    color: var(--text-pure-white, #FFFFFF);
+    text-shadow: 0 0 16px rgba(248, 250, 255, 0.3);
+    direction: ltr;
+    white-space: nowrap !important;
+    display: inline-flex;
+    align-items: baseline;
+    justify-content: center;
+    width: 240px;
+    min-width: 240px;
+    max-width: 240px;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .clock-ampm {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--neon-cyan, #22D3EE);
+    margin-left: 6px;
+    vertical-align: baseline;
+  }
+
+  /* Header Telemetry Group */
+  .header-telemetry-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  /* Header Actions & Status Badge */
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 14px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 30px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    font-size: 13px;
+    font-family: var(--font-arabic, 'Cairo', sans-serif);
+    font-weight: 600;
+    direction: ltr;
+    transition: all 0.3s ease;
+  }
+
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--neon-yellow, #FACC15);
+    box-shadow: 0 0 8px var(--neon-yellow, #FACC15);
+    transition: all 0.3s ease;
+  }
+
+  .status-badge.live .status-dot {
+    background-color: var(--neon-green, #10B981);
+    box-shadow: 0 0 10px var(--neon-green, #10B981), 0 0 20px var(--neon-green, #10B981);
+    animation: pulse-glow 2s infinite ease-in-out;
+  }
+
+  .status-badge.polling .status-dot {
+    background-color: var(--neon-cyan, #22D3EE);
+    box-shadow: 0 0 8px var(--neon-cyan, #22D3EE);
+  }
+
+  .status-badge.reconnecting .status-dot {
+    background-color: var(--neon-orange, #FB923C);
+    box-shadow: 0 0 8px var(--neon-orange, #FB923C);
+    animation: blink-fast 1s infinite;
+  }
+
+  .status-badge.offline .status-dot {
+    background-color: var(--neon-red, #EF4444);
+    box-shadow: 0 0 8px var(--neon-red, #EF4444);
+  }
+
+  .status-ping {
+    font-family: var(--font-numbers, 'Rajdhani', sans-serif);
+    font-size: 11px;
+    color: var(--neon-cyan, #22D3EE);
+    direction: ltr;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.75; }
+  }
+
+  @keyframes blink-fast {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+
+  /* Theme Dropdown Container */
+  .theme-dropdown-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Theme Switcher Button (Trigger) */
+  .theme-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    color: var(--text-pure-white, #FFFFFF);
+    cursor: pointer;
+    font-family: var(--font-arabic, 'Cairo', sans-serif);
+    font-size: 13px;
+    font-weight: 700;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    outline: none;
+  }
+
+  .theme-toggle-btn:hover,
+  .theme-dropdown-container.open .theme-toggle-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--neon-cyan, #22D3EE);
+    color: var(--neon-cyan, #22D3EE);
+    transform: translateY(-1px);
+    box-shadow: 0 0 14px rgba(34, 211, 238, 0.25);
+  }
+
+  .theme-indicator-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--theme-accent, #22D3EE);
+    box-shadow: 0 0 8px var(--theme-accent, #22D3EE);
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    flex-shrink: 0;
+  }
+
+  .theme-label-text {
+    white-space: nowrap;
+    line-height: 1;
+  }
+
+  .theme-chevron-icon {
+    font-size: 11px;
+    line-height: 1;
+    margin-left: 2px;
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    opacity: 0.75;
+    display: inline-block;
+  }
+
+  .theme-dropdown-container.open .theme-chevron-icon {
+    transform: rotate(180deg);
+    opacity: 1;
+  }
+
+  /* Dropdown Menu Panel */
+  .theme-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: auto;
+    z-index: 1000;
+    min-width: 240px;
+    background: var(--dropdown-bg, rgba(15, 23, 42, 0.96));
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.14));
+    border-radius: 14px;
+    padding: 6px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    display: none;
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+    transform-origin: top left;
+    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+    box-sizing: border-box;
+  }
+
+  .theme-dropdown-menu.open {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+    animation: dropdown-pop-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes dropdown-pop-in {
+    0% {
+      opacity: 0;
+      transform: translateY(-8px) scale(0.96);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  /* Theme Menu Item */
+  .theme-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-pure-white, #FFFFFF);
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    text-align: left;
+    font-family: var(--font-arabic, 'Cairo', sans-serif);
+    width: 100%;
+    box-sizing: border-box;
+    outline: none;
+  }
+
+  .theme-menu-item:hover,
+  .theme-menu-item:focus-visible {
+    background: var(--dropdown-hover, rgba(255, 255, 255, 0.08));
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateX(-2px);
+  }
+
+  .theme-menu-item.active {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: var(--theme-accent, #22D3EE);
+    box-shadow: inset 0 0 10px rgba(34, 211, 238, 0.12);
+  }
+
+  .theme-item-icon {
+    font-size: 16px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    flex-shrink: 0;
+  }
+
+  .theme-item-labels {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    gap: 1px;
+  }
+
+  .theme-item-name-en {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-pure-white, #FFFFFF);
+    line-height: 1.2;
+    letter-spacing: 0.2px;
+  }
+
+  .theme-item-name-ar {
+    font-size: 10.5px;
+    color: var(--text-muted, rgba(255, 255, 255, 0.55));
+    line-height: 1.2;
+    direction: rtl;
+    text-align: right;
+  }
+
+  .theme-item-color-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .theme-item-check {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--neon-cyan, #22D3EE);
+    opacity: 0;
+    transform: scale(0.6);
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    width: 14px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .theme-menu-item.active .theme-item-check {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .kiosk-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    color: var(--text-pure-white, #FFFFFF);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .kiosk-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--neon-cyan, #22D3EE);
+    color: var(--neon-cyan, #22D3EE);
+    transform: translateY(-1px);
+  }
+
+  /* Live Auto-Update Badge Pill */
+  .update-badge {
+    display: none;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 12px;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.16) 0%, rgba(234, 88, 12, 0.22) 100%);
+    border: 1.5px solid rgba(251, 191, 36, 0.65);
+    border-radius: 20px;
+    color: #FDE68A;
+    font-family: var(--font-arabic, 'Cairo', sans-serif);
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: update-pulse-glow 2.5s infinite ease-in-out;
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  .update-badge:hover {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.32) 0%, rgba(234, 88, 12, 0.38) 100%);
+    border-color: #FCD34D;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    transform: translateY(-1px) scale(1.03);
+    color: #FFFFFF;
+  }
+
+  .update-badge-icon {
+    font-size: 14px;
+    filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.8));
+    animation: bolt-flicker 1.8s infinite alternate;
+  }
+
+  @keyframes update-pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+    50% {
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.65), 0 0 35px rgba(245, 158, 11, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    }
+  }
+
+  @keyframes bolt-flicker {
+    0% { opacity: 0.85; transform: scale(0.95); }
+    100% { opacity: 1; transform: scale(1.15); }
+  }
+
+  /* Status is semantic and readable in every theme, including light ceramic. */
+  .status-badge { background: var(--status-surface); color: var(--status-warning); border-color: currentColor; }
+  .status-badge.live, .status-badge.polling { color: var(--status-normal); }
+  .status-badge.offline { color: var(--status-critical); }
+  .status-badge:is(.live, .polling, .reconnecting, .offline) .status-dot { background-color: currentColor; box-shadow: 0 0 8px currentColor; }
+  .status-ping { color: inherit; }
+</style>
+
+<!-- 1. Right: Prominent Enlarged Date Badge & Display Info -->
+<div class="header-right-group">
+  <!-- Prominent Enlarged Date Badge -->
+  <div class="date-group-badge">
+    <span class="date-icon">📅</span>
+    <span class="date-item date-hijri" id="date_hijri">--/--/--</span>
+    <span class="date-sep">•</span>
+    <span class="date-item date-greg" id="date_gregorian">--/--/--</span>
+  </div>
+
+  <!-- Weekdays Strip (7 Days of the Week) -->
+  <div class="weekdays-strip" id="weekdays-strip" aria-label="أيام الأسبوع">
+    <span class="weekday-pill" data-day="6">السبت</span>
+    <span class="weekday-pill" data-day="0">الأحد</span>
+    <span class="weekday-pill" data-day="1">الأثنين</span>
+    <span class="weekday-pill" data-day="2">الثلاثاء</span>
+    <span class="weekday-pill" data-day="3">الأربعاء</span>
+    <span class="weekday-pill" data-day="4">الخميس</span>
+    <span class="weekday-pill" data-day="5">الجمعة</span>
+  </div>
+</div>
+
+<!-- 2. Center: 12-Hour Clock Display (Standalone, Unwrapped, Dead Center) -->
+<div class="clock-display" id="system-clock"><span id="clock-time">--:--:--</span>&nbsp;<span class="clock-ampm" id="clock-ampm">--</span></div>
+
+<!-- 3. Left: Connection Status & Fullscreen -->
+<div class="header-telemetry-group">
+  <div class="header-actions">
+    <!-- Live Connection Status Badge -->
+    <div class="status-badge" id="status-badge" dir="ltr">
+      <span class="status-dot" id="status-dot"></span>
+      <span class="status-text" id="status-text">جاري الاتصال...</span>
+      <span class="status-ping" id="status-ping">-- ms</span>
+    </div>
+
+    <!-- Live Auto-Update Badge Pill -->
+    <button class="update-badge" id="btn-update-badge" title="تحديث جديد متوفر" aria-label="تحديث جديد متوفر">
+      <span class="update-badge-icon">⚡</span>
+      <span class="update-badge-text" id="update-badge-text">تحديث متوفر</span>
+    </button>
+
+    <!-- Theme Dropdown Container -->
+    <div class="theme-dropdown-container" id="theme-dropdown-container">
+      <button class="theme-toggle-btn" id="btn-theme-toggle" title="اختيار النمط المظهري" aria-label="اختيار النمط المظهري" aria-haspopup="true" aria-expanded="false">
+        <span class="theme-indicator-dot" id="theme-dot"></span>
+        <span class="theme-label-text" id="theme-text">🌊 Cyan Glass</span>
+        <span class="theme-chevron-icon">▾</span>
+      </button>
+
+      <!-- Dropdown Menu Panel -->
+      <div class="theme-dropdown-menu" id="theme-dropdown-menu" role="menu" aria-label="قائمة الأنماط المظهرية">
+        <div class="theme-menu-item" data-theme-id="default" role="menuitem" tabindex="0">
+          <span class="theme-item-icon">🌊</span>
+          <div class="theme-item-labels">
+            <span class="theme-item-name-en">Cyan Glass</span>
+            <span class="theme-item-name-ar">زجاج سيان</span>
+          </div>
+          <span class="theme-item-color-dot" style="background-color: #22D3EE; box-shadow: 0 0 6px #22D3EE;"></span>
+          <span class="theme-item-check">✓</span>
+        </div>
+        <div class="theme-menu-item" data-theme-id="oled" role="menuitem" tabindex="0">
+          <span class="theme-item-icon">🖤</span>
+          <div class="theme-item-labels">
+            <span class="theme-item-name-en">OLED Black</span>
+            <span class="theme-item-name-ar">أوليد أسود</span>
+          </div>
+          <span class="theme-item-color-dot" style="background-color: #38BDF8; box-shadow: 0 0 6px #38BDF8;"></span>
+          <span class="theme-item-check">✓</span>
+        </div>
+        <div class="theme-menu-item" data-theme-id="cyberpunk" role="menuitem" tabindex="0">
+          <span class="theme-item-icon">⚡</span>
+          <div class="theme-item-labels">
+            <span class="theme-item-name-en">Cyberpunk</span>
+            <span class="theme-item-name-ar">سايبر بانك</span>
+          </div>
+          <span class="theme-item-color-dot" style="background-color: #FFE600; box-shadow: 0 0 6px #FFE600;"></span>
+          <span class="theme-item-check">✓</span>
+        </div>
+        <div class="theme-menu-item" data-theme-id="emerald" role="menuitem" tabindex="0">
+          <span class="theme-item-icon">🍃</span>
+          <div class="theme-item-labels">
+            <span class="theme-item-name-en">Emerald</span>
+            <span class="theme-item-name-ar">زمردي أخضر</span>
+          </div>
+          <span class="theme-item-color-dot" style="background-color: #00FF66; box-shadow: 0 0 6px #00FF66;"></span>
+          <span class="theme-item-check">✓</span>
+        </div>
+        <div class="theme-menu-item" data-theme-id="aurora" role="menuitem" tabindex="0">
+          <span class="theme-item-icon">🌌</span>
+          <div class="theme-item-labels">
+            <span class="theme-item-name-en">Aurora</span>
+            <span class="theme-item-name-ar">أورورا الشفق</span>
+          </div>
+          <span class="theme-item-color-dot" style="background-color: #00FFC2; box-shadow: 0 0 6px #00FFC2;"></span>
+          <span class="theme-item-check">✓</span>
+        </div>
+        <div class="theme-menu-item" data-theme-id="f1-pitwall" role="menuitem" tabindex="0">
+          <span class="theme-item-icon">🏎️</span>
+          <div class="theme-item-labels">
+            <span class="theme-item-name-en">F1 Pitwall</span>
+            <span class="theme-item-name-ar">فورمولا 1</span>
+          </div>
+          <span class="theme-item-color-dot" style="background-color: #FF3344; box-shadow: 0 0 6px #FF3344;"></span>
+          <span class="theme-item-check">✓</span>
+        </div>
+        <div class="theme-menu-item" data-theme-id="neo-tactile" role="menuitem" tabindex="0">
+          <span class="theme-item-icon">🏺</span>
+          <div class="theme-item-labels">
+            <span class="theme-item-name-en">Neo-Tactile</span>
+            <span class="theme-item-name-ar">سيراميك تكتيكي</span>
+          </div>
+          <span class="theme-item-color-dot" style="background-color: #C8754E; box-shadow: 0 0 6px #C8754E;"></span>
+          <span class="theme-item-check">✓</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fullscreen Button -->
+    <button class="kiosk-toggle-btn" id="btn-fullscreen" title="ملء الشاشة Kiosk Mode" aria-label="ملء الشاشة">
+      <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+      </svg>
+    </button>
+  </div>
+</div>
+`;
+
+export class DashboardHeader extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+    this.shadowRoot.appendChild(template.content.cloneNode(true));
+
+    this.dom = {
+      dateHijri: this.shadowRoot.getElementById('date_hijri'),
+      dateGregorian: this.shadowRoot.getElementById('date_gregorian'),
+      weekdaysStrip: this.shadowRoot.getElementById('weekdays-strip'),
+      weekdayPills: this.shadowRoot.querySelectorAll('.weekday-pill'),
+      systemClock: this.shadowRoot.getElementById('system-clock'),
+      clockTime: this.shadowRoot.getElementById('clock-time'),
+      clockAmpm: this.shadowRoot.getElementById('clock-ampm'),
+      statusBadge: this.shadowRoot.getElementById('status-badge'),
+      statusDot: this.shadowRoot.getElementById('status-dot'),
+      statusText: this.shadowRoot.getElementById('status-text'),
+      statusPing: this.shadowRoot.getElementById('status-ping'),
+      updateBadge: this.shadowRoot.getElementById('btn-update-badge'),
+      updateBadgeText: this.shadowRoot.getElementById('update-badge-text'),
+      fullscreenBtn: this.shadowRoot.getElementById('btn-fullscreen'),
+      themeContainer: this.shadowRoot.getElementById('theme-dropdown-container'),
+      themeToggleBtn: this.shadowRoot.getElementById('btn-theme-toggle'),
+      themeDropdownMenu: this.shadowRoot.getElementById('theme-dropdown-menu'),
+      themeMenuItems: this.shadowRoot.querySelectorAll('.theme-menu-item'),
+      themeDot: this.shadowRoot.getElementById('theme-dot'),
+      themeText: this.shadowRoot.getElementById('theme-text'),
+    };
+
+    this._lastActiveDay = null;
+    this.timerId = null;
+    this._updateData = null;
+    this.updateCheckTimer = null;
+    this._isThemeMenuOpen = false;
+    this._copyTimeoutId = null;
+    this._cachedFormatter = null;
+    this._cachedTz = null;
+
+    this.onConnectionStatus = this.onConnectionStatus.bind(this);
+    this.onConnectionPing = this.onConnectionPing.bind(this);
+    this.onTelemetryData = this.onTelemetryData.bind(this);
+    this.toggleFullscreen = this.toggleFullscreen.bind(this);
+    this.toggleThemeMenu = this.toggleThemeMenu.bind(this);
+    this.openThemeMenu = this.openThemeMenu.bind(this);
+    this.closeThemeMenu = this.closeThemeMenu.bind(this);
+    this.setTheme = this.setTheme.bind(this);
+    this.cycleTheme = this.cycleTheme.bind(this);
+    this._onOutsideClick = this._onOutsideClick.bind(this);
+    this.openUpdateModal = this.openUpdateModal.bind(this);
+    this.closeUpdateModal = this.closeUpdateModal.bind(this);
+    this._onKeyDown = this._onKeyDown.bind(this);
+    this.copyUpdateCommand = this.copyUpdateCommand.bind(this);
+    this._onThemeMenuClick = this._onThemeMenuClick.bind(this);
+    this._onThemeMenuKeyDown = this._onThemeMenuKeyDown.bind(this);
+    this._onBackdropClick = this._onBackdropClick.bind(this);
+  }
+
+  static get observedAttributes() {
+    return ['timezone'];
+  }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (name === 'timezone' && oldValue !== newValue) {
+      this._cachedFormatter = null;
+      this._cachedTz = null;
+      this._lastActiveDay = null;
+      this.updateClock();
+      this.updateWeekdays();
+    }
+  }
+
+  connectedCallback() {
+    this.events?.abort();
+    this.events = new AbortController();
+    this.unsubStatus = EventBus.on('connection:status', this.onConnectionStatus);
+    this.unsubPing = EventBus.on('connection:ping', this.onConnectionPing);
+
+    this.unsubState = EventBus.on('state-changed', this.onTelemetryData);
+    this.onTelemetryData(window.stateManager?.currentState || {});
+
+    if (this.dom.fullscreenBtn) {
+      this.dom.fullscreenBtn.addEventListener('click', this.toggleFullscreen, { signal: this.events.signal });
+    }
+
+    if (this.dom.themeToggleBtn) {
+      this.dom.themeToggleBtn.addEventListener('click', this.toggleThemeMenu, { signal: this.events.signal });
+    }
+
+    if (this.dom.themeDropdownMenu) {
+      this.dom.themeDropdownMenu.addEventListener('click', this._onThemeMenuClick, { signal: this.events.signal });
+      this.dom.themeDropdownMenu.addEventListener('keydown', this._onThemeMenuKeyDown, { signal: this.events.signal });
+    }
+
+    if (this.dom.updateBadge) {
+      this.dom.updateBadge.addEventListener('click', this.openUpdateModal, { signal: this.events.signal });
+    }
+
+    window.addEventListener('pointerdown', this._onOutsideClick, { signal: this.events.signal });
+    window.addEventListener('click', this._onOutsideClick, { signal: this.events.signal });
+    window.addEventListener('keydown', this._onKeyDown, { signal: this.events.signal });
+
+    this.initTheme();
+    this.updateClock();
+    this.updateWeekdays();
+
+    this.timerId = setInterval(() => {
+      this.updateClock();
+      this.updateWeekdays();
+    }, 1000);
+
+    // Check for system updates after 3 seconds
+    this.updateCheckTimer = setTimeout(() => {
+      this.checkForUpdates();
+    }, 3000);
+  }
+
+  disconnectedCallback() {
+    this.events?.abort();
+    this.flipObserver?.disconnect();
+    if (this.timerId) {
+      clearInterval(this.timerId);
+      this.timerId = null;
+    }
+    if (this.updateCheckTimer) {
+      clearTimeout(this.updateCheckTimer);
+      this.updateCheckTimer = null;
+    }
+    if (this._copyTimeoutId) {
+      clearTimeout(this._copyTimeoutId);
+      this._copyTimeoutId = null;
+    }
+    window.removeEventListener('pointerdown', this._onOutsideClick);
+    window.removeEventListener('click', this._onOutsideClick);
+    window.removeEventListener('keydown', this._onKeyDown);
+    if (this.unsubStatus) {
+      this.unsubStatus();
+      this.unsubStatus = null;
+    }
+    if (this.unsubPing) {
+      this.unsubPing();
+      this.unsubPing = null;
+    }
+    if (this.unsubState) {
+      this.unsubState();
+      this.unsubState = null;
+    }
+
+    if (this.dom.fullscreenBtn) {
+      this.dom.fullscreenBtn.removeEventListener('click', this.toggleFullscreen);
+    }
+
+    if (this.dom.themeToggleBtn) {
+      this.dom.themeToggleBtn.removeEventListener('click', this.toggleThemeMenu);
+    }
+
+    if (this.dom.themeDropdownMenu) {
+      this.dom.themeDropdownMenu.removeEventListener('click', this._onThemeMenuClick);
+      this.dom.themeDropdownMenu.removeEventListener('keydown', this._onThemeMenuKeyDown);
+    }
+
+    if (this.dom.updateBadge) {
+      this.dom.updateBadge.removeEventListener('click', this.openUpdateModal);
+    }
+
+    this.destroyModalPortal();
+  }
+
+  initTheme() {
+    let savedThemeId = 'default';
+    try {
+      savedThemeId = localStorage.getItem('aida64_theme') || 'default';
+    } catch (e) {}
+
+    const theme = THEMES.find(t => t.id === savedThemeId) || THEMES[0];
+    if (theme.id === 'default') {
+      document.documentElement.removeAttribute('data-theme');
+    } else {
+      document.documentElement.setAttribute('data-theme', theme.id);
+    }
+    this.updateThemeUI(theme);
+    this.syncActiveThemeItem(theme.id);
+  }
+
+  toggleThemeMenu(e) {
+    if (e) {
+      e.stopPropagation();
+    }
+    if (this._isThemeMenuOpen) {
+      this.closeThemeMenu();
+    } else {
+      this.openThemeMenu();
+    }
+  }
+
+  openThemeMenu() {
+    this._isThemeMenuOpen = true;
+    if (this.dom.themeContainer) {
+      this.dom.themeContainer.classList.add('open');
+    }
+    if (this.dom.themeDropdownMenu) {
+      this.dom.themeDropdownMenu.classList.add('open');
+    }
+    if (this.dom.themeToggleBtn) {
+      this.dom.themeToggleBtn.setAttribute('aria-expanded', 'true');
+    }
+    this.syncActiveThemeItem();
+  }
+
+  closeThemeMenu() {
+    this._isThemeMenuOpen = false;
+    if (this.dom.themeContainer) {
+      this.dom.themeContainer.classList.remove('open');
+    }
+    if (this.dom.themeDropdownMenu) {
+      this.dom.themeDropdownMenu.classList.remove('open');
+    }
+    if (this.dom.themeToggleBtn) {
+      this.dom.themeToggleBtn.setAttribute('aria-expanded', 'false');
+    }
+  }
+
+  _onOutsideClick(e) {
+    if (!this._isThemeMenuOpen) return;
+    const path = e.composedPath ? e.composedPath() : [];
+    if (path.includes(this.dom.themeContainer)) {
+      return;
+    }
+    this.closeThemeMenu();
+  }
+
+  _onThemeMenuClick(e) {
+    const item = e.target && e.target.closest ? e.target.closest('.theme-menu-item') : null;
+    if (!item) return;
+    const themeId = item.getAttribute('data-theme-id');
+    if (themeId) {
+      this.setTheme(themeId, e);
+      this.closeThemeMenu();
+    }
+  }
+
+  _onThemeMenuKeyDown(e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const item = e.target && e.target.closest ? e.target.closest('.theme-menu-item') : null;
+    if (!item) return;
+    e.preventDefault();
+    const themeId = item.getAttribute('data-theme-id');
+    if (themeId) {
+      this.setTheme(themeId, e);
+      this.closeThemeMenu();
+    }
+  }
+
+  setTheme(themeId, e) {
+    const theme = THEMES.find(t => t.id === themeId) || THEMES[0];
+
+    // Determine click coordinates for CSS View Transitions ripple
+    let x = '85%';
+    let y = '30px';
+    if (e && e.clientX !== undefined) {
+      x = `${e.clientX}px`;
+      y = `${e.clientY}px`;
+    }
+    document.documentElement.style.setProperty('--click-x', x);
+    document.documentElement.style.setProperty('--click-y', y);
+
+    const applyTheme = () => {
+      if (theme.id === 'default') {
+        document.documentElement.removeAttribute('data-theme');
+      } else {
+        document.documentElement.setAttribute('data-theme', theme.id);
+      }
+      try {
+        localStorage.setItem('aida64_theme', theme.id);
+      } catch (err) {}
+      this.updateThemeUI(theme);
+      this.syncActiveThemeItem(theme.id);
+      EventBus.emit('theme:changed', theme.id);
+    };
+
+    // Use CSS View Transitions API with graceful fallback
+    if (document.startViewTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.startViewTransition(() => {
+        applyTheme();
+      });
+    } else {
+      applyTheme();
+    }
+  }
+
+  cycleTheme(e) {
+    const currentThemeId = document.documentElement.getAttribute('data-theme') || 'default';
+    const currentIndex = THEMES.findIndex(t => t.id === currentThemeId);
+    const nextIndex = (currentIndex + 1) % THEMES.length;
+    const nextTheme = THEMES[nextIndex];
+    this.setTheme(nextTheme.id, e);
+  }
+
+  syncActiveThemeItem(activeThemeId) {
+    const currentThemeId = activeThemeId || document.documentElement.getAttribute('data-theme') || 'default';
+    if (this.dom.themeMenuItems) {
+      this.dom.themeMenuItems.forEach(item => {
+        const id = item.getAttribute('data-theme-id');
+        const isActive = id === currentThemeId;
+        if (isActive) {
+          item.classList.add('active');
+          item.setAttribute('aria-selected', 'true');
+        } else {
+          item.classList.remove('active');
+          item.setAttribute('aria-selected', 'false');
+        }
+      });
+    }
+  }
+
+  updateThemeUI(theme) {
+    if (typeof theme === 'string') {
+      theme = THEMES.find(t => t.id === theme) || THEMES[0];
+    }
+    if (!this.dom.themeText || !this.dom.themeDot || !theme) return;
+    this.dom.themeText.textContent = `${theme.icon} ${theme.name}`;
+    this.dom.themeDot.style.backgroundColor = theme.color;
+    this.dom.themeDot.style.boxShadow = `0 0 8px ${theme.color}`;
+  }
+
+  _getDateTimeFormatter() {
+    const tz = this.getAttribute('timezone') || undefined;
+    if (this._cachedFormatter && this._cachedTz === tz) {
+      return this._cachedFormatter;
+    }
+    const options = {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+    };
+    if (tz) {
+      try {
+        this._cachedFormatter = new Intl.DateTimeFormat('en-US', { ...options, timeZone: tz });
+        this._cachedTz = tz;
+        return this._cachedFormatter;
+      } catch {
+        // Fallback to local timezone if tz is invalid
+      }
+    }
+    this._cachedFormatter = new Intl.DateTimeFormat('en-US', options);
+    this._cachedTz = null;
+    return this._cachedFormatter;
+  }
+
+  updateClock() {
+    if (!this.dom.systemClock) return;
+    const now = new Date();
+    if (Number.isNaN(now.getTime())) return;
+
+    let hoursStr = '';
+    let minutes = '';
+    let seconds = '';
+    let ampm = '';
+
+    try {
+      const formatter = this._getDateTimeFormatter();
+      const parts = formatter.formatToParts(now);
+      for (const part of parts) {
+        if (part.type === 'hour') hoursStr = part.value;
+        else if (part.type === 'minute') minutes = part.value;
+        else if (part.type === 'second') seconds = part.value;
+        else if (part.type === 'dayPeriod') ampm = part.value.toUpperCase();
+      }
+    } catch {
+      // Intl formatter error fallback
+    }
+
+    if (!hoursStr || !minutes || !seconds || !ampm) {
+      let hours = now.getHours();
+      ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12 || 12;
+      hoursStr = String(hours).padStart(2, '0');
+      minutes = String(now.getMinutes()).padStart(2, '0');
+      seconds = String(now.getSeconds()).padStart(2, '0');
+    }
+
+    if (this.dom.clockTime && this.dom.clockAmpm) {
+      this.dom.clockTime.textContent = `${hoursStr}:${minutes}:${seconds}`;
+      this.dom.clockAmpm.textContent = ampm;
+    } else {
+      this.dom.systemClock.replaceChildren();
+      const timeSpan = document.createElement('span');
+      timeSpan.id = 'clock-time';
+      timeSpan.textContent = `${hoursStr}:${minutes}:${seconds}`;
+      const nbsp = document.createTextNode('\u00A0');
+      const ampmSpan = document.createElement('span');
+      ampmSpan.className = 'clock-ampm';
+      ampmSpan.id = 'clock-ampm';
+      ampmSpan.textContent = ampm;
+      this.dom.systemClock.append(timeSpan, nbsp, ampmSpan);
+      this.dom.clockTime = timeSpan;
+      this.dom.clockAmpm = ampmSpan;
+    }
+  }
+
+  updateWeekdays() {
+    if (!this.dom.weekdayPills || this.dom.weekdayPills.length === 0) return;
+    const now = new Date();
+    if (Number.isNaN(now.getTime())) return;
+
+    let currentDay = now.getDay(); // 0: Sunday, 1: Monday, ..., 6: Saturday
+    const tz = this.getAttribute('timezone') || undefined;
+    if (tz) {
+      try {
+        const dayFormatter = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: tz });
+        const dayStr = dayFormatter.format(now);
+        const dayMap = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+        if (dayMap[dayStr] !== undefined) {
+          currentDay = dayMap[dayStr];
+        }
+      } catch {}
+    }
+
+    if (this._lastActiveDay === currentDay) return;
+    this._lastActiveDay = currentDay;
+
+    this.dom.weekdayPills.forEach(pill => {
+      const day = parseInt(pill.getAttribute('data-day'), 10);
+      if (day === currentDay) {
+        pill.classList.add('active-day');
+      } else {
+        pill.classList.remove('active-day');
+      }
+    });
+  }
+
+  onConnectionStatus({ mode, text } = {}) {
+    if (!this.dom.statusBadge || !this.dom.statusText) return;
+    const safeMode = typeof mode === 'string' && /^[a-zA-Z0-9_-]+$/.test(mode) ? mode : 'offline';
+    this.dom.statusBadge.className = `status-badge ${safeMode}`;
+    this.dom.statusText.textContent = typeof text === 'string' ? text : '';
+    if (safeMode === 'offline' && this.dom.statusPing) {
+      this.dom.statusPing.textContent = '-- ms';
+    }
+  }
+
+  onConnectionPing(ms) {
+    if (this.dom.statusPing) {
+      const val = typeof ms === 'number' && Number.isFinite(ms) ? Math.round(ms) : (ms ?? '--');
+      this.dom.statusPing.textContent = `${val} ms`;
+    }
+  }
+
+  onTelemetryData(data) {
+    if (!data || typeof data !== 'object') return;
+    if (data.date_gregorian !== undefined && this.dom.dateGregorian) {
+      this.dom.dateGregorian.textContent = String(data.date_gregorian ?? '--/--/--');
+    }
+    if (data.date_hijri !== undefined && this.dom.dateHijri) {
+      this.dom.dateHijri.textContent = String(data.date_hijri ?? '--/--/--');
+    }
+  }
+
+  async checkForUpdates() {
+    try {
+      const res = await fetch('/api/system/check-update');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data && data.update_available) {
+        this._updateData = data;
+        this.showUpdateBadge(data);
+      }
+    } catch (err) {
+      console.debug('Update check skipped or failed:', err);
+    }
+  }
+
+  showUpdateBadge(data) {
+    if (!this.dom.updateBadge || !this.dom.updateBadgeText) return;
+    const ver = data.latest_version ? (data.latest_version.startsWith('v') ? data.latest_version : `v${data.latest_version}`) : '';
+    this.dom.updateBadgeText.textContent = `⚡ تحديث جديد ${ver} متوفر`;
+    this.dom.updateBadge.style.display = 'inline-flex';
+  }
+
+  ensureModalPortal() {
+    let portal = document.getElementById('aida-update-modal-portal');
+    if (!portal) {
+      portal = document.createElement('div');
+      portal.id = 'aida-update-modal-portal';
+      portal.innerHTML = `
+        <style>
+          .aida-update-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(4, 8, 16, 0.78);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            z-index: 999999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+            direction: rtl;
+            box-sizing: border-box;
+            padding: 16px;
+          }
+          .aida-update-backdrop.open {
+            opacity: 1;
+            pointer-events: auto;
+          }
+          .aida-update-card {
+            width: 100%;
+            max-width: 540px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            background: rgba(15, 23, 42, 0.94);
+            border: 1.5px solid rgba(245, 158, 11, 0.5);
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(245, 158, 11, 0.25);
+            border-radius: 20px;
+            overflow: hidden;
+            transform: scale(0.92) translateY(12px);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            color: #F8FAFC;
+            font-family: var(--font-arabic, 'Cairo', sans-serif);
+          }
+          .aida-update-backdrop.open .aida-update-card {
+            transform: scale(1) translateY(0);
+          }
+          .aida-modal-header {
+            padding: 16px 22px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.02);
+          }
+          .aida-modal-title-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          }
+          .aida-modal-title {
+            font-size: 17.5px;
+            font-weight: 800;
+            color: #FFFFFF;
+            margin: 0;
+          }
+          .aida-modal-version-tag {
+            font-family: var(--font-numbers, 'Rajdhani', sans-serif);
+            font-size: 13px;
+            font-weight: 700;
+            color: #FCD34D;
+            background: rgba(245, 158, 11, 0.18);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            padding: 2px 9px;
+            border-radius: 12px;
+          }
+          .aida-modal-close-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.75);
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.2s ease;
+          }
+          .aida-modal-close-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.6);
+            color: #EF4444;
+          }
+          .aida-modal-body {
+            padding: 18px 22px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            font-size: 13.5px;
+            line-height: 1.6;
+          }
+          .aida-ver-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 12px;
+            padding: 10px 14px;
+          }
+          .aida-ver-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+          }
+          .aida-ver-lbl {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+          }
+          .aida-ver-num {
+            font-family: var(--font-numbers, 'Rajdhani', sans-serif);
+            font-size: 17px;
+            font-weight: 700;
+          }
+          .aida-ver-num.curr { color: rgba(255, 255, 255, 0.85); }
+          .aida-ver-num.new { color: #34D399; text-shadow: 0 0 10px rgba(52, 211, 153, 0.4); }
+          .aida-release-notes {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 12px 14px;
+            max-height: 160px;
+            overflow-y: auto;
+            font-size: 12.5px;
+            color: rgba(255, 255, 255, 0.75);
+            white-space: pre-wrap;
+            word-break: break-word;
+          }
+          .aida-instructions-card {
+            background: rgba(34, 211, 238, 0.06);
+            border: 1px solid rgba(34, 211, 238, 0.25);
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 12.5px;
+            color: #E2E8F0;
+          }
+          .aida-instructions-card code {
+            font-family: Consolas, monospace;
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid rgba(34, 211, 238, 0.3);
+            padding: 2px 7px;
+            border-radius: 6px;
+            color: #22D3EE;
+            direction: ltr;
+            display: inline-block;
+          }
+          .aida-copy-btn {
+            background: rgba(34, 211, 238, 0.15);
+            border: 1px solid rgba(34, 211, 238, 0.4);
+            color: #22D3EE;
+            border-radius: 6px;
+            padding: 3px 8px;
+            font-size: 11px;
+            font-family: var(--font-arabic, 'Cairo', sans-serif);
+            cursor: pointer;
+            margin-right: 8px;
+            transition: all 0.2s ease;
+          }
+          .aida-copy-btn:hover {
+            background: rgba(34, 211, 238, 0.3);
+          }
+          .aida-modal-footer {
+            padding: 14px 22px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.02);
+          }
+          .aida-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-family: var(--font-arabic, 'Cairo', sans-serif);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+          }
+          .aida-btn-sec {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #FFFFFF;
+          }
+          .aida-btn-sec:hover { background: rgba(255, 255, 255, 0.14); }
+          .aida-btn-pri {
+            background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+            border: 1px solid rgba(251, 191, 36, 0.65);
+            color: #FFFFFF;
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.35);
+          }
+          .aida-btn-pri:hover {
+            background: linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%);
+            box-shadow: 0 0 22px rgba(245, 158, 11, 0.55);
+            transform: translateY(-1px);
+          }
+        </style>
+        <div class="aida-update-backdrop" id="aida-update-backdrop">
+          <div class="aida-update-card" role="dialog" aria-modal="true">
+            <div class="aida-modal-header">
+              <div class="aida-modal-title-group">
+                <span style="font-size: 20px;">⚡</span>
+                <h3 class="aida-modal-title">تحديث جديد متوفر</h3>
+                <span class="aida-modal-version-tag" id="aida-modal-ver-tag">v--</span>
+              </div>
+              <button class="aida-modal-close-btn" id="aida-modal-close" aria-label="إغلاق">✕</button>
+            </div>
+            <div class="aida-modal-body">
+              <div class="aida-ver-row">
+                <div class="aida-ver-box">
+                  <span class="aida-ver-lbl">الإصدار المثبت</span>
+                  <span class="aida-ver-num curr" id="aida-modal-curr-ver">v1.0.0</span>
+                </div>
+                <span style="color: rgba(255,255,255,0.3); font-size: 18px;">➜</span>
+                <div class="aida-ver-box">
+                  <span class="aida-ver-lbl">الإصدار المتاح</span>
+                  <span class="aida-ver-num new" id="aida-modal-new-ver">v--</span>
+                </div>
+              </div>
+
+              <div style="font-weight: 700; color: #FFFFFF; font-size: 13px;" id="aida-modal-rel-name">ملاحظات الإصدار:</div>
+              <div class="aida-release-notes" id="aida-modal-rel-notes">جاري فحص تفاصيل التحديث...</div>
+
+              <div class="aida-instructions-card">
+                <strong>💡 طريقة التحديث التلقائي:</strong><br>
+                لتحديث لوحة التحكم بنقرة واحدة والحفاظ على كافة الإعدادات والملفات:<br>
+                <div style="margin-top: 6px; display: flex; align-items: center; gap: 8px;">
+                  <code>scripts\\update.bat</code>
+                  <button class="aida-copy-btn" id="aida-btn-copy-cmd">نسخ الأمر</button>
+                </div>
+              </div>
+            </div>
+            <div class="aida-modal-footer">
+              <button class="aida-btn aida-btn-sec" id="aida-modal-dismiss">إغلاق</button>
+              <a class="aida-btn aida-btn-pri" id="aida-modal-dl-link" href="#" target="_blank" rel="noopener noreferrer">
+                <span>⬇️</span> تحميل الحزمة (GitHub)
+              </a>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(portal);
+
+      const closeBtn = portal.querySelector('#aida-modal-close');
+      const dismissBtn = portal.querySelector('#aida-modal-dismiss');
+      const backdrop = portal.querySelector('#aida-update-backdrop');
+      const copyBtn = portal.querySelector('#aida-btn-copy-cmd');
+
+      if (closeBtn) closeBtn.addEventListener('click', this.closeUpdateModal);
+      if (dismissBtn) dismissBtn.addEventListener('click', this.closeUpdateModal);
+      if (backdrop) backdrop.addEventListener('click', this._onBackdropClick);
+      if (copyBtn) copyBtn.addEventListener('click', this.copyUpdateCommand);
+    }
+    return portal;
+  }
+
+  _onBackdropClick(e) {
+    if (e.target && e.target.id === 'aida-update-backdrop') {
+      this.closeUpdateModal();
+    }
+  }
+
+  openUpdateModal() {
+    const portal = this.ensureModalPortal();
+    if (!portal) return;
+
+    const data = this._updateData || {};
+    const ver = data.latest_version || 'v--';
+    const tag = ver.startsWith('v') ? ver : `v${ver}`;
+
+    const verTag = portal.querySelector('#aida-modal-ver-tag');
+    const currVer = portal.querySelector('#aida-modal-curr-ver');
+    const newVer = portal.querySelector('#aida-modal-new-ver');
+    const relName = portal.querySelector('#aida-modal-rel-name');
+    const relNotes = portal.querySelector('#aida-modal-rel-notes');
+    const dlLink = portal.querySelector('#aida-modal-dl-link');
+    const backdrop = portal.querySelector('#aida-update-backdrop');
+
+    if (verTag) verTag.textContent = tag;
+    if (currVer) currVer.textContent = `v${data.current_version || '1.0.0'}`;
+    if (newVer) newVer.textContent = tag;
+    if (relName) {
+      relName.textContent = data.release_name ? `ملاحظات الإصدار (${data.release_name}):` : 'ملاحظات الإصدار:';
+    }
+    if (relNotes) {
+      relNotes.textContent = data.release_notes || 'لا توجد ملاحظات إضافية لهذا الإصدار.';
+    }
+    if (dlLink) {
+      const fallbackUrl = 'https://github.com/aasanea/aida64-web-sensorpanel/releases';
+      const rawUrl = data.download_url || data.html_url || fallbackUrl;
+      try {
+        const parsed = new URL(rawUrl, window.location.href);
+        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+          dlLink.href = parsed.href;
+        } else {
+          dlLink.href = fallbackUrl;
+        }
+      } catch {
+        dlLink.href = fallbackUrl;
+      }
+    }
+    if (backdrop) {
+      backdrop.classList.add('open');
+    }
+  }
+
+  closeUpdateModal() {
+    const portal = document.getElementById('aida-update-modal-portal');
+    if (portal) {
+      const backdrop = portal.querySelector('#aida-update-backdrop');
+      if (backdrop) {
+        backdrop.classList.remove('open');
+      }
+    }
+  }
+
+  copyUpdateCommand(e) {
+    const text = 'scripts\\update.bat';
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = e && e.target;
+      if (btn) {
+        const orig = btn.textContent;
+        btn.textContent = 'تم النسخ! ✓';
+        if (this._copyTimeoutId) clearTimeout(this._copyTimeoutId);
+        this._copyTimeoutId = setTimeout(() => {
+          btn.textContent = orig;
+          this._copyTimeoutId = null;
+        }, 2000);
+      }
+    }).catch(err => {
+      console.warn('Failed to copy command:', err);
+    });
+  }
+
+  destroyModalPortal() {
+    const portal = document.getElementById('aida-update-modal-portal');
+    if (portal) {
+      const closeBtn = portal.querySelector('#aida-modal-close');
+      const dismissBtn = portal.querySelector('#aida-modal-dismiss');
+      const backdrop = portal.querySelector('#aida-update-backdrop');
+      const copyBtn = portal.querySelector('#aida-btn-copy-cmd');
+
+      if (closeBtn) closeBtn.removeEventListener('click', this.closeUpdateModal);
+      if (dismissBtn) dismissBtn.removeEventListener('click', this.closeUpdateModal);
+      if (backdrop) backdrop.removeEventListener('click', this._onBackdropClick);
+      if (copyBtn) copyBtn.removeEventListener('click', this.copyUpdateCommand);
+
+      if (portal.parentNode) {
+        portal.parentNode.removeChild(portal);
+      }
+    }
+  }
+
+  _onKeyDown(e) {
+    if (e.key === 'Escape') {
+      if (this._isThemeMenuOpen) {
+        this.closeThemeMenu();
+      }
+      this.closeUpdateModal();
+    }
+  }
+
+  toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.warn('Fullscreen request failed:', err);
+      });
+    } else {
+      document.exitFullscreen().catch(err => {
+        console.warn('Exit fullscreen failed:', err);
+      });
+    }
+  }
+}
+
+customElements.define('dashboard-header', DashboardHeader);

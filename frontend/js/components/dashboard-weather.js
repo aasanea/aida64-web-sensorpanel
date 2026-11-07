@@ -1,5 +1,5 @@
-import { updateText, updateTelemetryStatus } from './component-utils.js?v=20261006.2';
-import { EventBus } from '../store/event_bus.js?v=20261006.2';
+import { updateText, updateTelemetryStatus } from './component-utils.js?v=20261007.3';
+import { EventBus } from '../store/event_bus.js?v=20261007.3';
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -370,7 +370,7 @@ export class DashboardWeather extends HTMLElement {
   connectedCallback() {
     this.events?.abort();
     this.events = new AbortController();
-    this.unsubscribe = EventBus.on('state-changed', this.onStateChange);
+    this.unsubscribe = EventBus.on('state-changed', this.onStateChange, {signal:this.events.signal});
     this.onStateChange(window.stateManager?.currentState || {});
 
     this.isRunning = true;

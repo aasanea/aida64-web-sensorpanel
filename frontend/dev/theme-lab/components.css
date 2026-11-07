@@ -1,0 +1,97 @@
+/* One constructed stylesheet, adopted by the preview components themselves. */
+:host { color: var(--text-pure-white); }
+* { text-shadow: none !important; }
+.card-back { background: var(--lab-card); }
+.card-header { padding-bottom: 8px; border-bottom: 1px solid var(--lab-line); }
+.card-title { font-size: 22px; line-height: 1.3; color: var(--text-pure-white); }
+.card-title-group { min-width: 0; gap: 8px; }
+.card-title-group > div:last-child { min-width: 0; }
+.card-sub { font-size: 12px; letter-spacing: .7px; }
+:host(preview-cpu) .card-title, :host(preview-gpu) .card-title { font-size: 20px; white-space: nowrap; }
+:host(preview-cpu) .btn-flip-toggle, :host(preview-gpu) .btn-flip-toggle { max-width: 132px; white-space: normal; font-size: 12px; line-height: 1.35; padding: 5px 8px; background: var(--lab-fill); border: 1px solid var(--lab-line); }
+:host(preview-cpu) .badge-label, :host(preview-gpu) .badge-label { font-size: 14px; }
+:host(preview-cpu) .card-badge, :host(preview-gpu) .card-badge { padding: 5px 8px; gap: 6px; }
+:host(preview-cpu) .card-title-group, :host(preview-gpu) .card-title-group { flex: 1; }
+:host(preview-ram) .card-body-medium { gap: 3px; }
+:host(preview-ram) .hero-metric-display .huge-number { font-size: 40px; }
+:host(preview-ram) .arabic-label { font-size: 17px; }
+:host(preview-ram) .cap-val { font-size: 25px; }
+:host(preview-ram) .sub-num { font-size: 22px; }
+:host(preview-ram) .capacity-row, :host(preview-ram) .sub-stat-box { padding: 4px 8px; }
+:host(preview-display) .wing-tag { font-size: 16px; }
+:host(preview-display) .card-face { gap: 6px; }
+:host(preview-display) .telemetry-pill { padding-block: 4px; }
+:host(preview-display) .display-hub-content { gap: 4px; }
+.card-sub, .card-subtitle, .metric-label, .gauge-label, .wing-status, .meta-label,
+.cap-total, .apt-meta-item, .apt-status-label, .prayer-label, .time-label, .gauge-tick-label,
+.stat-label, .date-sep, .weekday-pill, .gauge-subtitle { color: var(--text-muted); }
+.card-icon { background: var(--lab-fill); border-color: var(--lab-line); box-shadow: none; border-radius: 10px; }
+.flip-btn, .apt-manage-btn, .theme-toggle-btn, .kiosk-toggle-btn, .filter-btn,
+.tournament-tab, .theme-menu-item { color: var(--text-pure-white); background: var(--lab-fill); border-color: var(--lab-line); box-shadow: none; }
+.flip-btn:hover, .theme-menu-item:hover, .filter-btn.active, .tournament-tab.active {
+  background: var(--lab-accent-soft); color: var(--neon-cyan); border-color: var(--neon-cyan); box-shadow: none;
+}
+.card-badge, .badge-value, .metric-value, .stat-value, .team-name, .score-numbers,
+.cap-val, .meta-val, .apt-item-title, .apt-hero-title, .table-team-name, .col-num, .col-pts {
+  color: var(--text-pure-white); font-variant-numeric: tabular-nums;
+}
+.card-badge, .wing, .net-direction-box, .match-card, .match-item, .apt-item,
+.apt-hero-banner, .fps-hero-capsule, .metric-box, .telemetry-pill, .prayer-item,
+.weather-info-box, .stat-box, .spec-item, .spec-row, .capacity-row {
+  background: var(--lab-fill); border-color: var(--lab-line); box-shadow: none;
+}
+.gauge-circular-container, .gauge-dynamic-root { filter: none; }
+.metric-bar-track, .progress-track, .ram-progress-track, .storage-progress-track,
+.vram-progress-track, .track-inset, .mixer-track { background: var(--lab-soft); box-shadow: none; }
+.theme-dropdown-menu { background: var(--lab-card); border-color: var(--lab-line); }
+.theme-item-name-en, .theme-label-text { color: var(--text-pure-white); }
+.theme-item-name-ar { color: var(--text-muted); }
+.date-group-badge, .weekdays-strip { background: var(--lab-fill); border-color: var(--lab-line); box-shadow: none; backdrop-filter: none; }
+.weekday-pill.active-day { background: var(--lab-accent-soft); color: var(--neon-cyan); border: 1px solid var(--neon-cyan); box-shadow: none; transform: none; }
+.clock-display { color: var(--text-pure-white); }
+.clock-ampm { color: var(--text-muted); }
+.header-right-group { gap: 12px; }
+button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--neon-cyan); outline-offset: 3px; }
+button:disabled { opacity: .55; cursor: default; }
+:host([data-preview-variant="titanium"]) .card-header { border-bottom: 1px solid var(--lab-line); padding-bottom: 10px; }
+:host([data-preview-variant="titanium"]) .card-icon { border-radius: 5px; }
+:host([data-preview-variant="titanium"]) :is(.card-badge, .wing, .net-direction-box, .apt-hero-banner, .fps-hero-capsule, .flip-btn) { border-radius: 6px; }
+:host([data-preview-variant="titanium"]) .card-title { font-size: 21px; }
+:host([data-preview-variant="pearl"]) :is(.card-sub, .card-subtitle, .cap-total, .badge-unit, .metric-unit, .score-divider,
+.apt-meta-item, .apt-item-time, .net-unit, .team-name, .channel-badge, .league-group-header,
+.filter-btn, .filter-button, .forecast-day, .gauge-value, .value-text, .mic-badge, .telemetry-label,
+.wing-status, .mixer-channel-name, .app-name, .table-team-name, .empty-state, .apt-empty-state) { color: var(--text-muted) !important; }
+:host([data-preview-variant="pearl"]) :is(.hero-value, .hero-number, .hero-metric-display, .fps-val, .temp-value,
+.badge-value, .metric-value, .stat-value, .prayer-time, .countdown-value, .countdown-digits, .apt-hero-title,
+.apt-item-title, .meta-val, .cap-val, .date-greg, .team-name, .score-numbers, .gauge-value) { color: var(--text-pure-white) !important; }
+:host([data-preview-variant="pearl"]) :is(.telemetry-pill, .mic-badge, .mixer-channel, .spec-item, .clock-display,
+.prayer-time-box, .forecast-item, .apt-category-pill, .tournament-tab, .filter-button) { background: var(--lab-fill); border-color: var(--lab-line); box-shadow: none; }
+:host([data-preview-variant="pearl"]) .gauge-dynamic-root { --gauge-tick-color: #526577; }
+:host([data-preview-variant="pearl"]) :is(.badge-label, .arabic-ring-label, .core-cell-load, .platform-cell-val,
+.pill-label, .res-val, .ch-name, .ch-val, .strip-media-title, .sec-heading, .card-primary-label,
+.eq-pill-name, .route-val, .spec-data, .dyn-val, .bw-port, .tile-label, .app-name, .prayer-pill-time) { color: var(--text-pure-white) !important; }
+:host([data-preview-variant="pearl"]) :is(.strip-hint, .core-group-avg, .core-cell-name, .platform-cell-name,
+.cores-footer-strip, .strip-media-desc, .sec-badge, .matrix-status, .studio-card-caption, .eq-pill-type,
+.route-label, .spec-prop, .dyn-label, .dyn-sub, .bw-caption, .studio-footer-hint, .metric-sep, .metric-val-total,
+.strip-pill-label, .tile-sub, .card-footer-strip, .app-conn-badge, .empty-apps-state, .back-footer-strip, .ping-badge) { color: var(--text-muted) !important; }
+:host([data-preview-variant="pearl"]) :is(.apt-category-pill, .match-comp-badge, .match-channel-badge) { background: var(--lab-accent-soft); color: var(--neon-cyan) !important; border-color: var(--lab-line); }
+:host([data-preview-variant="pearl"]) :is(.weather-desc, .status-upcoming, .filter-btn.upcoming-filter.active, .platform-cell-unit.unit-amber) { color: var(--status-warning) !important; background: var(--status-surface); }
+:host([data-preview-variant="pearl"]) :is(.cap-free-text, .dyn-highlight) { color: var(--status-normal); }
+:host([data-preview-variant="pearl"]) :is(.apt-hero-countdown-box, .channel-card, .master-audio-box, .prayer-pill, .prayer-capsule,
+.studio-card, .studio-section, .platform-cell, .core-cell, .gpu-detail-tile, .micro-telemetry-strip, .micro-cores-strip) { background: var(--lab-fill); border-color: var(--lab-line); box-shadow: none; }
+:host([data-preview-variant="pearl"]) :is(.holo-outer-ring, .split-bg-ring, .tachometer-bg, .tachometer-tick) { stroke: var(--lab-line); }
+:host([data-preview-variant="titanium"]) :is(.progress-bar, .metric-bar-fill, .progress-dot, .gauge-svg *) { filter: none !important; box-shadow: none; }
+:host([data-preview-variant="titanium"]) .progress-dot { background: var(--neon-cyan); box-shadow: none; width: 5px; height: 5px; }
+:host(preview-display) .bottom-media-strip { flex-shrink: 0; margin-top: 0; }
+:host(preview-display) .strip-media-title { font-size: 11px; }
+:host(preview-display) .strip-media-desc { font-size: 9px; }
+:host(preview-display) .channel-card { padding: 5px 8px; }
+:host([data-preview-variant="pearl"]) .holo-hairline-bg { stroke: var(--lab-line); }
+:host([data-preview-variant="pearl"]) :is(.progress-dot, .holo-core-glow) { box-shadow: none; filter: none; }
+:host([data-preview-variant="pearl"]) .gauge-status-pill { background: var(--status-surface); box-shadow: none; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+:host(preview-ram) .metric-row .arabic-label { font-size: 14px; }
+:host(preview-ram) .card-sub-grid { margin-block: 0; }

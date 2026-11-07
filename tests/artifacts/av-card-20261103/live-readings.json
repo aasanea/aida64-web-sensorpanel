@@ -1,0 +1,148 @@
+{
+  "utc": "2026-11-03T10:26:52.729531+00:00",
+  "display": {
+    "fps": 221.0,
+    "fps_source": "AIDA64",
+    "display_hz": 240.0,
+    "display_res": "3840 x 2160",
+    "frametime_ms": null,
+    "audio_mic_muted": false
+  },
+  "sonarChecks": [
+    {
+      "channel": "master",
+      "path": "monitoring",
+      "volumeMatches": true,
+      "muteMatches": true
+    },
+    {
+      "channel": "master",
+      "path": "streaming",
+      "volumeMatches": true,
+      "muteMatches": true
+    },
+    {
+      "channel": "game",
+      "path": "monitoring",
+      "volumeMatches": true,
+      "muteMatches": true
+    },
+    {
+      "channel": "game",
+      "path": "streaming",
+      "volumeMatches": true,
+      "muteMatches": true
+    },
+    {
+      "channel": "chat",
+      "path": "monitoring",
+      "volumeMatches": true,
+      "muteMatches": true
+    },
+    {
+      "channel": "chat",
+      "path": "streaming",
+      "volumeMatches": true,
+      "muteMatches": true
+    },
+    {
+      "channel": "media",
+      "path": "monitoring",
+      "volumeMatches": true,
+      "muteMatches": true
+    },
+    {
+      "channel": "media",
+      "path": "streaming",
+      "volumeMatches": true,
+      "muteMatches": true
+    },
+    {
+      "channel": "aux",
+      "path": "monitoring",
+      "volumeMatches": true,
+      "muteMatches": true
+    },
+    {
+      "channel": "aux",
+      "path": "streaming",
+      "volumeMatches": true,
+      "muteMatches": true
+    },
+    {
+      "channel": "mic",
+      "path": "monitoring",
+      "volumeMatches": true,
+      "muteMatches": true
+    },
+    {
+      "channel": "mic",
+      "path": "streaming",
+      "volumeMatches": true,
+      "muteMatches": true
+    }
+  ],
+  "routes": [
+    {
+      "streamRedirectionId": "streaming",
+      "deviceId": "{0.0.0.00000000}.{79f06a76-0b9b-4740-9c00-073873822c0f}",
+      "status": [
+        {
+          "role": "chatCapture",
+          "isEnabled": true
+        },
+        {
+          "role": "chatRender",
+          "isEnabled": true
+        },
+        {
+          "role": "game",
+          "isEnabled": false
+        },
+        {
+          "role": "media",
+          "isEnabled": false
+        },
+        {
+          "role": "aux",
+          "isEnabled": false
+        }
+      ],
+      "isRunning": true
+    },
+    {
+      "streamRedirectionId": "monitoring",
+      "deviceId": "{0.0.0.00000000}.{fe660238-b924-4425-bb33-c95af8acee10}",
+      "status": [
+        {
+          "role": "chatCapture",
+          "isEnabled": false
+        },
+        {
+          "role": "chatRender",
+          "isEnabled": true
+        },
+        {
+          "role": "game",
+          "isEnabled": true
+        },
+        {
+          "role": "media",
+          "isEnabled": true
+        },
+        {
+          "role": "aux",
+          "isEnabled": true
+        }
+      ],
+      "isRunning": true
+    },
+    {
+      "streamRedirectionId": "mic",
+      "deviceId": "{0.0.1.00000000}.{d139c240-d79a-4d48-940b-7999df9ef389}",
+      "status": [],
+      "isRunning": true
+    }
+  ],
+  "limitation": "Sequential read-only samples; hardware FPS accuracy under a game is not independently benchmarked."
+}

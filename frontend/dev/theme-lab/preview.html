@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIDA64 Glassmorphism 2.0 Dashboard</title>
+
+  <script>
+    const proposalId = new URLSearchParams(location.search).get('theme');
+    document.documentElement.dataset.previewTheme = ['lumen','titanium','pearl'].includes(proposalId) ? proposalId : 'lumen';
+  </script>
+  
+  <!-- Essential Arabic, telemetry, and display fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Barlow:wght@500;600;700;800&family=Roboto+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/css/design-tokens.css?v=20261007.3">
+  <link rel="stylesheet" href="/css/global.css?v=20261007.3">
+  <link rel="stylesheet" href="/css/style.css?v=20261007.3">
+  <link rel="stylesheet" href="/css/gauge-styles.css?v=20261007.3">
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="./themes.css?v=1">
+</head>
+<body>
+
+  <!-- Background Layer: Animated Mesh Gradient & Floating Orbs -->
+  <div class="mesh-background" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="orb orb-4"></div>
+  </div>
+  
+  <!-- SVG Noise Overlay (0.03 opacity) -->
+  <div class="noise-overlay" aria-hidden="true"></div>
+
+  <!-- Dashboard Main Container -->
+  <div class="dashboard-container">
+    
+    <!-- Top Bar Header Web Component -->
+    <preview-header class="top-bar" id="dashboard-header"></preview-header>
+
+    <!-- Asymmetric Bento Grid (9 Cards) -->
+    <main class="bento-grid">
+
+      <!-- CARD 1: CPU Master Panel (Large Bento Card) -->
+      <preview-cpu class="glass-card card-cpu" id="card-cpu"></preview-cpu>
+
+      <!-- CARD 2: Appointments Panel (Center Bento Card Row 1) -->
+      <preview-appointments class="glass-card card-appointments" id="card-appointments"></preview-appointments>
+
+      <!-- CARD 3: GPU Master Panel (Large Bento Card) -->
+      <preview-gpu class="glass-card card-gpu" id="card-gpu"></preview-gpu>
+
+      <!-- CARD 4: RAM Panel (Medium Bento Card) -->
+      <preview-ram class="glass-card card-ram" id="card-ram"></preview-ram>
+
+      <!-- CARD 5: Live Matches & Saudi Pro League Panel (Medium Bento Card) -->
+      <preview-matches class="glass-card card-matches" id="card-matches"></preview-matches>
+
+      <!-- CARD 6: Storage Panel (Medium Bento Card) -->
+      <preview-storage class="glass-card card-storage" id="card-storage"></preview-storage>
+
+      <!-- CARD 7: Display & Gaming Telemetry (Card Slot 1) -->
+      <preview-display class="glass-card card-slot-1" id="card-slot-1"></preview-display>
+
+      <!-- CARD 8: Riyadh Weather & Prayer Times (Card Slot 2) -->
+      <preview-weather class="glass-card card-slot-2" id="card-slot-2"></preview-weather>
+
+      <!-- CARD 9: Network Telemetry (Compact Bento Card) -->
+      <preview-network class="glass-card card-network" id="card-network"></preview-network>
+
+    </main>
+
+    <!-- Footer Bar -->
+    <footer class="footer-bar">
+      <div class="footer-item">
+        <span class="footer-dot"></span>
+        <span>AIDA64 SHARED MEMORY V4.0</span>
+      </div>
+      <div class="footer-item">
+        <span id="preview-label" dir="ltr">LIVE THEME PREVIEW</span> • <a href="./index.html">مقارنة التصاميم</a>
+      </div>
+    </footer>
+
+  </div>
+
+  <script type="module" src="./preview.js?v=1"></script>
+</body>
+</html>

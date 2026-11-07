@@ -1,5 +1,5 @@
-import { animationAlpha, updateTelemetryStatus } from './component-utils.js?v=20261006.2';
-import { EventBus } from '../store/event_bus.js?v=20261006.2';
+import { animationAlpha, updateTelemetryStatus } from './component-utils.js?v=20261007.3';
+import { EventBus } from '../store/event_bus.js?v=20261007.3';
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -267,7 +267,7 @@ template.innerHTML = `
       <span class="cap-val" id="vram_used_gb">--</span>
       <span class="cap-separator">/</span>
       <span class="cap-total" id="vram_total_gb">--</span>
-      <span class="cap-unit">GB</span>
+      <span class="cap-unit">GiB</span>
     </div>
   </div>
 

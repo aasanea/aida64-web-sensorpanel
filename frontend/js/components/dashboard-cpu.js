@@ -1,12 +1,12 @@
-import { animationAlpha, connectFlipFaces, updateTelemetryStatus } from './component-utils.js?v=20261006.2';
-import { EventBus } from '../store/event_bus.js?v=20261006.2';
-import { GaugeEngine } from './gauge-styles-engine.js?v=20261006.2';
-import { GaugePicker } from './gauge-style-picker.js?v=20261006.2';
+import { animationAlpha, connectFlipFaces, updateTelemetryStatus } from './component-utils.js?v=20261007.3';
+import { EventBus } from '../store/event_bus.js?v=20261007.3';
+import { GaugeEngine } from './gauge-styles-engine.js?v=20261007.3';
+import { GaugePicker } from './gauge-style-picker.js?v=20261007.3';
 
 const template = document.createElement('template');
 template.innerHTML = `
 <style>
-  @import url('/css/gauge-styles.css?v=20261006.2');
+  @import url('/css/gauge-styles.css?v=20261007.3');
   /* Local Component Styles */
   :host {
     display: block;
@@ -738,7 +738,7 @@ template.innerHTML = `
       </div>
       <div class="header-actions">
         <div class="card-badge">
-          <span class="badge-label">البقعة الساخنة</span>
+          <span class="badge-label">حرارة الحزمة Package</span>
           <span class="badge-val-group" dir="ltr">
             <span class="badge-value" id="cpu_hotspot_temp">--</span>
             <span class="badge-unit">°C</span>
@@ -859,7 +859,7 @@ template.innerHTML = `
         </div>
         <div>
           <h2 class="card-title">مصفوفة الأنوية واللوحة</h2>
-          <span class="card-sub">20-CORE HYBRID MATRIX & PLATFORM TELEMETRY</span>
+          <span class="card-sub">CORE MATRIX / WINDOWS TOPOLOGY</span>
         </div>
       </div>
       <button class="btn-flip-toggle btn-back" id="btn-flip-back" type="button" title="العودة للواجهة الرئيسية">
@@ -962,7 +962,7 @@ template.innerHTML = `
           <!-- CPU Package Hotspot -->
           <div class="platform-cell" title="حرارة البقعة القصوى للمعالج CPU Hotspot">
             <div class="platform-cell-top">
-              <span class="platform-cell-name">🔥 البقعة الساخنة</span>
+              <span class="platform-cell-name">🔥 حرارة الحزمة Package</span>
             </div>
             <div class="platform-cell-val-group" dir="ltr">
               <span class="platform-cell-val" id="back_cpu_hotspot_temp">--</span>
@@ -971,12 +971,12 @@ template.innerHTML = `
           </div>
 
           <!-- Total System Power -->
-          <div class="platform-cell" title="طاقة النظام الإجمالية Total System Power">
+          <div class="platform-cell" title="مجموع طاقة CPU + GPU فقط · محسوب">
             <div class="platform-cell-top">
-              <span class="platform-cell-name">⚡ طاقة النظام</span>
+              <span class="platform-cell-name">⚡ CPU + GPU · محسوب</span>
             </div>
             <div class="platform-cell-val-group" dir="ltr">
-              <span class="platform-cell-val" id="total_power">--</span>
+              <span class="platform-cell-val" id="cpu_gpu_power">--</span>
               <span class="platform-cell-unit unit-amber">W</span>
             </div>
           </div>
@@ -985,7 +985,7 @@ template.innerHTML = `
     </div>
 
     <div class="cores-footer-strip">
-      <span>INTEL CORE ULTRA 7 265KF • LION COVE (8P) + SKYMONT (12E) • ARROW LAKE PLATFORM</span>
+      <span data-inventory="cpu">هوية المعالج غير متاحة</span>
     </div>
   </div>
 </div>
@@ -1010,7 +1010,7 @@ export class DashboardCPU extends HTMLElement {
       motherboard_temp: null,
       pch_temp: null,
       nvme_temp: null,
-      total_power: null
+      cpu_gpu_power: null
     };
     
     this.targetValues = {
@@ -1026,7 +1026,7 @@ export class DashboardCPU extends HTMLElement {
       motherboard_temp: null,
       pch_temp: null,
       nvme_temp: null,
-      total_power: null
+      cpu_gpu_power: null
     };
 
     this.cpuCores = null;
@@ -1056,7 +1056,7 @@ export class DashboardCPU extends HTMLElement {
       motherboard_temp: this.shadowRoot.getElementById('motherboard_temp'),
       pch_temp: this.shadowRoot.getElementById('pch_temp'),
       nvme_temp: this.shadowRoot.getElementById('nvme_temp'),
-      total_power: this.shadowRoot.getElementById('total_power'),
+      cpu_gpu_power: this.shadowRoot.getElementById('cpu_gpu_power'),
       platformSummary: this.shadowRoot.getElementById('platform-summary'),
 
       btnFlipCores: this.shadowRoot.getElementById('btn-flip-cores'),
@@ -1090,70 +1090,25 @@ export class DashboardCPU extends HTMLElement {
     this.tick = this.tick.bind(this);
   }
 
-  buildCoreDOMElements() {
-    // 8 P-Core Mini Bars
-    for (let i = 1; i <= 8; i++) {
-      const bar = document.createElement('div');
-      bar.className = 'mini-core-bar p-core-bar';
-      bar.id = `p-mini-${i}`;
-      bar.title = `P-Core ${i}: --% | --°C`;
-      this.dom.pMiniBarsContainer.appendChild(bar);
-      this.coreDom.miniBars.push(bar);
+  buildCoreDOMElements(cores=[]) {
+    const signature=cores.map(core=>`${core.id}:${core.type}`).join('|');
+    if(this.coreSignature===signature)return;
+    this.coreSignature=signature;
+    for(const container of [this.dom.pMiniBarsContainer,this.dom.eMiniBarsContainer,this.dom.pCoresGrid,this.dom.eCoresGrid])container.replaceChildren();
+    this.coreDom={miniBars:[],cells:[]};
+    for(const core of cores){
+      const efficient=core.type==='E', tag=core.type ? `${core.type}${core.id}` : `Core ${core.id}`;
+      const bar=document.createElement('div');bar.className=`mini-core-bar ${efficient?'e':'p'}-core-bar`;
+      (efficient?this.dom.eMiniBarsContainer:this.dom.pMiniBarsContainer).append(bar);this.coreDom.miniBars.push(bar);
+      const cell=document.createElement('div');cell.className=`core-cell ${efficient?'e':'p'}-core-cell`;
+      cell.innerHTML=`<div class="core-cell-top"><span class="core-cell-name">${tag}</span><span class="core-cell-temp">—°</span></div><div class="core-cell-load">—%</div><div class="core-cell-bar-track"><div class="core-cell-bar-fill"></div></div>`;
+      (efficient?this.dom.eCoresGrid:this.dom.pCoresGrid).append(cell);this.coreDom.cells.push({temp:cell.querySelector('.core-cell-temp'),load:cell.querySelector('.core-cell-load'),bar:cell.querySelector('.core-cell-bar-fill')});
     }
-
-    // 12 E-Core Mini Bars
-    for (let i = 9; i <= 20; i++) {
-      const bar = document.createElement('div');
-      bar.className = 'mini-core-bar e-core-bar';
-      bar.id = `e-mini-${i}`;
-      bar.title = `E-Core ${i - 8}: --% | --°C`;
-      this.dom.eMiniBarsContainer.appendChild(bar);
-      this.coreDom.miniBars.push(bar);
-    }
-
-    // 8 P-Cores Back Grid Cells
-    for (let i = 1; i <= 8; i++) {
-      const cell = document.createElement('div');
-      cell.className = 'core-cell p-core-cell';
-      cell.innerHTML = `
-        <div class="core-cell-top">
-          <span class="core-cell-name">P${i}</span>
-          <span class="core-cell-temp" id="p-temp-${i}">--°</span>
-        </div>
-        <div class="core-cell-load" id="p-load-${i}">--%</div>
-        <div class="core-cell-bar-track">
-          <div class="core-cell-bar-fill" id="p-bar-${i}"></div>
-        </div>
-      `;
-      this.dom.pCoresGrid.appendChild(cell);
-      this.coreDom.cells.push({
-        temp: cell.querySelector(`#p-temp-${i}`),
-        load: cell.querySelector(`#p-load-${i}`),
-        bar: cell.querySelector(`#p-bar-${i}`)
-      });
-    }
-
-    // 12 E-Cores Back Grid Cells
-    for (let i = 9; i <= 20; i++) {
-      const cell = document.createElement('div');
-      cell.className = 'core-cell e-core-cell';
-      cell.innerHTML = `
-        <div class="core-cell-top">
-          <span class="core-cell-name">E${i - 8}</span>
-          <span class="core-cell-temp" id="e-temp-${i}">--°</span>
-        </div>
-        <div class="core-cell-load" id="e-load-${i}">--%</div>
-        <div class="core-cell-bar-track">
-          <div class="core-cell-bar-fill" id="e-bar-${i}"></div>
-        </div>
-      `;
-      this.dom.eCoresGrid.appendChild(cell);
-      this.coreDom.cells.push({
-        temp: cell.querySelector(`#e-temp-${i}`),
-        load: cell.querySelector(`#e-load-${i}`),
-        bar: cell.querySelector(`#e-bar-${i}`)
-      });
-    }
+    this.dom.eCoresGrid.closest('.core-group-row')?.toggleAttribute('hidden',!cores.some(core=>core.type==='E'));
+    const badges=this.shadowRoot.querySelectorAll('.core-group-badge');
+    if(badges[0])badges[0].textContent=cores.some(core=>core.type==='P')?`أنوية الأداء · ${cores.filter(core=>core.type==='P').length}`:`أنوية المصدر · ${cores.length}`;
+    if(badges[1])badges[1].textContent=`أنوية الكفاءة · ${cores.filter(core=>core.type==='E').length}`;
+    this.dom.microCoresStrip.title=`تفاصيل ${cores.length} من أنوية المصدر`;
   }
 
   connectedCallback() {
@@ -1257,6 +1212,7 @@ export class DashboardCPU extends HTMLElement {
     }
     if (delta.cpu_cores !== undefined) {
       this.cpuCores = delta.cpu_cores;
+      this.buildCoreDOMElements?.(this.cpuCores || []);
       this.renderCores();
     }
   }
@@ -1363,7 +1319,7 @@ export class DashboardCPU extends HTMLElement {
 
     this.updateText(this.dom.cpu_voltage, this.currentValues.cpu_voltage, 3);
     this.updateText(this.dom.cpu_fan_rpm, this.currentValues.cpu_fan_rpm, 0);
-    this.updateText(this.dom.total_power, this.currentValues.total_power, 0);
+    this.updateText(this.dom.cpu_gpu_power, this.currentValues.cpu_gpu_power, 0);
 
     // Platform Summary Text (Highest node temp)
     if (this.dom.platformSummary) {
@@ -1401,7 +1357,7 @@ export class DashboardCPU extends HTMLElement {
     let eLoadSum = 0, eTempSum = 0, eCount = 0, eTempCount = 0;
 
     for (let i = 0; i < this.coreDom.cells.length; i++) {
-      const core = this.cpuCores[i] ?? { type: i < 8 ? 'P' : 'E', id: i + 1, load: null, temp: null };
+      const core = this.cpuCores[i] ?? { type: null, id: i + 1, load: null, temp: null };
       const load = Number.isFinite(core.load) ? Math.min(100, Math.max(0, core.load)) : null;
       const temp = (core.temp !== null && !isNaN(core.temp)) ? core.temp : null;
       const defaultColor = core.type === 'P' ? 'var(--neon-cyan)' : 'var(--neon-violet)';
@@ -1414,7 +1370,7 @@ export class DashboardCPU extends HTMLElement {
           pTempCount++;
         }
 
-      } else {
+      } else if(core.type==='E') {
         if (load !== null) { eLoadSum += load; eCount++; }
         if (temp !== null) {
           eTempSum += temp;
@@ -1429,7 +1385,7 @@ export class DashboardCPU extends HTMLElement {
         const heightPct = load === null ? 0 : Math.max(15, load);
         miniBar.style.height = `${heightPct}%`;
         miniBar.style.backgroundColor = color;
-        const tag = core.type === 'P' ? `P-Core ${core.id}` : `E-Core ${core.id - 8}`;
+        const tag = `${core.type || 'Core'} ${core.id}`;
         miniBar.title = `${tag}: ${load === null ? '--' : Math.round(load)}% | ${temp !== null ? Math.round(temp) : '--'}°C`;
       }
 

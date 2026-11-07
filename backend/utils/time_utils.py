@@ -32,7 +32,7 @@ def format_12h(time_str: Optional[str], with_period: bool = True) -> Optional[st
 
 def get_current_dates() -> Tuple[str, str]:
     """Returns a tuple of (Gregorian Date, Hijri Date)."""
-    now = datetime.datetime.now()
+    now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=3)))
     greg_str = now.strftime("%Y/%m/%d")
     if _HIJRI_AVAILABLE:
         h_date = HijriGregorian(now.year, now.month, now.day).to_hijri()

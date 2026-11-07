@@ -49,7 +49,9 @@ async def test_sonar_fetch_volume_settings_success():
     mock_resp.json.return_value = mock_json
 
     mock_client = AsyncMock()
-    mock_client.get.return_value = mock_resp
+    mode_resp = MagicMock()
+    mode_resp.json.return_value = "classic"
+    mock_client.get.side_effect = [mode_resp, mock_resp]
 
     success = await service._fetch_volume_settings(mock_client)
     assert success is True

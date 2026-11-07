@@ -9,7 +9,7 @@ setlocal enabledelayedexpansion
 title AIDA64 Dashboard - Dedicated Screen Launcher
 set "SCRIPT_DIR=%~dp0"
 set "BIN_EXE=%SCRIPT_DIR%bin\AIDA64Panel.exe"
-set "HEALTH_URL=http://localhost:8088/health"
+set "HEALTH_URL=http://127.0.0.1:8088/health"
 
 echo [AIDA64] Activating Dashboard on DEDICATED Monitor (3840, -1200)...
 

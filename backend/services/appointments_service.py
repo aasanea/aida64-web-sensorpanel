@@ -7,7 +7,7 @@ and tracks countdown to the next scheduled appointment.
 import os
 import json
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List, Optional
 from loguru import logger
 
@@ -102,27 +102,35 @@ class AppointmentsService:
         live status (upcoming, ongoing, completed), and seconds until/since start.
         """
         if now is None:
-            now = datetime.now()
+            now = datetime.now(timezone(timedelta(hours=3)))
 
         today_items = []
         today_date_str = now.strftime("%Y-%m-%d")
         current_time_minutes = now.hour * 60 + now.minute
         current_time_seconds = current_time_minutes * 60 + now.second
 
-        for apt in self._appointments:
+        for apt in getattr(self, "_appointments", []):
             # Check date or recurrence
-            days = apt.get("days", ["all"])
             date_filter = apt.get("date")
-            if date_filter and date_filter != today_date_str:
-                continue
+            if date_filter:
+                if date_filter != today_date_str:
+                    continue
+            else:
+                days = apt.get("days", ["all"])
+                weekday = now.strftime("%A").lower()
+                weekday_ar = ["الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت", "الأحد"][now.weekday()]
+                if "all" not in days and weekday not in [str(day).lower() for day in days] and weekday_ar not in days:
+                    continue
 
-            time_str = apt.get("time", "00:00")
+            time_str = apt.get("time") or ""
             try:
                 parts = time_str.split(":")
                 apt_hour = int(parts[0])
                 apt_min = int(parts[1])
+                if not 0 <= apt_hour < 24 or not 0 <= apt_min < 60:
+                    continue
             except Exception:
-                apt_hour, apt_min = 0, 0
+                continue
 
             apt_seconds = (apt_hour * 60 + apt_min) * 60
             diff_seconds = apt_seconds - current_time_seconds
@@ -146,6 +154,7 @@ class AppointmentsService:
                 "title": apt.get("title", "موعد بدون عنوان"),
                 "time": time_str,
                 "time_12h": format_12h(time_str, with_period=True),
+                "date": apt.get("date"),
                 "category": apt.get("category", "general"),
                 "category_label": apt.get("category_label", "عام"),
                 "location": apt.get("location", ""),
@@ -158,6 +167,28 @@ class AppointmentsService:
         today_items.sort(key=lambda x: x["time"])
         return today_items
 
+    def get_all_appointments(self) -> List[Dict[str, Any]]:
+        """
+        Return all appointments enriched with 12h time and date,
+        sorted chronologically by date and time.
+        """
+        all_items = []
+        for apt in getattr(self, "_appointments", []):
+            time_str = apt.get("time") or ""
+            all_items.append({
+                "id": apt.get("id", ""),
+                "title": apt.get("title", "موعد بدون عنوان"),
+                "time": time_str,
+                "time_12h": format_12h(time_str, with_period=True),
+                "date": apt.get("date"),
+                "category": apt.get("category", "general"),
+                "category_label": apt.get("category_label", "عام"),
+                "location": apt.get("location", ""),
+                "days": apt.get("days", ["all"]),
+            })
+        all_items.sort(key=lambda x: (x["date"] or "9999-99-99", x["time"]))
+        return all_items
+
     def get_summary(self, now: Optional[datetime] = None) -> Dict[str, Any]:
         """
         Compute dashboard summary for appointments card:
@@ -165,6 +196,7 @@ class AppointmentsService:
         - Upcoming & ongoing count
         - Next appointment details and countdown seconds
         - All today's items
+        - All scheduled appointments
         """
         items = self.get_today_appointments(now=now)
 
@@ -197,6 +229,7 @@ class AppointmentsService:
             "next_appointment_seconds": next_seconds,
             "next_appointment_ongoing": is_ongoing,
             "today_appointments": items,
+            "all_appointments": self.get_all_appointments(),
         }
 
     def add_appointment(
@@ -207,9 +240,11 @@ class AppointmentsService:
         category_label: str = "عمل",
         location: str = "",
         days: Optional[List[str]] = None,
+        date_str: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Add a new appointment."""
         apt_id = f"apt_{int(time.time()*1000)}"
+        clean_date = date_str.strip() if date_str and isinstance(date_str, str) and date_str.strip() else None
         new_item = {
             "id": apt_id,
             "title": title.strip(),
@@ -219,6 +254,9 @@ class AppointmentsService:
             "location": location.strip(),
             "days": days or ["all"],
         }
+        if clean_date:
+            new_item["date"] = clean_date
+
         self._appointments.append(new_item)
         self._save_appointments()
         return new_item

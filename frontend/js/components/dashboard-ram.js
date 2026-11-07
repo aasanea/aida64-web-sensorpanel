@@ -1,5 +1,5 @@
-import { animationAlpha, updateTelemetryStatus } from './component-utils.js?v=20261006.2';
-import { EventBus } from '../store/event_bus.js?v=20261006.2';
+import { animationAlpha, updateTelemetryStatus } from './component-utils.js?v=20261007.3';
+import { EventBus } from '../store/event_bus.js?v=20261007.3';
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -16,7 +16,7 @@ template.innerHTML = `
   /* Typography */
   .arabic-label {
     font-family: var(--font-arabic);
-    font-size: 19px;
+    font-size: 17px;
     font-weight: 800;
     color: var(--text-pure-white);
     opacity: 1;
@@ -90,7 +90,7 @@ template.innerHTML = `
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    gap: 6px;
+    gap: 5px;
     flex: 1;
     min-height: 0;
   }
@@ -192,7 +192,7 @@ template.innerHTML = `
     gap: 2px;
   }
   .metric-info {
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: space-between;
   }
@@ -266,13 +266,13 @@ template.innerHTML = `
       <span class="cap-val" id="ram_used_gb">--</span>
       <span class="cap-separator">/</span>
       <span class="cap-total" id="ram_total_gb">--</span>
-      <span class="cap-unit">GB</span>
+      <span class="cap-unit">GiB</span>
     </div>
   </div>
 
   <div class="card-sub-grid">
     <div class="sub-stat-box">
-      <span class="arabic-label">تردد الذاكرة</span>
+      <span class="arabic-label">ساعة الذاكرة</span>
       <div class="sub-stat-val">
         <span class="sub-num" id="ram_speed_mhz">--</span>
         <span class="sub-unit">MHz</span>
@@ -349,7 +349,7 @@ export class DashboardRAM extends HTMLElement {
       this.unsubscribe = null;
     }
 
-    this.unsubscribe = EventBus.on('state-changed', this.onStateChange);
+    this.unsubscribe = EventBus.on('state-changed', this.onStateChange, {signal:this.events.signal});
 
 
     if (typeof window !== 'undefined' && window.stateManager && window.stateManager.currentState) {

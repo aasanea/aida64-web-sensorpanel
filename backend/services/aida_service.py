@@ -5,6 +5,10 @@ Complies strictly with HardwareMetrics model (None for missing values).
 """
 
 import ctypes
+import math
+import time
+from services.inventory_service import InventoryService
+from services.telemetry_contract import field_meta, source_meta
 import re
 import winreg
 import xml.etree.ElementTree as ET
@@ -79,6 +83,9 @@ def read_registry_sensors() -> Dict[str, Dict[str, str]]:
     try:
         key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, REGISTRY_KEY_PATH)
         try:
+            modified = winreg.QueryInfoKey(key)[2] / 10_000_000 - 11644473600
+            if time.time() - modified > 5:
+                return {}
             i = 0
             while True:
                 try:
@@ -174,7 +181,8 @@ def _parse_val(val_str: Optional[str]) -> Optional[float]:
     if not cleaned:
         return None
     try:
-        return float(cleaned)
+        number = float(cleaned)
+        return number if math.isfinite(number) else None
     except (ValueError, TypeError):
         return None
 
@@ -245,16 +253,16 @@ def get_sensors_and_count(fallback_registry: bool = True) -> Tuple[HardwareMetri
     )
 
     # Network calculations
-    dl_mbps, ul_mbps = extract_network_rates(sensors)
+    dl_mbps, ul_mbps = None, None  # Route-selected Windows service owns network telemetry.
 
-    # NVMe SSD Temp (THDD1, THDD2, or any THDD*)
-    nvme_temp = _get_float(sensors, "THDD1", "THDD2")
-    if nvme_temp is None:
-        for sid in sensors:
-            if sid.startswith("THDD") and not sid.endswith("TS2"):
-                nvme_temp = _get_float(sensors, sid)
-                if nvme_temp is not None:
-                    break
+    inventory_service = InventoryService.get_instance()
+    inventory = inventory_service.get_snapshot()
+    topology = inventory_service.topology
+    disks = (inventory or {}).get("disks", [])
+    nvme_names = [disk["FriendlyName"] for disk in disks if disk.get("BusType") == 17 or str(disk.get("BusType", "")).lower() == "nvme"]
+    nvme_matches = [(sid, info) for sid, info in sensors.items() if sid.startswith("THDD") and any(name.lower() == info.get("label", "").lower() for name in nvme_names)]
+    nvme_temp = _parse_val(nvme_matches[0][1].get("value")) if len(nvme_matches) == 1 else None
+    nvme_name = nvme_matches[0][1].get("label") if len(nvme_matches) == 1 else None
 
     # GPU Voltage in mV
     raw_vgpu = _get_float(sensors, "VGPU1", "VGPU")
@@ -266,17 +274,15 @@ def get_sensors_and_count(fallback_registry: bool = True) -> Tuple[HardwareMetri
     # Total System Power (CPU + GPU Package/Core)
     cpu_pwr = _get_float(sensors, "PCPUPKG", "PCPUIAC")
     gpu_pwr = _get_float(sensors, "PGPU1", "PGPU")
-    if cpu_pwr is not None or gpu_pwr is not None:
-        total_power = round((cpu_pwr or 0.0) + (gpu_pwr or 0.0), 1)
-    else:
-        total_power = None
+    cpu_gpu_power = round(cpu_pwr + gpu_pwr, 1) if cpu_pwr is not None and gpu_pwr is not None else None
+    total_power = _get_float(sensors, "PSYSTEM", "PTOTALSYSTEM")
 
     # Storage Calculations (Drives C & D)
     drive_c_used_percent = _get_float(sensors, "SDRVCUTI")
     drive_c_free_gb = _get_float(sensors, "SDRVCFREESPC")
     drive_c_used_gb = _get_float(sensors, "SDRVCUSEDSPC")
     drive_c_total_gb = (
-        round(drive_c_used_gb + drive_c_free_gb, 0)
+        round(drive_c_used_gb + drive_c_free_gb, 2)
         if (drive_c_used_gb is not None and drive_c_free_gb is not None)
         else None
     )
@@ -285,7 +291,7 @@ def get_sensors_and_count(fallback_registry: bool = True) -> Tuple[HardwareMetri
     drive_d_free_gb = _get_float(sensors, "SDRVDFREESPC")
     drive_d_used_gb = _get_float(sensors, "SDRVDUSEDSPC")
     drive_d_total_gb = (
-        round(drive_d_used_gb + drive_d_free_gb, 0)
+        round(drive_d_used_gb + drive_d_free_gb, 2)
         if (drive_d_used_gb is not None and drive_d_free_gb is not None)
         else None
     )
@@ -313,23 +319,31 @@ def get_sensors_and_count(fallback_registry: bool = True) -> Tuple[HardwareMetri
     res_val = sensors.get("SDESKRES", {}).get("value")
     display_res = str(res_val).strip() if res_val else None
 
-    # 20-Core Hybrid Metrics (Arrow Lake: 8 P-Cores + 12 E-Cores)
-    cpu_cores = []
-    has_any_core = False
-    for i in range(1, 21):
-        core_type = "P" if i <= 8 else "E"
-        core_load = _get_float(sensors, f"SCPU{i}UTI")
-        core_temp = _get_float(sensors, f"TCC-1-{i}", f"TCPUCORE{i}")
-        if core_load is not None or core_temp is not None:
-            has_any_core = True
-        cpu_cores.append({
-            "id": i,
-            "type": core_type,
-            "load": core_load,
-            "temp": core_temp
-        })
-    if not has_any_core:
-        cpu_cores = None
+    ids = sorted({int(match.group(1) or match.group(2)) for sid in sensors for match in [re.fullmatch(r"SCPU(\d+)UTI|TCPUCORE(\d+)", sid)] if match} | {int(sid.rsplit("-", 1)[1]) for sid in sensors if re.fullmatch(r"TCC-1-\d+", sid)})
+    cpu_cores = [{"id": i, "type": topology.get(i), "load": _get_float(sensors, f"SCPU{i}UTI"), "temp": _get_float(sensors, f"TCC-1-{i}", f"TCPUCORE{i}")} for i in ids] or None
+    # AIDA FPS from AIDA64 native sensor; fallback to RTSS or refresh rate
+    fps = _get_float(sensors, "SAIDAFPS", "SRTSSFPS", "SVREFRATE")
+    fps_src = "AIDA64" if sensors.get("SAIDAFPS") else "RTSS" if sensors.get("SRTSSFPS") else "Display" if sensors.get("SVREFRATE") else None
+    provenance = {key: field_meta("aida", "") for key in HardwareMetrics.model_fields if not key.startswith("telemetry_") and not key.endswith("_source")}
+    for key in provenance:
+        provenance[key]["unit"] = "°C" if key.endswith("temp") else "RPM" if key.endswith("rpm") else "MHz" if key.endswith(("clock", "mhz")) else "GiB" if key.endswith("gb") else "%" if key.endswith(("percent", "load", "volume")) else "W" if key.endswith("power") else ""
+    provenance.update({
+        "cpu_gpu_power": field_meta("aida", "W", "derived", ["cpu_power", "gpu_power"]),
+        "ram_used_gb": field_meta("aida", "GiB", "derived", ["SUSEDMEM"]),
+        "vram_used_gb": field_meta("aida", "GiB", "derived", ["SUSEDVMEM"]),
+        "drive_c_total_gb": field_meta("aida", "GiB", "derived", ["drive_c_used_gb", "drive_c_free_gb"]),
+        "drive_d_total_gb": field_meta("aida", "GiB", "derived", ["drive_d_used_gb", "drive_d_free_gb"]),
+        "max_temp": field_meta("aida", "°C", "derived"),
+        "gpu_voltage_mv": field_meta("aida", "mV", "derived", ["VGPU1"]),
+        "hardware_inventory": field_meta("inventory", ""),
+        "ram_total_gb": field_meta("aida", "GiB", "derived", ["SUSEDMEM", "SFREEMEM"]),
+        "vram_total_gb": field_meta("aida", "GiB", "derived", ["SUSEDVMEM", "SFREEVMEM"]),
+        "storage_total_free_gb": field_meta("aida", "GiB", "derived", ["drive_c_free_gb", "drive_d_free_gb"]),
+        "cpu_hotspot_temp": field_meta("aida", "°C", "measured", ["TCPUPKG"]),
+        "fps": field_meta("aida", "FPS", "measured", ["SAIDAFPS", "SRTSSFPS"]),
+        "display_hz": field_meta("aida", "Hz", "measured", ["SVREFRATE"]),
+        "display_res": field_meta("aida", "", "measured", ["SDESKRES"]),
+    })
 
     data = HardwareMetrics(
         # CPU
@@ -339,7 +353,7 @@ def get_sensors_and_count(fallback_registry: bool = True) -> Tuple[HardwareMetri
         cpu_power=cpu_pwr,
         cpu_voltage=_get_float(sensors, "VCPU", "VCORE"),
         cpu_fan_rpm=_get_float(sensors, "FCPU"),
-        cpu_hotspot_temp=_get_float(sensors, "TCPUPKG", "TCPUHOT"),
+        cpu_hotspot_temp=_get_float(sensors, "TCPUPKG"),
         cpu_cores=cpu_cores,
         # GPU
         gpu_temp=_get_float(sensors, "TGPU1", "TGPU"),
@@ -366,7 +380,7 @@ def get_sensors_and_count(fallback_registry: bool = True) -> Tuple[HardwareMetri
         vrm_temp=_get_float(sensors, "TVRM"),
         pch_temp=_get_float(sensors, "TPCH", "TPCHDIO"),
         nvme_temp=nvme_temp,
-        pump_rpm=_get_float(sensors, "FCHA4", "FPUMP", "FWATER", "FCPUOPT", "FCHAS1"),
+        pump_rpm=_get_float(sensors, "FPUMP", "FWATER"),
         # Storage
         drive_c_used_percent=drive_c_used_percent,
         drive_c_free_gb=drive_c_free_gb,
@@ -381,21 +395,14 @@ def get_sensors_and_count(fallback_registry: bool = True) -> Tuple[HardwareMetri
         network_download_mbps=dl_mbps,
         network_upload_mbps=ul_mbps,
         # System Telemetry & Header
-        fps=(
-            rtss_fps
-            if (rtss_fps := _get_float(sensors, "SRTSSFPS")) is not None and rtss_fps > 0
-            else (
-                aida_fps
-                if (aida_fps := _get_float(sensors, "SAIDAFPS")) is not None
-                and aida_fps > 0
-                and (
-                    (vref := _get_float(sensors, "SVREFRATE")) is None
-                    or abs(aida_fps - vref) > 1.0
-                    or (_get_float(sensors, "SGPU1UTI", "SGPUUTI") or 0.0) > 35.0
-                )
-                else (0.0 if (_get_float(sensors, "SAIDAFPS") is not None or _get_float(sensors, "SRTSSFPS") is not None) else None)
-            )
-        ),
+        fps=fps,
+        fps_source=fps_src if fps is not None else None,
+        cpu_gpu_power=cpu_gpu_power,
+        hardware_inventory=inventory,
+        nvme_sensor_name=nvme_name,
+        storage_total_scope="C + D" if drive_c_free_gb is not None and drive_d_free_gb is not None else "C فقط" if drive_c_free_gb is not None else "D فقط" if drive_d_free_gb is not None else None,
+        telemetry_fields=provenance,
+        telemetry_sources={"aida": source_meta("AIDA64 shared memory / registry", time.time(), 5, available=bool(sensors)), "inventory": inventory_service.metadata()},
         total_power=total_power,
         max_temp=max_temp,
         display_hz=_get_float(sensors, "SVREFRATE"),
