@@ -118,34 +118,200 @@ class WeatherService:
         except Exception as e:
             logger.warning(f"Failed to save Riyadh cache: {e}")
 
+    @staticmethod
+    def _parse_metar(metar: Optional[Dict[str, Any]], is_day: bool) -> Optional[Dict[str, Any]]:
+        """Extract meteorological ground truth from King Khalid Airport METAR station (OERK)."""
+        if not metar:
+            return None
+
+        wx = (metar.get("wxString") or "").upper()
+        raw = (metar.get("rawOb") or "").upper()
+        cover = (metar.get("cover") or "").upper()
+        temp = metar.get("temp")
+
+        has_phenomenon = False
+        desc = None
+        icon = None
+        wcode = None
+
+        # 1. Severe Weather / Thunderstorms & Rain
+        if "+TSRA" in wx or "+TSRA" in raw:
+            desc, icon, wcode, has_phenomenon = "عواصف رعدية شديدة", "⛈️", 99, True
+        elif "TSRA" in wx or "TSRA" in raw:
+            desc, icon, wcode, has_phenomenon = "عواصف رعدية ممطرة", "⛈️", 95, True
+        elif "TS" in wx or "TS" in raw or "VCTS" in wx or "VCTS" in raw:
+            desc, icon, wcode, has_phenomenon = "عواصف رعدية", "⛈️", 95, True
+        elif "+RA" in wx or "+RA" in raw or "+SHRA" in wx or "+SHRA" in raw:
+            desc, icon, wcode, has_phenomenon = "أمطار غزيرة", "⛈️", 65, True
+        elif "SHRA" in wx or "SHRA" in raw or "VCSH" in wx or "VCSH" in raw:
+            desc, icon, wcode, has_phenomenon = "زخات مطر", "🌦️", 80, True
+        elif "-RA" in wx or "-RA" in raw:
+            desc, icon, wcode, has_phenomenon = "أمطار خفيفة", "🌧️", 61, True
+        elif "RA" in wx or "RA" in raw:
+            desc, icon, wcode, has_phenomenon = "أمطار معتدلة", "🌧️", 63, True
+        elif "-DZ" in wx or "-DZ" in raw:
+            desc, icon, wcode, has_phenomenon = "رذاذ خفيف", "🌦️", 51, True
+        elif "+DZ" in wx or "+DZ" in raw:
+            desc, icon, wcode, has_phenomenon = "رذاذ كثيف", "🌧️", 55, True
+        elif "DZ" in wx or "DZ" in raw:
+            desc, icon, wcode, has_phenomenon = "رذاذ معتدل", "🌦️", 53, True
+        elif "GR" in wx or "GS" in wx or "GR" in raw:
+            desc, icon, wcode, has_phenomenon = "عواصف مع بَرَد", "⛈️", 96, True
+        elif any(k in wx or k in raw for k in ("BLDU", "DU", "SA")):
+            desc, icon, wcode, has_phenomenon = "أتربة مثارة", "🌫️", 45, True
+        elif "HZ" in wx or "HZ" in raw:
+            desc, icon, wcode, has_phenomenon = "سديم", "🌫️", 45, True
+        elif "FG" in wx or "FG" in raw:
+            desc, icon, wcode, has_phenomenon = "ضباب", "🌫️", 45, True
+        elif "BR" in wx or "BR" in raw:
+            desc, icon, wcode, has_phenomenon = "شبورة مائية", "🌫️", 45, True
+
+        # 2. Cloud Coverage if no active rain/phenomenon
+        if not has_phenomenon:
+            if cover in ("OVC", "VV"):
+                desc, icon, wcode = "غائم كلياً", "☁️", 3
+            elif cover == "BKN":
+                desc, icon, wcode = "غائم", "☁️", 3
+            elif cover == "SCT":
+                desc, icon, wcode = "غائم جزئياً", "⛅", 2
+            elif cover == "FEW":
+                desc, icon, wcode = "صافي غالباً", "🌤️", 1
+            elif cover in ("CLR", "SKC", "CAVOK"):
+                desc = "مشمس" if is_day else "صافي"
+                icon = "☀️" if is_day else "🌙"
+                wcode = 0
+
+        return {
+            "has_phenomenon": has_phenomenon,
+            "desc": desc,
+            "icon": icon,
+            "wcode": wcode,
+            "cover": cover,
+            "temp": temp,
+            "raw": raw,
+        }
+
     async def fetch_weather(self):
-        """Fetch current weather for Riyadh from Open-Meteo."""
-        url = (
+        """Fetch Riyadh weather via Hybrid Consensus: Physical OERK METAR + DWD ICON Seamless."""
+        metar_url = "https://aviationweather.gov/api/data/metar?ids=OERK&hours=1&format=json"
+        open_meteo_url = (
             f"https://api.open-meteo.com/v1/forecast?"
             f"latitude={RIYADH_LAT}&longitude={RIYADH_LON}&"
-            f"current=temperature_2m,relative_humidity_2m,weather_code,apparent_temperature,is_day&"
-            f"timezone=Asia%2FRiyadh"
+            f"current=temperature_2m,relative_humidity_2m,weather_code,apparent_temperature,is_day,precipitation,rain,showers,cloud_cover&"
+            f"models=icon_seamless&timezone=Asia%2FRiyadh"
         )
-        try:
-            async with httpx.AsyncClient(timeout=8.0) as client:
-                resp = await client.get(url)
-                if resp.status_code == 200:
-                    data = resp.json().get("current", {})
-                    temp = data.get("temperature_2m")
-                    wcode = data.get("weather_code")
-                    is_day = bool(data.get("is_day", 1))
+        headers = {"User-Agent": "AIDA64SensorPanel/2.0 (abdullah@aasanea.com)"}
 
-                    code_info = WMO_WEATHER_CODES.get(wcode, (None, None, None, None))
+        try:
+            async with httpx.AsyncClient(timeout=8.0, headers=headers) as client:
+                metar_task = client.get(metar_url)
+                om_task = client.get(open_meteo_url)
+                results = await asyncio.gather(metar_task, om_task, return_exceptions=True)
+
+                metar_resp, om_resp = results[0], results[1]
+
+                metar_item = None
+                if isinstance(metar_resp, httpx.Response) and metar_resp.status_code == 200:
+                    try:
+                        metar_json = metar_resp.json()
+                        if metar_json and isinstance(metar_json, list):
+                            metar_item = metar_json[0]
+                    except Exception:
+                        pass
+
+                om_current = None
+                if isinstance(om_resp, httpx.Response) and om_resp.status_code == 200:
+                    try:
+                        om_current = om_resp.json().get("current", {})
+                    except Exception:
+                        pass
+
+                # Fallback to standard Open-Meteo endpoint if icon_seamless had an issue
+                if not om_current:
+                    try:
+                        fallback_url = (
+                            f"https://api.open-meteo.com/v1/forecast?"
+                            f"latitude={RIYADH_LAT}&longitude={RIYADH_LON}&"
+                            f"current=temperature_2m,relative_humidity_2m,weather_code,apparent_temperature,is_day&"
+                            f"timezone=Asia%2FRiyadh"
+                        )
+                        fb_resp = await client.get(fallback_url)
+                        if fb_resp.status_code == 200:
+                            om_current = fb_resp.json().get("current", {})
+                    except Exception:
+                        pass
+
+                if not metar_item and not om_current:
+                    raise RuntimeError("Both METAR and Open-Meteo providers failed to respond")
+
+                # Day / Night status
+                is_day = bool(om_current.get("is_day", 1)) if om_current else (6 <= datetime.now(RIYADH_TZ).hour < 18)
+
+                # Parse ground truth from OERK physical station
+                metar_data = self._parse_metar(metar_item, is_day)
+
+                # Extract Open-Meteo ICON signals
+                om_wcode = om_current.get("weather_code") if om_current else None
+                om_precip = float(om_current.get("precipitation") or 0.0) if om_current else 0.0
+                om_rain = float(om_current.get("rain") or 0.0) if om_current else 0.0
+                om_cloud = float(om_current.get("cloud_cover") or 0.0) if om_current else 0.0
+                om_temp = om_current.get("temperature_2m") if om_current else None
+
+                # Hybrid Consensus Decision Engine
+                # 1. Physical station observed phenomenon (Rain, Dust, Thunderstorm, Mist)
+                if metar_data and metar_data.get("has_phenomenon") and metar_data.get("desc"):
+                    desc = metar_data["desc"]
+                    icon = metar_data["icon"]
+                # 2. Numerical Model Rain / Precipitation Override
+                elif om_precip > 0.0 or om_rain > 0.0 or (om_wcode is not None and om_wcode >= 51):
+                    if om_wcode is not None and om_wcode in WMO_WEATHER_CODES:
+                        wcode = om_wcode
+                    elif om_precip >= 5.0 or om_rain >= 5.0:
+                        wcode = 65
+                    elif om_precip >= 1.0 or om_rain >= 1.0:
+                        wcode = 63
+                    else:
+                        wcode = 61
+                    code_info = WMO_WEATHER_CODES.get(wcode, ("أمطار خفيفة", "أمطار خفيفة", "🌧️", "🌧️"))
                     desc = code_info[0] if is_day else code_info[1]
                     icon = code_info[2] if is_day else code_info[3]
+                # 3. Ground Station Clouds (BKN / OVC) or Model Cloud >= 70%
+                elif (metar_data and metar_data.get("cover") in ("BKN", "OVC")) or om_cloud >= 70.0 or (om_wcode == 3):
+                    desc = "غائم"
+                    icon = "☁️"
+                # 4. Partial Clouds (SCT) or Model Cloud >= 35%
+                elif (metar_data and metar_data.get("cover") == "SCT") or om_cloud >= 35.0 or (om_wcode == 2):
+                    desc = "غائم جزئياً"
+                    icon = "⛅"
+                # 5. Few Clouds (FEW) or Model Cloud >= 15%
+                elif (metar_data and metar_data.get("cover") == "FEW") or om_cloud >= 15.0 or (om_wcode == 1):
+                    desc = "صافي غالباً"
+                    icon = "🌤️"
+                # 6. Clear Sky
+                else:
+                    desc = "مشمس" if is_day else "صافي"
+                    icon = "☀️" if is_day else "🌙"
 
-                    self._data["riyadh_temp"] = round(float(temp), 1) if temp is not None else None
-                    self._data["riyadh_weather_desc"] = desc
-                    self._data["riyadh_weather_icon"] = icon
-                    self._last_weather_fetch = time.time()
-                    self._weather_cached = False
-                    self._save_cache()
-                    logger.debug(f"Riyadh Weather updated: {self._data['riyadh_temp']}°C, {desc}")
+                # Temperature resolution
+                final_temp = None
+                if om_temp is not None:
+                    final_temp = round(float(om_temp), 1)
+                elif metar_data and metar_data.get("temp") is not None:
+                    final_temp = round(float(metar_data["temp"]), 1)
+
+                # Calibrate if model deviates significantly from airport physical sensor
+                if metar_data and metar_data.get("temp") is not None and final_temp is not None:
+                    sensor_t = float(metar_data["temp"])
+                    if abs(final_temp - sensor_t) > 4.0:
+                        final_temp = round(sensor_t, 1)
+
+                self._data["riyadh_temp"] = final_temp
+                self._data["riyadh_weather_desc"] = desc
+                self._data["riyadh_weather_icon"] = icon
+                self._last_weather_fetch = time.time()
+                self._weather_cached = False
+                self._save_cache()
+                logger.info(f"Riyadh Weather updated [Hybrid]: {final_temp}°C, {desc} {icon} (METAR: {metar_data.get('cover') if metar_data else 'None'}, ICON Cloud: {om_cloud}%)")
         except Exception as e:
             self._weather_cached = True
             logger.warning(f"Error fetching Riyadh weather: {e}")
@@ -213,7 +379,7 @@ class WeatherService:
     def get_snapshot(self):
         self._calculate_prayer_intervals()
         result = dict(self._data)
-        weather = source_meta("Open-Meteo / Riyadh", self._last_weather_fetch, 3600, cached=self._weather_cached)
+        weather = source_meta("OERK METAR + DWD ICON (Hybrid)", self._last_weather_fetch, 3600, cached=self._weather_cached)
         if weather["status"] in ("stale", "unavailable"):
             for key in ("riyadh_temp", "riyadh_weather_desc", "riyadh_weather_icon"):
                 result[key] = None
@@ -236,11 +402,10 @@ class WeatherService:
         logger.info("Starting Weather Service background loop...")
 
         async def _loop():
-            # Initial background fetch without blocking FastAPI startup
+            # Initial background fetch immediately on startup to guarantee fresh live data
             try:
+                await self.fetch_weather()
                 now = time.time()
-                if now - self._last_weather_fetch > 1800 or self._data["riyadh_temp"] is None:
-                    await self.fetch_weather()
                 if now - self._last_prayer_fetch > 43200 or datetime.now(RIYADH_TZ).date().isoformat() not in self._schedule:
                     await self.fetch_prayer_times()
             except Exception as e:
@@ -249,8 +414,8 @@ class WeatherService:
             while self._running:
                 try:
                     cur_time = time.time()
-                    # Weather: fetch every 15 minutes (900 seconds)
-                    if cur_time - self._last_weather_fetch >= 900:
+                    # Weather: fetch every 10 minutes (600 seconds)
+                    if cur_time - self._last_weather_fetch >= 600:
                         await self.fetch_weather()
 
                     # Prayer times: fetch every 12 hours (43200 seconds)
