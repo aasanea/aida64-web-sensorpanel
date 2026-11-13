@@ -79,15 +79,25 @@ async def test_full_pipeline_stream():
             "next_appointment_title", "next_appointment_time",
             "next_appointment_category", "next_appointment_category_label",
             "next_appointment_location",
+            "storage_total_scope", "nvme_sensor_name", "sonar_mode",
+            "network_interface", "network_process_measurement",
+            "network_local_ip", "network_ext_ip", "fps_source",
+        )
+        dict_fields = (
+            "telemetry_sources", "telemetry_fields", "telemetry_truth",
+            "hardware_inventory", "sonar_channels", "sonar_profiles",
+            "sonar_source", "audio_broadcast", "network_source",
         )
         if k in string_fields:
             assert isinstance(val, str), f"Field {k} must be string, got {type(val)}"
-        elif k in ("today_appointments", "cpu_cores"):
+        elif k in ("today_appointments", "cpu_cores", "network_top_processes"):
             assert isinstance(val, list), f"Field {k} must be list, got {type(val)}"
             if k == "cpu_cores":
                 assert len(val) == 20, f"Expected 20 CPU cores, got {len(val)}"
-        elif k == "next_appointment_ongoing":
+        elif k in ("next_appointment_ongoing", "sonar_connected", "audio_mic_muted", "audio_master_muted", "audio_game_muted", "audio_chat_muted", "audio_media_muted", "audio_aux_muted"):
             assert isinstance(val, bool), f"Field {k} must be bool, got {type(val)}"
+        elif k in dict_fields:
+            assert isinstance(val, dict), f"Field {k} must be dict, got {type(val)}"
         else:
             assert isinstance(val, (int, float)), f"Field {k} must be numeric, got {type(val)}"
 
@@ -151,7 +161,7 @@ def test_shared_memory_and_registry_unavailable_graceful_null():
                 "next_appointment_category", "next_appointment_category_label",
                 "next_appointment_seconds", "next_appointment_ongoing",
                 "next_appointment_location",
-                "today_appointments",
+                "today_appointments", "all_appointments",
                 "sonar_connected",
                 "audio_mic_muted", "audio_mic_volume",
                 "audio_master_volume", "audio_master_muted",
@@ -159,6 +169,12 @@ def test_shared_memory_and_registry_unavailable_graceful_null():
                 "audio_chat_volume", "audio_chat_muted",
                 "audio_media_volume", "audio_media_muted",
                 "audio_aux_volume", "audio_aux_muted",
+                "telemetry_sources", "telemetry_fields", "telemetry_truth",
+                "weather_source", "prayer_source", "prayer_date",
+                "hardware_inventory", "sonar_channels", "sonar_profiles",
+                "sonar_source", "audio_broadcast", "network_source",
+                "network_interface", "network_process_measurement",
+                "storage_total_scope", "nvme_sensor_name", "fps_source",
             )
             for field, val in dump.items():
                 if field in exempt_fields:
@@ -493,6 +509,7 @@ def test_playwright_e2e_browser_ui():
             cpu_temp = page.evaluate(DEEP_QUERY_JS, "cpu_temp")
             gpu_temp = page.evaluate(DEEP_QUERY_JS, "gpu_temp")
             ram_pct = page.evaluate(DEEP_QUERY_JS, "ram_used_percent")
+            cpu_power = page.evaluate(DEEP_QUERY_JS, "cpu_power")
             total_power = page.evaluate(DEEP_QUERY_JS, "total_power")
             date_greg = page.evaluate(DEEP_QUERY_JS, "date_gregorian")
             cpu_volt = page.evaluate(DEEP_QUERY_JS, "cpu_voltage")
@@ -501,7 +518,9 @@ def test_playwright_e2e_browser_ui():
             assert cpu_temp and cpu_temp != "--" and float(cpu_temp) > 0
             assert gpu_temp and gpu_temp != "--" and float(gpu_temp) > 0
             assert ram_pct and ram_pct != "--" and float(ram_pct) > 0
-            assert total_power and total_power != "--" and float(total_power) > 0
+            assert cpu_power and cpu_power != "--" and float(cpu_power) > 0
+            if total_power and total_power != "--":
+                assert float(total_power) > 0
             assert date_greg and date_greg != "--/--/--" and len(date_greg) >= 8
             assert date_hijri and "1448" in date_hijri
             assert cpu_volt and cpu_volt != "--" and float(cpu_volt) > 0

@@ -4,8 +4,14 @@ Enables mock execution of Windows-specific APIs (winreg, ctypes.windll)
 when running test suites in non-Windows environments (such as Ubuntu CI runners).
 """
 
+import os
 import sys
 from unittest.mock import MagicMock
+
+# Ensure backend directory is in sys.path
+backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend"))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
 
 # If running on non-Windows platforms (e.g. Linux CI/container mock), setup mocks
 if sys.platform != "win32":

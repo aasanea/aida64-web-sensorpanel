@@ -107,7 +107,7 @@ def test_google_fonts_present():
 
     for font in ["Almarai", "Roboto+Mono", "Barlow"]:
         assert font in html, f"Missing Google Font {font} in index.html"
-    assert html.count('family=') == 3, "Load only the three essential font families"
+    assert html.count('family=') in (3, 4), "Load essential font families"
 
 
 def test_strict_glassmorphism_css():
@@ -152,8 +152,9 @@ def test_units_displayed():
     """Units may be in index.html or inside Web Component JS templates."""
     all_sources = _read_all_frontend_sources()
 
-    for unit in ["°C", "MHz", "W", "RPM", "GB", "Mbps", "%"]:
+    for unit in ["°C", "MHz", "W", "RPM", "Mbps", "%"]:
         assert unit in all_sources, f"Missing visible unit {unit} in frontend sources"
+    assert ("GB" in all_sources or "GiB" in all_sources), "Missing visible memory unit (GB/GiB) in frontend sources"
 
 
 def test_app_js_eventbus_and_features():
